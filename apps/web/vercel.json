@@ -1,0 +1,12 @@
+{
+  "buildCommand": "cd ../.. && npx turbo build --filter=web",
+  "outputDirectory": ".next",
+  "devCommand": "next dev --turbopack --port 3000",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "@next_public_api_url",
+    "NEXT_PUBLIC_APP_URL": "@next_public_app_url",
+    "USE_API_MOCKS": "@use_api_mocks"
+  }
+}
