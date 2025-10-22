@@ -45,13 +45,13 @@ export default function TeacherDashboardPage() {
   const [selectedClass, setSelectedClass] = useState(() => classesForTeacher[0]?.id || '');
   const isTeacher = (user?.roles || []).includes(ROLES.TEACHER);
 
-  // live updates
-  useEffect(() => {
-    const unsub = storeSubscribe(() => {
-      setEntities(getEntities(schoolId));
-    });
-    return unsub;
-  }, [schoolId]);
+  // Removed storeSubscribe - data will be fetched from real API instead
+  // useEffect(() => {
+  //   const unsub = storeSubscribe(() => {
+  //     setEntities(getEntities(schoolId));
+  //   });
+  //   return unsub;
+  // }, [schoolId]);
 
   // profile menu outside click
   useEffect(() => {

@@ -547,11 +547,11 @@ export default function PlatformDashboardPage() {
     return Number.isFinite(n) && n > 0 ? n : 0;
   };
 
-  // Reflect updates from other portals via shared store
-  useEffect(() => {
-    const unsub = storeSubscribe(() => setSchools(storeGetSchools()));
-    return unsub;
-  }, []);
+  // Removed storeSubscribe - data will be fetched from real API instead
+  // useEffect(() => {
+  //   const unsub = storeSubscribe(() => setSchools(storeGetSchools()));
+  //   return unsub;
+  // }, []);
 
   return (
     <ProtectedRoute>

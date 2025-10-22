@@ -8,7 +8,6 @@ import { ROLES } from '@repo/config';
 import {
   getCurrentSchoolId,
   getEntities,
-  subscribe as storeSubscribe,
   setParentChildren,
   setInvoices,
   getSchools,
@@ -32,11 +31,8 @@ export default function ParentDashboardPage() {
   const [entities, setEntities] = useState(() => getEntities(schoolId));
   const isParent = (user?.roles || []).includes(ROLES.PARENT) || (user?.roles || []).includes('student');
 
-  // live updates
-  useEffect(() => {
-    const unsub = storeSubscribe(() => setEntities(getEntities(schoolId)));
-    return unsub;
-  }, [schoolId]);
+  // Removed storeSubscribe - no longer using live updates from data-store
+  // Data will be fetched from real API instead
 
   // Seed parent-children mapping if empty for mock parent
   useEffect(() => {
@@ -126,7 +122,7 @@ export default function ParentDashboardPage() {
 
   // Support tickets local state for Parent view
   const [tickets, setTickets] = useState(() => getSupportTickets());
-  useEffect(() => { const unsub = storeSubscribe(() => setTickets(getSupportTickets())); return unsub; }, []);
+  // Removed storeSubscribe - tickets will be fetched from API instead
 
   // Navbar state
   const [showNotif, setShowNotif] = useState(false);
@@ -215,7 +211,7 @@ export default function ParentDashboardPage() {
           {!isParent ? (
             <div className="p-6"><div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md p-4">You do not have permission to view this page.</div></div>
           ) : (
-            <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8">
+            <main className=" mx-auto w-full p-4 sm:p-6 lg:p-8">
               {/* Dashboard */}
               {active === 'dashboard' && (
                 <section className="animate-slide-in-top">

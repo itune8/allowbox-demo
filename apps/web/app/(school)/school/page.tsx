@@ -40,21 +40,7 @@ type Staff = { id: string; name: string; role: string };
 type ClassItem = { id: string; name: string; strength: number };
 type Invoice = import('../../../lib/data-store').Invoice;
 
-const mockStudents: Student[] = [
-  { id: 'stu-1', name: 'Aisha Khan', className: 'Grade 6', age: 11 },
-  { id: 'stu-2', name: 'Chinedu Okafor', className: 'Grade 8', age: 13 },
-  { id: 'stu-3', name: 'Meera Joshi', className: 'Grade 10', age: 15 },
-];
-const mockStaff: Staff[] = [
-  { id: 'stf-1', name: 'Mr. James', role: 'Math Teacher' },
-  { id: 'stf-2', name: 'Ms. Ada', role: 'Science Teacher' },
-  { id: 'stf-3', name: 'Mrs. Bisi', role: 'Admin' },
-];
-const mockClasses: ClassItem[] = [
-  { id: 'cls-1', name: 'Grade 6', strength: 32 },
-  { id: 'cls-2', name: 'Grade 8', strength: 28 },
-  { id: 'cls-3', name: 'Grade 10', strength: 25 },
-];
+// Removed mock data - now fetching from real API
 
 export default function SchoolDashboardPage() {
   const { user, logout } = useAuth();
@@ -62,11 +48,19 @@ export default function SchoolDashboardPage() {
   const [active, setActive] = useState<Section>('dashboard');
   // Theme (dark-mode readiness)
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const schoolId = useMemo(() => getCurrentSchoolId(), []);
-  const [students, setStudents] = useState<Student[]>(() => getEntities(schoolId).students.length ? getEntities(schoolId).students : mockStudents);
-  const [staff, setStaff] = useState<Staff[]>(() => getEntities(schoolId).staff.length ? getEntities(schoolId).staff : mockStaff);
-  const [classes, setClasses] = useState<ClassItem[]>(() => getEntities(schoolId).classes.length ? getEntities(schoolId).classes : mockClasses);
-  const [invoicesMap, setInvoicesMap] = useState<Record<string, Invoice[]>>(() => getEntities(schoolId).invoices);
+
+  // Use real user's tenantId instead of mock getCurrentSchoolId
+  const schoolId = useMemo(() => {
+    console.log('🏫 School Dashboard - User:', user);
+    console.log('🏫 TenantId:', user?.tenantId);
+    console.log('🏫 Roles:', user?.roles);
+    return user?.tenantId || '';
+  }, [user]);
+
+  const [students, setStudents] = useState<Student[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [invoicesMap, setInvoicesMap] = useState<Record<string, Invoice[]>>({});
   const [banner, setBanner] = useState<string | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileRef = useRef<HTMLDivElement | null>(null);
@@ -182,7 +176,13 @@ export default function SchoolDashboardPage() {
     return students.filter((s) => s.name.toLowerCase().includes(q) || s.className.toLowerCase().includes(q));
   }, [students, studentQuery]);
 
-  const isSchoolAdmin = (user?.roles || []).includes(ROLES.SCHOOL_ADMIN);
+  // Use real user role from authentication
+  const isSchoolAdmin = useMemo(() => {
+    const hasRole = (user?.roles || []).includes(ROLES.SCHOOL_ADMIN) ||
+                    (user?.roles || []).includes(ROLES.TENANT_ADMIN);
+    console.log('🔐 Is School Admin:', hasRole, '| User roles:', user?.roles);
+    return hasRole;
+  }, [user?.roles]);
 
   // Fetch tenant data from backend
   useEffect(() => {
@@ -307,17 +307,17 @@ export default function SchoolDashboardPage() {
     setTimeout(() => setBanner(null), 1500);
   };
 
-  // Sync updates from other tabs/pages via store subscription
-  useEffect(() => {
-    const unsub = storeSubscribe(() => {
-      const e = getEntities(schoolId);
-      setStudents(e.students);
-      setStaff(e.staff);
-      setClasses(e.classes);
-      setInvoicesMap(e.invoices);
-    });
-    return unsub;
-  }, [schoolId]);
+  // Removed storeSubscribe - data will be fetched from real API instead
+  // useEffect(() => {
+  //   const unsub = storeSubscribe(() => {
+  //     const e = getEntities(schoolId);
+  //     setStudents(e.students);
+  //     setStaff(e.staff);
+  //     setClasses(e.classes);
+  //     setInvoicesMap(e.invoices);
+  //   });
+  //   return unsub;
+  // }, [schoolId]);
 
   // Persist initial classes to shared store if store is empty (so Teacher sees classes)
   useEffect(() => {
@@ -434,6 +434,7 @@ export default function SchoolDashboardPage() {
           </header>
 
           {!isSchoolAdmin ? (
+            
             <div className="p-6">
               <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md p-4">
                 You do not have permission to view this page.

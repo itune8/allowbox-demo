@@ -7,7 +7,7 @@ export interface User {
   permissions: string[];
   firstName?: string;
   lastName?: string;
-  tenantTheme: TenantTheme;
+  tenantTheme?: TenantTheme;
 }
 
 export interface TenantTheme {

@@ -35,7 +35,7 @@ class ApiClient {
       },
       (error) => {
         // Handle errors globally
-        if (error.response?.status === 401 && !env.useApiMocks) {
+        if (error.response?.status === 401) {
           // Redirect to login if unauthorized
           if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
             window.location.href = '/auth/login';

@@ -78,10 +78,12 @@ class AuthService {
       credentials
     );
 
-    // Store tokens in localStorage (or httpOnly cookies if backend sets them)
+    // Store tokens and user data in localStorage
     if (response.data.accessToken) {
       localStorage.setItem('accessToken', response.data.accessToken);
       localStorage.setItem('refreshToken', response.data.refreshToken);
+      // Store user data for persistence
+      localStorage.setItem('user', JSON.stringify(response.data.user));
     }
 
     return response.data;
@@ -103,6 +105,8 @@ class AuthService {
     if (response.data.accessToken) {
       localStorage.setItem('accessToken', response.data.accessToken);
       localStorage.setItem('refreshToken', response.data.refreshToken);
+      // Store user data for persistence
+      localStorage.setItem('user', JSON.stringify(response.data.user));
     }
 
     return response.data;
@@ -130,6 +134,7 @@ class AuthService {
   async logout(): Promise<void> {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
   }
 
   /**
@@ -152,6 +157,19 @@ class AuthService {
    */
   getRefreshToken(): string | null {
     return localStorage.getItem('refreshToken');
+  }
+
+  /**
+   * Get stored user data
+   */
+  getStoredUser(): AuthResponse['user'] | null {
+    const userData = localStorage.getItem('user');
+    if (!userData) return null;
+    try {
+      return JSON.parse(userData);
+    } catch {
+      return null;
+    }
   }
 }
 
