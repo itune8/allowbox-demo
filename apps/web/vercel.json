@@ -5,8 +5,8 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "env": {
-    "NEXT_PUBLIC_API_URL": "@next_public_api_url",
-    "NEXT_PUBLIC_APP_URL": "@next_public_app_url",
-    "USE_API_MOCKS": "@use_api_mocks"
+    "NEXT_PUBLIC_API_URL": "https://api.allowbox.app/api/v1",
+    "NEXT_PUBLIC_APP_URL": "https://allowbox.app",
+    "USE_API_MOCKS": "false"
   }
 }
