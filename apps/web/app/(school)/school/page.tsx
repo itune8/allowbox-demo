@@ -5,15 +5,11 @@ import { ProtectedRoute } from '../../../components/protected-route';
 import { useAuth } from '../../../contexts/auth-context';
 import { Button } from '@repo/ui/button';
 import { ROLES } from '@repo/config';
-import { LineChart } from '../../../components/charts';
 import {
-  getCurrentSchoolId,
   getEntities,
-  getSchools as storeGetSchools,
   setStudents as storeSetStudents,
   setStaff as storeSetStaff,
   setClasses as storeSetClasses,
-  subscribe as storeSubscribe,
   addInvoice as storeAddInvoice,
 } from '../../../lib/data-store';
 import { useRouter } from 'next/navigation';
@@ -22,6 +18,14 @@ import { CreateStudentModal, type StudentFormData } from '../../../components/mo
 import { CreateUserModal, type UserFormData } from '../../../components/modals/create-user-modal';
 import { studentService } from '../../../lib/services/student.service';
 import { userService } from '../../../lib/services/user.service';
+import { StatCard } from '@/components/dashboard/stat-card';
+import { DashboardHeader } from '@/components/dashboard/dashboard-header';
+import {
+  UsersIcon,
+  UserAddIcon,
+  CalendarIcon,
+  DollarIcon,
+} from '@/components/dashboard/icons';
 
 type Section = 'dashboard' | 'students' | 'staff' | 'classes' | 'fees' | 'reports' | 'support';
 
@@ -46,8 +50,6 @@ export default function SchoolDashboardPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [active, setActive] = useState<Section>('dashboard');
-  // Theme (dark-mode readiness)
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   // Use real user's tenantId instead of mock getCurrentSchoolId
   const schoolId = useMemo(() => {
@@ -59,8 +61,8 @@ export default function SchoolDashboardPage() {
 
   const [students, setStudents] = useState<Student[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
-  const [classes, setClasses] = useState<ClassItem[]>([]);
-  const [invoicesMap, setInvoicesMap] = useState<Record<string, Invoice[]>>({});
+  const [classes] = useState<ClassItem[]>([]);
+  const [invoicesMap] = useState<Record<string, Invoice[]>>({});
   const [banner, setBanner] = useState<string | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileRef = useRef<HTMLDivElement | null>(null);
@@ -110,65 +112,7 @@ export default function SchoolDashboardPage() {
     return { pendingFeesTotal, pendingInvoices, paidInvoices };
   }, [invoicesMap]);
 
-  // Build month labels for the last 5 months (abbr)
-  const monthLabels = useMemo(() => {
-    const fmt = new Intl.DateTimeFormat('en', { month: 'short' });
-    const arr: string[] = [];
-    const d = new Date();
-    for (let i = 4; i >= 0; i--) {
-      const dt = new Date(d.getFullYear(), d.getMonth() - i, 1);
-      arr.push(fmt.format(dt));
-    }
-    return arr;
-  }, []);
 
-  // Internal keys like 2025-10 for grouping
-  const monthKeys = useMemo(() => {
-    const d = new Date();
-    const arr: string[] = [];
-    for (let i = 4; i >= 0; i--) {
-      const dt = new Date(d.getFullYear(), d.getMonth() - i, 1);
-      arr.push(`${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`);
-    }
-    return arr;
-  }, []);
-
-  // Fees collected over last months (paid invoices). Fallback: school MRR for months with no payments
-  const feesTrend = useMemo(() => {
-    const sums = new Map<string, number>();
-    monthKeys.forEach((k) => sums.set(k, 0));
-    try {
-      const all = Object.values(invoicesMap).flat();
-      for (const inv of all) {
-        if (inv.status !== 'Paid' || !inv.paidAt) continue;
-        const dt = new Date(inv.paidAt);
-        if (Number.isNaN(dt.getTime())) continue;
-        const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
-        if (sums.has(key)) sums.set(key, (sums.get(key) || 0) + Math.max(0, inv.amount || 0));
-      }
-    } catch {
-      // ignore
-    }
-    const currentSchool = storeGetSchools().find((s) => s.id === schoolId);
-    const baselineMRR = Math.max(0, currentSchool?.mrr || 0);
-    const series = monthKeys.map((k) => {
-      const paid = sums.get(k) || 0;
-      return Math.round(paid > 0 ? paid : baselineMRR);
-    });
-    if (series.every((v) => v === 0)) {
-      const base = Math.max(200, totals.studentCount * 5);
-      const factors = [0.3, 0.5, 0.7, 0.85, 1.0];
-      return factors.map((f) => Math.round(base * f));
-    }
-    return series;
-  }, [invoicesMap, monthKeys, totals.studentCount, schoolId]);
-
-  // Student growth approximation
-  const studentGrowth = useMemo(() => {
-    const t = Math.max(0, totals.studentCount);
-    const factors = [0.1, 0.3, 0.55, 0.8, 1.0];
-    return factors.map((f) => Math.round(t * f));
-  }, [totals.studentCount]);
 
   const filteredStudents = useMemo(() => {
     const q = studentQuery.trim().toLowerCase();
@@ -241,18 +185,7 @@ export default function SchoolDashboardPage() {
     return () => document.removeEventListener('mousedown', onDocClick);
   }, []);
 
-  // Initialize theme
-  useEffect(() => {
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('theme') : null;
-      const prefersDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const initial = stored === 'dark' || (!stored && prefersDark) ? 'dark' : 'light';
-      setTheme(initial);
-      if (typeof document !== 'undefined') {
-        document.documentElement.classList.toggle('dark', initial === 'dark');
-      }
-    } catch {/* ignore */}
-  }, []);
+  // Initialize theme (removed dark mode toggle)
 
   // Helpers to keep numeric inputs clean (digits only, non-negative integers)
   const blockNonIntegerKeys = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -332,23 +265,14 @@ export default function SchoolDashboardPage() {
   return (
     <ProtectedRoute>
       <div className="relative min-h-screen flex transition-opacity duration-300 ease-in-out text-gray-900 dark:text-gray-100">
-        {/* Layered background (light/dark) */}
+        {/* Clean background (light/dark) - No gradients */}
         <div
-          className="absolute inset-0 -z-10"
-          style={{
-            background:
-              theme === 'dark'
-                ? 'radial-gradient(1200px 600px at 20% -10%, rgba(99,102,241,0.12), transparent), radial-gradient(1000px 500px at 120% 10%, rgba(168,85,247,0.10), transparent), linear-gradient(180deg, #0b0b0f 0%, #0b0b0f 60%, #111827 100%)'
-                : 'radial-gradient(1200px 600px at 20% -10%, rgba(99,102,241,0.12), transparent), radial-gradient(1000px 500px at 120% 10%, rgba(168,85,247,0.10), transparent), linear-gradient(180deg, #f7f7fb 0%, #f7f7fb 60%, #f3f4f6 100%)',
-          }}
+          className="absolute inset-0 -z-10 bg-gray-50 dark:bg-gray-950"
         />
-        {/* Radial glows */}
-        <div className="pointer-events-none absolute -top-24 -left-1/6 w-[1200px] h-[600px] bg-gradient-radial from-indigo-500/20 via-indigo-500/10 to-transparent blur-3xl opacity-60 animate-gradientMove" />
-        <div className="pointer-events-none absolute top-1/3 -right-1/6 w-[1000px] h-[500px] bg-gradient-radial from-purple-500/20 via-purple-500/10 to-transparent blur-3xl opacity-60 animate-gradientFlow" />
         {/* Sidebar */}
-        <aside className="w-64 bg-white/95 dark:bg-gray-900/80 backdrop-blur border-r border-gray-100 dark:border-gray-800 hidden md:flex md:flex-col sticky top-0 h-screen shadow-[0_8px_30px_rgba(0,0,0,0.04)] animate-slide-in-left">
-          <div className="h-16 flex items-center px-6 border-b">
-            <span className="text-lg font-bold" style={{ color: 'var(--color-primary)' }}>
+        <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 hidden md:flex md:flex-col sticky top-0 h-screen shadow-sm animate-slide-in-left">
+          <div className="h-16 flex items-center px-6 border-b border-gray-200 dark:border-gray-800">
+            <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
               {loadingTenant ? 'Loading...' : tenantData?.schoolName || 'Allowbox School'}
             </span>
           </div>
@@ -359,15 +283,15 @@ export default function SchoolDashboardPage() {
                 onClick={() => setActive(item.key)}
                 className={`group w-full text-left px-6 py-3 rounded-r-xl border-l-4 transition-all ease-in-out duration-300 transform ${
                   active === item.key
-                    ? 'bg-indigo-50/60 dark:bg-gray-800/70 text-indigo-700 dark:text-indigo-300 font-medium border-indigo-500'
-                    : 'text-gray-700 dark:text-gray-300 border-transparent hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white hover:pl-7 hover:-translate-y-0.5'
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-semibold border-gray-900 dark:border-gray-100'
+                    : 'text-gray-600 dark:text-gray-400 border-transparent hover:bg-gray-900 dark:hover:bg-gray-100 hover:text-white dark:hover:text-gray-900 hover:border-gray-900 dark:hover:border-gray-100 hover:pl-7 hover:-translate-y-0.5'
                 }`}
               >
                 {item.label}
               </button>
             ))}
           </nav>
-          <div className="p-4 border-t">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-800">
             <Button variant="outline" size="sm" onClick={logout} className="w-full">
               Logout
             </Button>
@@ -377,42 +301,25 @@ export default function SchoolDashboardPage() {
         {/* Main content */}
         <div className="flex-1 flex flex-col">
           {/* Topbar */}
-          <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur shadow-sm sticky top-0 z-10 border-b border-gray-100 dark:border-gray-800 animate-slide-in-top">
+          <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-10 border-b border-gray-200 dark:border-gray-800 animate-slide-in-top">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
               <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">School Admin Dashboard</h1>
               <div className="flex items-center gap-3 relative" ref={profileRef}>
-                {/* Dark mode toggle */}
                 <button
-                  className="text-xs px-2 py-1 rounded-md border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ease-smooth text-gray-700 dark:text-gray-300"
-                  title="Toggle dark mode"
-                  onClick={() => {
-                    if (typeof document !== 'undefined') {
-                      setTheme((prev) => {
-                        const next = prev === 'dark' ? 'light' : 'dark';
-                        document.documentElement.classList.toggle('dark', next === 'dark');
-                        try { localStorage.setItem('theme', next); } catch { /* ignore */ }
-                        return next;
-                      });
-                    }
-                  }}
-                >
-                  {theme === 'dark' ? '☀️' : '🌙'}
-                </button>
-                <button
-                  className="flex items-center gap-2 rounded-full hover:bg-indigo-50 transition-colors ease-smooth px-2 py-1"
+                  className="flex items-center gap-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ease-smooth px-2 py-1"
                   onClick={() => setShowProfileMenu((s) => !s)}
                 >
-                  <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold">
+                  <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-900 dark:text-gray-100 font-semibold">
                     {user?.firstName?.[0] ?? 'A'}
                   </div>
-                  <span className="text-sm text-gray-900 hidden sm:block">
+                  <span className="text-sm text-gray-900 dark:text-gray-100 hidden sm:block">
                     {user?.firstName} {user?.lastName}
                   </span>
                 </button>
                 {showProfileMenu && (
-                  <div className="absolute right-0 top-12 w-48 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-md shadow-lg animate-zoom-in">
+                  <div className="absolute right-0 top-12 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg animate-zoom-in">
                     <button
-                      className="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 transition-colors"
                       onClick={() => {
                         setShowProfileMenu(false);
                         router.push('/auth/forgot_password');
@@ -420,9 +327,9 @@ export default function SchoolDashboardPage() {
                     >
                       Reset Password
                     </button>
-                    <div className="h-px bg-gray-100" />
+                    <div className="h-px bg-gray-200 dark:bg-gray-700" />
                     <button
-                      className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 text-sm text-red-600"
+                      className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 text-sm text-red-600 transition-colors"
                       onClick={logout}
                     >
                       Logout
@@ -450,64 +357,120 @@ export default function SchoolDashboardPage() {
 
               {active === 'dashboard' && (
                 <section className="animate-slide-in-top">
+                  {/* Header */}
+                  <DashboardHeader
+                    title="School Admin Dashboard"
+                    subtitle="Comprehensive overview of your school's performance"
+                    breadcrumbs={[
+                      { label: "Home", href: "/" },
+                      { label: "Dashboard" },
+                    ]}
+                  />
+
                   {/* School Information Card */}
                   {tenantData && (
-                    <div className="bg-white shadow rounded-lg p-6 mb-6">
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">School Information</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-6">
+                      <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">School Information</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                         <div>
-                          <p className="text-sm text-gray-500">School Name</p>
-                          <p className="text-base font-medium text-gray-900">{tenantData.schoolName}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">School Name</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-0.5">{tenantData.schoolName}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Domain</p>
-                          <p className="text-base font-medium text-gray-900">{tenantData.domain}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Domain</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-0.5">{tenantData.domain}</p>
                         </div>
                         {tenantData.contactEmail && (
                           <div>
-                            <p className="text-sm text-gray-500">Contact Email</p>
-                            <p className="text-base font-medium text-gray-900">{tenantData.contactEmail}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Contact Email</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-0.5">{tenantData.contactEmail}</p>
                           </div>
                         )}
                         {tenantData.contactPhone && (
                           <div>
-                            <p className="text-sm text-gray-500">Contact Phone</p>
-                            <p className="text-base font-medium text-gray-900">{tenantData.contactPhone}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Contact Phone</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-0.5">{tenantData.contactPhone}</p>
                           </div>
                         )}
                         {tenantData.address && (
                           <div className="md:col-span-2">
-                            <p className="text-sm text-gray-500">Address</p>
-                            <p className="text-base font-medium text-gray-900">{tenantData.address}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Address</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-0.5">{tenantData.address}</p>
                           </div>
                         )}
                       </div>
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <StatCard title="Total Students" value={totals.studentCount} color="blue" />
-                    <StatCard title="Active Staff" value={totals.staffCount} color="green" />
-                    <StatCard title="Total Classes" value={totals.classCount} color="indigo" />
-                    <StatCard title="Pending Fees" value={`$${pendingFeesTotal.toLocaleString()}`} color="purple" />
+                  {/* Stats Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
+                    <StatCard
+                      title="Total Students"
+                      value={totals.studentCount}
+                      icon={<UsersIcon className="w-5 h-5 text-gray-500" />}
+                      iconBgColor="bg-gray-50"
+                    />
+                    <StatCard
+                      title="Active Staff"
+                      value={totals.staffCount}
+                      icon={<UserAddIcon className="w-5 h-5 text-gray-500" />}
+                      iconBgColor="bg-gray-50"
+                    />
+                    <StatCard
+                      title="Total Classes"
+                      value={totals.classCount}
+                      icon={<CalendarIcon className="w-5 h-5 text-gray-500" />}
+                      iconBgColor="bg-gray-50"
+                    />
+                    <StatCard
+                      title="Pending Fees"
+                      value={`$${pendingFeesTotal.toLocaleString()}`}
+                      icon={<DollarIcon className="w-5 h-5 text-orange-600" />}
+                      iconBgColor="bg-orange-50"
+                    />
                   </div>
 
+                  {/* Quick Actions & Events */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 hover:shadow-md transition-all ease-smooth">
-                      <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+                    <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+                      <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Quick Actions</h3>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <Button onClick={() => setIsStudentModalOpen(true)}>Add Student (API)</Button>
-                        <Button variant="outline" onClick={() => setIsStaffModalOpen(true)}>Add Staff (API)</Button>
-                        <Button variant="outline" onClick={() => setActive('classes')}>Manage Classes</Button>
-                        <Button variant="outline" onClick={() => setActive('fees')}>Fees & Billing</Button>
+                        <Button onClick={() => setIsStudentModalOpen(true)}>
+                          Add Student
+                        </Button>
+                        <Button variant="outline" onClick={() => setIsStaffModalOpen(true)}>
+                          Add Staff
+                        </Button>
+                        <Button variant="outline" onClick={() => setActive('classes')}>
+                          Manage Classes
+                        </Button>
+                        <Button variant="outline" onClick={() => setActive('fees')}>
+                          Fees & Billing
+                        </Button>
                       </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 hover:shadow-md transition-all ease-smooth animate-fadeIn">
-                      <h3 className="text-lg font-semibold mb-3">Upcoming Events</h3>
-                      <ul className="space-y-2 text-sm text-gray-700">
-                        <li className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm bg-gray-300"/><span className="w-2 h-2 rounded-full bg-green-500"/> PTA Meeting – Tue 11:00 AM</li>
-                        <li className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm bg-gray-300"/><span className="w-2 h-2 rounded-full bg-yellow-500"/> Midterm Exams – Next Week</li>
-                        <li className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm bg-gray-300"/><span className="w-2 h-2 rounded-full bg-red-500"/> Sports Day – 2 Weeks</li>
+                    
+                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+                      <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Upcoming Events</h3>
+                      <ul className="space-y-3">
+                        <li className="flex items-start gap-3">
+                          <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5"></div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">PTA Meeting – Tue 11:00 AM</p>
+                          </div>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <div className="w-2 h-2 rounded-full bg-yellow-500 mt-1.5"></div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Midterm Exams – Next Week</p>
+                          </div>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5"></div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Sports Day – 2 Weeks</p>
+                          </div>
+                        </li>
                       </ul>
                     </div>
                   </div>
@@ -601,7 +564,7 @@ export default function SchoolDashboardPage() {
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Staff</h2>
                     <div className="flex items-center gap-2">
                       <div className="relative">
-                        <select value={roleFilter} onChange={(e)=>setRoleFilter(e.target.value)} className="h-9 px-3 rounded-md border dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <select value={roleFilter} onChange={(e)=>setRoleFilter(e.target.value)} className="h-9 px-3 rounded-md border border-gray-300 text-sm text-gray-900 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-gray-400">
                           <option value="">All Roles</option>
                           <option value="Teacher">Teacher</option>
                           <option value="Admin">Admin</option>
@@ -767,7 +730,7 @@ export default function SchoolDashboardPage() {
                       <Button onClick={()=>{ setNewTicketTitle(''); setShowNewTicket(true); }}>+ New Ticket</Button>
                     </div>
                     <div className="relative mb-3">
-                      <input className="h-10 w-full max-w-sm border border-gray-200 dark:border-gray-700 rounded-lg pl-9 pr-9 text-sm focus:ring-2 focus:ring-indigo-400 bg-white dark:bg-gray-900 placeholder:text-gray-400 dark:placeholder:text-gray-500" placeholder="Search tickets" value={ticketSearch} onChange={(e)=>setTicketSearch(e.target.value)} />
+                      <input className="h-10 w-full max-w-sm border border-gray-300 rounded-lg pl-9 pr-9 text-sm focus:ring-2 focus:ring-gray-400 bg-white text-gray-900 placeholder:text-gray-400" placeholder="Search tickets" value={ticketSearch} onChange={(e)=>setTicketSearch(e.target.value)} />
                       <span className="absolute left-3 top-2.5 text-gray-400"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
                       {ticketSearch && <button className="absolute right-2 top-2.5 text-gray-400 hover:text-gray-300" onClick={()=>setTicketSearch('')}>×</button>}
                     </div>
@@ -826,12 +789,12 @@ export default function SchoolDashboardPage() {
                     >
                       <div>
                         <label className="block text-sm text-gray-600 mb-1">Name</label>
-                        <input name="name" required className="w-full border rounded-md px-3 py-2 text-sm" placeholder="e.g., Aisha Khan" />
+                        <input name="name" required className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-gray-400" placeholder="e.g., Aisha Khan" />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-sm text-gray-600 mb-1">Class</label>
-                          <select name="className" className="w-full border rounded-md px-3 py-2 text-sm">
+                          <select name="className" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:ring-2 focus:ring-gray-400">
                             {classes.map((c) => (
                               <option key={c.id} value={c.name}>{c.name}</option>
                             ))}
@@ -839,7 +802,7 @@ export default function SchoolDashboardPage() {
                         </div>
                         <div>
                           <label className="block text-sm text-gray-600 mb-1">Age</label>
-                          <input name="age" type="number" min={0} step={1} inputMode="numeric" pattern="[0-9]*" onKeyDown={blockNonIntegerKeys} onInput={sanitizeOnInput} onPaste={blockNonDigitPaste} className="w-full border rounded-md px-3 py-2 text-sm" />
+                          <input name="age" type="number" min={0} step={1} inputMode="numeric" pattern="[0-9]*" onKeyDown={blockNonIntegerKeys} onInput={sanitizeOnInput} onPaste={blockNonDigitPaste} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-gray-400" />
                         </div>
                       </div>
                       <div className="flex items-center justify-end gap-2 pt-2">
@@ -873,11 +836,11 @@ export default function SchoolDashboardPage() {
                     >
                       <div>
                         <label className="block text-sm text-gray-600 mb-1">Name</label>
-                        <input name="name" required className="w-full border rounded-md px-3 py-2 text-sm" placeholder="e.g., Mr. James" />
+                        <input name="name" required className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-gray-400" placeholder="e.g., Mr. James" />
                       </div>
                       <div>
                         <label className="block text-sm text-gray-600 mb-1">Role</label>
-                        <input name="role" className="w-full border rounded-md px-3 py-2 text-sm" placeholder="e.g., Math Teacher" />
+                        <input name="role" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-gray-400" placeholder="e.g., Math Teacher" />
                       </div>
                       <div className="flex items-center justify-end gap-2 pt-2">
                         <Button type="button" variant="outline" onClick={() => setShowAddStaff(false)}>Cancel</Button>
@@ -948,29 +911,29 @@ export default function SchoolDashboardPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm text-gray-600 mb-1">Target</label>
-                          <select name="target" className="w-full border rounded-md px-3 py-2 text-sm">
+                          <select name="target" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:ring-2 focus:ring-gray-400">
                             <option value="student">Single Student</option>
                             <option value="class">Entire Class</option>
                           </select>
                         </div>
                         <div>
                           <label className="block text-sm text-gray-600 mb-1">Title</label>
-                          <input name="title" required className="w-full border rounded-md px-3 py-2 text-sm" placeholder="e.g., Term 1 Tuition" />
+                          <input name="title" required className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-gray-400" placeholder="e.g., Term 1 Tuition" />
                         </div>
                         <div>
                           <label className="block text-sm text-gray-600 mb-1">Amount</label>
-                          <input name="amount" inputMode="numeric" pattern="[0-9]*" onKeyDown={blockNonIntegerKeys} onInput={sanitizeOnInput} onPaste={blockNonDigitPaste} className="w-full border rounded-md px-3 py-2 text-sm" placeholder="e.g., 250" />
+                          <input name="amount" inputMode="numeric" pattern="[0-9]*" onKeyDown={blockNonIntegerKeys} onInput={sanitizeOnInput} onPaste={blockNonDigitPaste} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-gray-400" placeholder="e.g., 250" />
                         </div>
                         <div>
                           <label className="block text-sm text-gray-600 mb-1">Due Date</label>
-                          <input name="due" type="date" className="w-full border rounded-md px-3 py-2 text-sm" />
+                          <input name="due" type="date" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:ring-2 focus:ring-gray-400" />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                         <div>
                           <label className="block text-sm text-gray-600 mb-1">Student</label>
-                          <select name="studentId" className="w-full border rounded-md px-3 py-2 text-sm">
+                          <select name="studentId" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:ring-2 focus:ring-gray-400">
                             <option value="">Select student…</option>
                             {students.map((s) => (
                               <option key={s.id} value={s.id}>{s.name} — {s.className}</option>
@@ -980,7 +943,7 @@ export default function SchoolDashboardPage() {
                         </div>
                         <div>
                           <label className="block text-sm text-gray-600 mb-1">Class</label>
-                          <select name="className" className="w-full border rounded-md px-3 py-2 text-sm">
+                          <select name="className" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:ring-2 focus:ring-gray-400">
                             <option value="">Select class…</option>
                             {classes.map((c) => (
                               <option key={c.id} value={c.name}>{c.name}</option>
@@ -1044,7 +1007,7 @@ export default function SchoolDashboardPage() {
                     <div className="space-y-3">
                       <div>
                         <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Title</label>
-                        <input value={newTicketTitle} onChange={(e)=>setNewTicketTitle(e.target.value)} className="w-full border rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100" placeholder="e.g., Unable to access portal" />
+                        <input value={newTicketTitle} onChange={(e)=>setNewTicketTitle(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-gray-400" placeholder="e.g., Unable to access portal" />
                       </div>
                     </div>
                     <div className="mt-4 text-right flex items-center justify-end gap-2">
@@ -1079,73 +1042,4 @@ export default function SchoolDashboardPage() {
   );
 }
 
-function StatCard({ title, value, color }: { title: string; value: string | number; color: 'blue' | 'purple' | 'green' | 'indigo' }) {
-  const colorMap: Record<string, string> = {
-    blue: 'from-blue-500 to-sky-400',
-    purple: 'from-purple-500 to-fuchsia-500',
-    green: 'from-green-500 to-emerald-400',
-    indigo: 'from-indigo-500 to-violet-500',
-  };
-  return (
-    <div className="group bg-white/70 dark:bg-gray-900/60 backdrop-blur rounded-2xl border border-white/40 dark:border-gray-800 shadow p-5 transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-0.5">
-      <div className="flex items-center">
-        <div className={`rounded-md bg-gradient-to-r ${colorMap[color]} p-3 shadow-sm`} />
-        <div className="ml-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">{title}</p>
-          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100"><CountingNumber value={value} /></p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function CountingNumber({ value, duration = 800 }: { value: number | string; duration?: number }) {
-  const [display, setDisplay] = useState<string>(typeof value === 'number' ? '0' : String(value));
-  useEffect(() => {
-    const endStr = String(value);
-    const numeric = Number(String(value).replace(/[^0-9.]/g, ''));
-    if (!Number.isFinite(numeric)) { setDisplay(endStr); return; }
-    const start = 0; const startTime = performance.now(); let raf = 0;
-    const step = (now: number) => {
-      const t = Math.min(1, (now - startTime) / duration);
-      const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-      const val = Math.round(start + (numeric - start) * eased);
-      const formatted = String(value).includes('$') ? `$${val.toLocaleString()}` : val.toLocaleString();
-      setDisplay(formatted);
-      if (t < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [value, duration]);
-  return <span>{display}</span>;
-}
-
-function BarChartDivs({ data, labels, className = '' }: { data: number[]; labels: string[]; className?: string }) {
-  const max = Math.max(1, ...data);
-  return (
-    <div className={`w-full ${className}`}>
-      <div className="w-full h-full flex items-end gap-3">
-        {data.map((v, i) => {
-          const h = Math.round((v / max) * 100);
-          return (
-            <div key={i} className="group flex-1 flex flex-col items-center justify-end">
-              <div
-                className="w-full rounded-t-md bg-gradient-to-t from-indigo-500 to-purple-400 transition-all duration-700 ease-in-out hover:scale-110"
-                style={{ height: `${h}%` }}
-                title={`${labels[i] ?? ''}: ${v.toLocaleString()}`}
-              />
-              <div className="mt-1 text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">{v.toLocaleString()}</div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-2 grid grid-cols-5 text-[10px] text-gray-400">
-        {labels.map((l, i) => (
-          <div key={i} className="text-center">{l}</div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// (Placeholder component removed as part of linter cleanup)

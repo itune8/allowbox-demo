@@ -121,7 +121,7 @@ export default function ParentDashboardPage() {
   }, [allInvoicesList]);
 
   // Support tickets local state for Parent view
-  const [tickets, setTickets] = useState(() => getSupportTickets());
+  const [tickets] = useState(() => getSupportTickets());
   // Removed storeSubscribe - tickets will be fetched from API instead
 
   // Navbar state
@@ -131,12 +131,11 @@ export default function ParentDashboardPage() {
   return (
     <ProtectedRoute>
       <div className="relative min-h-screen bg-gray-50 dark:bg-gray-950 flex transition-opacity duration-300 ease-in-out">
-        {/* Layered background glows */}
-        <div className="pointer-events-none absolute -top-24 -left-1/6 w-[1200px] h-[600px] bg-gradient-radial from-indigo-500/20 via-indigo-500/10 to-transparent blur-3xl opacity-60 animate-gradientMove" />
-        <div className="pointer-events-none absolute top-1/3 -right-1/6 w-[1000px] h-[500px] bg-gradient-radial from-purple-500/20 via-purple-500/10 to-transparent blur-3xl opacity-60 animate-gradientFlow" />
+        {/* Clean background - no gradients */}
+        
         {/* Sidebar */}
-  <aside className="w-64 bg-white/95 dark:bg-gray-900/80 backdrop-blur border-r dark:border-gray-800 hidden md:flex md:flex-col sticky top-0 h-screen shadow-[0_8px_30px_rgba(0,0,0,0.04)] animate-slide-in-left">
-          <div className="h-16 flex items-center px-6 border-b dark:border-gray-800">
+        <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 hidden md:flex md:flex-col sticky top-0 h-screen shadow-sm animate-slide-in-left">
+          <div className="h-16 flex items-center px-6 border-b border-gray-200 dark:border-gray-800">
             <span className="text-lg font-bold text-gray-900 dark:text-gray-100">Parent Portal</span>
           </div>
           <nav className="flex-1 py-4 overflow-auto">
@@ -148,14 +147,14 @@ export default function ParentDashboardPage() {
               ['support','Support', (<span key="support"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M9 9h.01"/><path d="M15 9h.01"/><path d="M8 13a4 4 0 0 0 8 0"/></svg></span>)]
             ] as [Section,string,React.ReactNode][]).map(([key,label,icon]) => (
               <button key={key} onClick={() => setActive(key)} className={`group w-full text-left px-6 py-3 rounded-r-xl border-l-4 transition-all ease-in-out duration-300 transform flex items-center gap-3 ${
-                active===key? 'bg-indigo-50/60 dark:bg-gray-800/70 text-indigo-700 dark:text-indigo-300 font-medium border-indigo-500' : 'text-gray-700 dark:text-gray-300 border-transparent hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white hover:pl-7 hover:-translate-y-0.5'
+                active===key? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-semibold border-gray-900 dark:border-gray-100' : 'text-gray-600 dark:text-gray-400 border-transparent hover:bg-gray-900 dark:hover:bg-gray-100 hover:text-white dark:hover:text-gray-900 hover:border-gray-900 dark:hover:border-gray-100 hover:pl-7 hover:-translate-y-0.5'
               }`}>
-                <span className="text-gray-500 dark:text-gray-400 group-hover:text-white dark:group-hover:text-white">{icon}</span>
+                <span className="text-gray-500 dark:text-gray-400 group-hover:text-white dark:group-hover:text-gray-900">{icon}</span>
                 <span>{label}</span>
               </button>
             ))}
           </nav>
-          <div className="p-4 border-t">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-800">
             <Button variant="outline" size="sm" onClick={logout} className="w-full">Logout</Button>
           </div>
         </aside>
@@ -163,45 +162,32 @@ export default function ParentDashboardPage() {
         {/* Main content */}
         <div className="flex-1 flex flex-col">
           {/* Topbar */}
-          <header className="bg-white/90 dark:bg-gray-900 backdrop-blur shadow-sm sticky top-0 z-10 border-b border-gray-100 dark:border-gray-800">
+          <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-10 border-b border-gray-200 dark:border-gray-800">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
               <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Parent Dashboard</h1>
               <div className="relative flex items-center gap-2" ref={profileRef}>
-                {/* Theme toggle */}
-                <button
-                  className="text-xs px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  title="Toggle dark mode"
-                  onClick={() => {
-                    if (typeof document !== 'undefined') {
-                      const isDark = document.documentElement.classList.toggle('dark');
-                      try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch { /* no-op */ }
-                    }
-                  }}
-                >
-                  🌙
-                </button>
                 {/* Notifications */}
-                <button className="h-8 w-8 rounded-full grid place-items-center hover:bg-gray-100 dark:hover:bg-gray-800" onClick={()=>setShowNotif((s)=>!s)} title="Notifications">🔔</button>
+                <button className="h-8 w-8 rounded-full grid place-items-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" onClick={()=>setShowNotif((s)=>!s)} title="Notifications">🔔</button>
                 {showNotif && (
-                  <div className="absolute right-0 top-12 w-72 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-lg shadow-md p-3 space-y-2 animate-slide-in-bottom">
+                  <div className="absolute right-0 top-12 w-72 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-md p-3 space-y-2 animate-slide-in-bottom">
                     <div className="text-xs text-gray-500">Latest updates</div>
                     <div className="text-sm">📄 Your invoice receipt is ready.</div>
                     <div className="text-sm">💬 Support replied to your ticket.</div>
                   </div>
                 )}
-                <button className="flex items-center gap-2 rounded-full hover:bg-indigo-50 dark:hover:bg-gray-800 transition-colors px-2 py-1" onClick={() => setShowProfileMenu((s) => !s)}>
-                  <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-700 dark:text-indigo-200 font-semibold">{user?.firstName?.[0] ?? 'P'}</div>
+                <button className="flex items-center gap-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors px-2 py-1" onClick={() => setShowProfileMenu((s) => !s)}>
+                  <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-900 dark:text-gray-100 font-semibold">{user?.firstName?.[0] ?? 'P'}</div>
                   <div className="hidden sm:block text-left">
                     <div className="text-sm text-gray-900 dark:text-gray-100">{user?.firstName} {user?.lastName}</div>
                     <div className="text-[10px] text-gray-500">Parent</div>
                   </div>
                 </button>
                 {showProfileMenu && (
-                  <div className="absolute right-0 top-12 w-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-lg shadow-md animate-slide-in-bottom">
-                    <button className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100">View Profile</button>
-                    <button className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100">Settings</button>
-                    <div className="h-px bg-gray-100 dark:bg-gray-800" />
-                    <button className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm text-red-600 dark:text-red-400" onClick={logout}>Logout</button>
+                  <div className="absolute right-0 top-12 w-40 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-md animate-slide-in-bottom">
+                    <button className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 transition-colors">View Profile</button>
+                    <button className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 transition-colors">Settings</button>
+                    <div className="h-px bg-gray-200 dark:bg-gray-800" />
+                    <button className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm text-red-600 dark:text-red-400 transition-colors" onClick={logout}>Logout</button>
                   </div>
                 )}
               </div>
@@ -369,7 +355,7 @@ export default function ParentDashboardPage() {
                   <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 mt-6">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Upcoming Due Fees</h3>
-                      <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-lg hover:opacity-90" onClick={()=>downloadFeeStatement(allInvoicesList)}>Download Fee Statement</button>
+                      <button className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-all" onClick={()=>downloadFeeStatement(allInvoicesList)}>Download Fee Statement</button>
                     </div>
                     <div className="divide-y divide-gray-100 dark:divide-gray-800">
                       {allInvoicesList.filter(({inv})=>inv.status!=='Paid').sort((a,b)=>a.inv.due.localeCompare(b.inv.due)).map(({child,inv}) => (

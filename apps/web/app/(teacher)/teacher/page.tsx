@@ -10,7 +10,6 @@ import {
   getEntities,
   setAttendance,
   setHomework,
-  subscribe as storeSubscribe,
   Homework as HomeworkType,
   ClassItem,
   TimetableEntry,
@@ -87,14 +86,13 @@ export default function TeacherDashboardPage() {
 
   return (
     <ProtectedRoute>
-  <div className="relative min-h-screen bg-gray-50 dark:bg-gray-950 flex transition-opacity duration-300 ease-in-out">
-        {/* Layered background glows */}
-        <div className="pointer-events-none absolute -top-24 -left-1/6 w-[1200px] h-[600px] bg-gradient-radial from-indigo-500/20 via-indigo-500/10 to-transparent blur-3xl opacity-60 animate-gradientMove" />
-        <div className="pointer-events-none absolute top-1/3 -right-1/6 w-[1000px] h-[500px] bg-gradient-radial from-purple-500/20 via-purple-500/10 to-transparent blur-3xl opacity-60 animate-gradientFlow" />
+      <div className="relative min-h-screen bg-gray-50 dark:bg-gray-950 flex transition-opacity duration-300 ease-in-out">
+        {/* Clean background - no gradients */}
+        
         {/* Sidebar */}
-  <aside className="w-64 bg-white/95 dark:bg-gray-900/80 backdrop-blur border-r dark:border-gray-800 hidden md:flex md:flex-col sticky top-0 h-screen shadow-[0_8px_30px_rgba(0,0,0,0.04)] animate-slide-in-left">
-          <div className="h-16 flex items-center px-6 border-b">
-            <span className="text-lg font-bold" style={{ color: 'var(--color-primary)' }}>
+        <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 hidden md:flex md:flex-col sticky top-0 h-screen shadow-sm animate-slide-in-left">
+          <div className="h-16 flex items-center px-6 border-b border-gray-200 dark:border-gray-800">
+            <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
               Teacher Portal
             </span>
           </div>
@@ -105,16 +103,16 @@ export default function TeacherDashboardPage() {
                 onClick={() => setActive(item.key)}
                 className={`group w-full text-left px-6 py-3 rounded-r-xl border-l-4 transition-all ease-in-out duration-300 transform flex items-center gap-3 ${
                   active === item.key
-                    ? 'bg-indigo-50/60 dark:bg-gray-800/70 text-indigo-700 dark:text-indigo-300 font-medium border-indigo-500'
-                    : 'text-gray-700 dark:text-gray-300 border-transparent hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white hover:pl-7 hover:-translate-y-0.5'
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-semibold border-gray-900 dark:border-gray-100'
+                    : 'text-gray-600 dark:text-gray-400 border-transparent hover:bg-gray-900 dark:hover:bg-gray-100 hover:text-white dark:hover:text-gray-900 hover:border-gray-900 dark:hover:border-gray-100 hover:pl-7 hover:-translate-y-0.5'
                 }`}
               >
-                <span className="text-gray-500 dark:text-gray-400 group-hover:text-white dark:group-hover:text-white">{item.icon}</span>
+                <span className="text-gray-500 dark:text-gray-400 group-hover:text-white dark:group-hover:text-gray-900">{item.icon}</span>
                 <span>{item.label}</span>
               </button>
             ))}
           </nav>
-          <div className="p-4 border-t">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-800">
             <Button variant="outline" size="sm" onClick={logout} className="w-full">
               Logout
             </Button>
@@ -123,33 +121,20 @@ export default function TeacherDashboardPage() {
 
         {/* Main content */}
         <div className="flex-1 flex flex-col">
-          <header className="bg-white/90 dark:bg-gray-900 backdrop-blur shadow-sm sticky top-0 z-10 border-b border-gray-100 dark:border-gray-800">
+          <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-10 border-b border-gray-200 dark:border-gray-800">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
               <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Teacher Dashboard</h1>
               <div className="relative flex items-center gap-2" ref={profileRef}>
-                {/* Theme toggle */}
-                <button
-                  className="text-xs px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ease-smooth"
-                  title="Toggle dark mode"
-                  onClick={() => {
-                    if (typeof document !== 'undefined') {
-                      const isDark = document.documentElement.classList.toggle('dark');
-                      try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch { /* no-op */ }
-                    }
-                  }}
-                >
-                  🌙
-                </button>
-                <button className="flex items-center gap-2 rounded-full hover:bg-indigo-50 dark:hover:bg-gray-800 transition-colors ease-smooth px-2 py-1" onClick={() => setShowProfileMenu((s) => !s)}>
-                  <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-700 dark:text-indigo-200 font-semibold">{user?.firstName?.[0] ?? 'T'}</div>
+                <button className="flex items-center gap-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ease-smooth px-2 py-1" onClick={() => setShowProfileMenu((s) => !s)}>
+                  <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-900 dark:text-gray-100 font-semibold">{user?.firstName?.[0] ?? 'T'}</div>
                   <span className="text-sm text-gray-900 dark:text-gray-100 hidden sm:block">{user?.firstName} {user?.lastName}</span>
                 </button>
                 {showProfileMenu && (
-                  <div className="absolute right-0 top-12 w-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-lg shadow-md animate-slide-in-bottom">
-                    <button className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100">View Profile</button>
-                    <button className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100">Settings</button>
-                    <div className="h-px bg-gray-100 dark:bg-gray-800" />
-                    <button className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm text-red-600 dark:text-red-400" onClick={logout}>Logout</button>
+                  <div className="absolute right-0 top-12 w-40 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-md animate-slide-in-bottom">
+                    <button className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 transition-colors">View Profile</button>
+                    <button className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 transition-colors">Settings</button>
+                    <div className="h-px bg-gray-200 dark:bg-gray-800" />
+                    <button className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm text-red-600 dark:text-red-400 transition-colors" onClick={logout}>Logout</button>
                   </div>
                 )}
               </div>
@@ -174,13 +159,13 @@ export default function TeacherDashboardPage() {
 
                 {/* Quick actions */}
                 <div className="flex gap-3 mt-5 flex-wrap">
-                  <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-all duration-200 shadow-sm active:scale-95 inline-flex items-center gap-2" onClick={() => setActive('homework')}>
+                  <button className="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-all duration-200 shadow-md active:scale-95 inline-flex items-center gap-2 border border-gray-900" onClick={() => setActive('homework')}>
                     <span>＋</span> Add Homework
                   </button>
-                  <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-all duration-200 shadow-sm active:scale-95 inline-flex items-center gap-2" onClick={() => setActive('attendance')}>
+                  <button className="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-all duration-200 shadow-md active:scale-95 inline-flex items-center gap-2 border border-gray-900" onClick={() => setActive('attendance')}>
                     <span>✓</span> Mark Attendance
                   </button>
-                  <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-all duration-200 shadow-sm active:scale-95 inline-flex items-center gap-2" onClick={() => setActive('timetable')}>
+                  <button className="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-all duration-200 shadow-md active:scale-95 inline-flex items-center gap-2 border border-gray-900" onClick={() => setActive('timetable')}>
                     <span>📅</span> View Timetable
                   </button>
                 </div>
@@ -190,7 +175,7 @@ export default function TeacherDashboardPage() {
                   <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 animate-fade-in">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Today&apos;s Schedule</h3>
-                      <select className="border border-gray-300 bg-white text-gray-900 rounded-md px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
+                      <select className="border border-gray-300 bg-white text-gray-900 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-gray-400" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
                         {classesForTeacher.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
                       </select>
                     </div>
@@ -455,7 +440,7 @@ function AttendanceSection({ today, setToday, entities, selectedClass, setSelect
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Attendance</h2>
           <div className="flex items-center gap-2">
             <label className="text-sm text-gray-700 dark:text-gray-300" htmlFor="att-date">Date</label>
-            <input id="att-date" type="date" className="border border-gray-300 bg-white text-gray-900 rounded-md px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" value={today} onChange={(e) => setToday(e.target.value)} />
+            <input id="att-date" type="date" className="border border-gray-300 bg-white text-gray-900 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-gray-400" value={today} onChange={(e) => setToday(e.target.value)} />
             <label className="text-sm text-gray-700 dark:text-gray-300" htmlFor="att-class">Class</label>
             <select id="att-class" className="border border-gray-300 bg-white text-gray-900 rounded-md px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
               {classesForTeacher.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
@@ -581,19 +566,19 @@ function HomeworkPage({ schoolId, entities, allowedClasses, onEntitiesChange }: 
             </select>
           </div>
           <div className="relative">
-            <input className="peer border border-gray-300 bg-white text-gray-900 dark:border-gray-700 rounded-lg px-3 pt-5 pb-2 text-sm w-full dark:bg-gray-900 dark:text-gray-100 placeholder-transparent focus:ring-2 focus:ring-indigo-400 focus:outline-none" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
+            <input className="peer border border-gray-300 bg-white text-gray-900 rounded-lg px-3 pt-5 pb-2 text-sm w-full placeholder-transparent focus:ring-2 focus:ring-gray-400 focus:outline-none" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
             <label className="absolute left-3 top-2 text-xs text-gray-400 transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-2.5 peer-focus:top-2 peer-focus:text-xs">Title</label>
           </div>
           <div className="relative">
-            <input type="date" className="peer border border-gray-300 bg-white text-gray-900 dark:border-gray-700 rounded-lg px-3 pt-5 pb-2 text-sm w-full dark:bg-gray-900 dark:text-gray-100 placeholder-transparent focus:ring-2 focus:ring-indigo-400 focus:outline-none" value={due} onChange={(e) => setDue(e.target.value)} placeholder="Due" />
+            <input type="date" className="peer border border-gray-300 bg-white text-gray-900 rounded-lg px-3 pt-5 pb-2 text-sm w-full placeholder-transparent focus:ring-2 focus:ring-gray-400 focus:outline-none" value={due} onChange={(e) => setDue(e.target.value)} placeholder="Due" />
             <label className="absolute left-3 top-2 text-xs text-gray-400">Due</label>
           </div>
           <div className="sm:col-span-3">
-            <textarea className="border border-gray-300 bg-white text-gray-900 dark:border-gray-700 rounded-lg px-3 py-2 text-sm w-full dark:bg-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-400 focus:outline-none" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Instructions or links…" />
+            <textarea className="border border-gray-300 bg-white text-gray-900 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-gray-400 focus:outline-none" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Instructions or links…" />
           </div>
         </div>
         <div className="flex justify-end items-center">
-          <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-all shadow-sm active:scale-95" onClick={addHomework}>Add</button>
+          <button className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-all shadow-sm active:scale-95" onClick={addHomework}>Add</button>
         </div>
 
         {/* Stats bar */}

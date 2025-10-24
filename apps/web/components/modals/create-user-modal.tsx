@@ -107,7 +107,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit }: CreateUserModalPr
                 value={formData.role}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               >
                 <option value="teacher">Teacher</option>
                 <option value="tenant_admin">School Admin</option>
@@ -127,7 +127,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit }: CreateUserModalPr
                 value={formData.firstName}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
@@ -143,7 +143,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit }: CreateUserModalPr
                 value={formData.lastName}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
@@ -159,7 +159,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit }: CreateUserModalPr
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
@@ -176,7 +176,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit }: CreateUserModalPr
                 onChange={handleChange}
                 required
                 minLength={8}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
               <p className="mt-1 text-xs text-gray-500">Minimum 8 characters</p>
             </div>
@@ -192,7 +192,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit }: CreateUserModalPr
                 name="phoneNumber"
                 value={formData.phoneNumber}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
@@ -209,7 +209,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit }: CreateUserModalPr
                     name="employeeId"
                     value={formData.employeeId}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
                     placeholder="Auto-generated if empty"
                   />
                 </div>
@@ -224,7 +224,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit }: CreateUserModalPr
                     name="joiningDate"
                     value={formData.joiningDate}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
                   />
                 </div>
 
@@ -238,7 +238,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit }: CreateUserModalPr
                     name="qualification"
                     value={formData.qualification}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
                     placeholder="e.g., M.Ed, B.Sc, etc."
                   />
                 </div>
