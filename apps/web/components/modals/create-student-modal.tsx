@@ -113,7 +113,7 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
                 name="studentId"
                 value={formData.studentId}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
                 placeholder="Auto-generated if empty"
               />
             </div>
@@ -130,7 +130,7 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
                 value={formData.firstName}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
@@ -146,7 +146,7 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
                 value={formData.lastName}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
@@ -161,7 +161,7 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
@@ -177,7 +177,7 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
                 value={formData.dateOfBirth}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
@@ -192,7 +192,7 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
                 value={formData.gender}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               >
                 <option value="male">Male</option>
                 <option value="female">Female</option>
@@ -210,7 +210,7 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
                 name="bloodGroup"
                 value={formData.bloodGroup}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               >
                 <option value="">Select...</option>
                 <option value="A+">A+</option>
@@ -235,7 +235,7 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
                 name="phoneNumber"
                 value={formData.phoneNumber}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
@@ -250,7 +250,7 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
                 value={formData.address}
                 onChange={handleChange}
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
@@ -265,7 +265,7 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
                 name="parentEmail"
                 value={formData.parentEmail}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
@@ -280,7 +280,7 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
                 name="parentPhone"
                 value={formData.parentPhone}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
           </div>
