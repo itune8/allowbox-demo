@@ -74,7 +74,7 @@ export default function StudentProfilePage() {
 
             // Fetch teacher from timetable
             if (timetableData.length > 0) {
-              const teacherId = timetableData[0].teacherId;
+              const teacherId = timetableData[0]?.teacherId;
               const allUsers = await userService.getUsers();
               const teacherData = allUsers.find(u => (u.id || u._id) === teacherId && u.role === 'teacher');
               if (teacherData) setTeacher(teacherData);
