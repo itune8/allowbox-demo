@@ -2,23 +2,51 @@
 import { apiClient } from '../api-client';
 import { UserFormData } from '../../components/modals/create-user-modal';
 
-export interface UserResponse {
+export interface User {
   id: string;
+  _id?: string; // MongoDB ID (when returned from backend)
   email: string;
   firstName: string;
   lastName: string;
   role: string;
   tenantId?: string;
   phoneNumber?: string;
-  employeeId?: string;
+  address?: string;
   isActive: boolean;
+  // First login and blocking
+  isFirstLogin?: boolean;
+  isBlocked?: boolean;
+  // Student-specific fields
+  studentId?: string;
+  classId?: any; // Can be string or populated object
+  section?: string;
+  dateOfBirth?: string | Date;
+  gender?: string;
+  bloodGroup?: string;
+  parentEmail?: string;
+  parentPhone?: string;
+  // Teacher/Staff-specific fields
+  employeeId?: string;
+  joiningDate?: string | Date;
+  qualification?: string;
+  subjects?: any[];
+  // Parent-specific fields
+  children?: any[];
+  parents?: any[];
+  // Timestamps
+  createdAt?: string;
+  updatedAt?: string;
+  lastLoginAt?: string;
 }
+
+// Keep UserResponse as alias for backward compatibility
+export type UserResponse = User;
 
 class UserService {
   /**
-   * Create a new user (teacher, staff, parent)
+   * Create a new user (teacher, staff, parent, student)
    */
-  async createUser(userData: UserFormData): Promise<UserResponse> {
+  async createUser(userData: any): Promise<User> {
     // Use simple default password if not provided
     const defaultPassword = userData.password || 'teacher123';
 
@@ -48,31 +76,31 @@ class UserService {
       }
     });
 
-    const response = await apiClient.post<UserResponse>('/users', payload);
+    const response = await apiClient.post<User>('/users', payload);
     return response.data;
   }
 
   /**
-   * Get all users
+   * Get all users (automatically filtered by tenantId via JWT)
    */
-  async getUsers(): Promise<UserResponse[]> {
-    const response = await apiClient.get<UserResponse[]>('/users');
+  async getUsers(): Promise<User[]> {
+    const response = await apiClient.get<User[]>('/users');
     return response.data;
   }
 
   /**
    * Get user by ID
    */
-  async getUserById(userId: string): Promise<UserResponse> {
-    const response = await apiClient.get<UserResponse>(`/users/${userId}`);
+  async getUserById(userId: string): Promise<User> {
+    const response = await apiClient.get<User>(`/users/${userId}`);
     return response.data;
   }
 
   /**
    * Update user
    */
-  async updateUser(userId: string, data: Partial<UserFormData>): Promise<UserResponse> {
-    const response = await apiClient.patch<UserResponse>(`/users/${userId}`, data);
+  async updateUser(userId: string, data: any): Promise<User> {
+    const response = await apiClient.patch<User>(`/users/${userId}`, data);
     return response.data;
   }
 
@@ -81,6 +109,38 @@ class UserService {
    */
   async deleteUser(userId: string): Promise<void> {
     await apiClient.delete(`/users/${userId}`);
+  }
+
+  /**
+   * Link a parent to a child
+   */
+  async linkParentToChild(parentId: string, childId: string): Promise<User> {
+    const response = await apiClient.post<User>(`/users/${parentId}/link-child/${childId}`);
+    return response.data;
+  }
+
+  /**
+   * Get users by role
+   */
+  async getUsersByRole(role: string): Promise<User[]> {
+    const allUsers = await this.getUsers();
+    return allUsers.filter(user => user.role === role);
+  }
+
+  /**
+   * Block a user from logging in
+   */
+  async blockUser(userId: string): Promise<{ message: string; user: User }> {
+    const response = await apiClient.patch<{ message: string; user: User }>(`/users/${userId}/block`);
+    return response.data;
+  }
+
+  /**
+   * Unblock a user
+   */
+  async unblockUser(userId: string): Promise<{ message: string; user: User }> {
+    const response = await apiClient.patch<{ message: string; user: User }>(`/users/${userId}/unblock`);
+    return response.data;
   }
 }
 

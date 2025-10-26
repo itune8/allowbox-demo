@@ -10,6 +10,9 @@ export const env = {
 // Role Constants
 export const ROLES = {
   SUPER_ADMIN: 'super_admin',
+  SALES: 'sales',
+  SUPPORT: 'support',
+  FINANCE: 'finance',
   SCHOOL_ADMIN: 'school_admin',
   TENANT_ADMIN: 'tenant_admin', // Backend uses tenant_admin
   TEACHER: 'teacher',
@@ -53,6 +56,9 @@ export const ROUTES = {
 // Role to Dashboard Mapping
 export const ROLE_DASHBOARDS = {
   [ROLES.SUPER_ADMIN]: ROUTES.PLATFORM_DASHBOARD,
+  [ROLES.SALES]: ROUTES.PLATFORM_DASHBOARD,
+  [ROLES.SUPPORT]: ROUTES.PLATFORM_DASHBOARD,
+  [ROLES.FINANCE]: ROUTES.PLATFORM_DASHBOARD,
   [ROLES.SCHOOL_ADMIN]: ROUTES.SCHOOL_DASHBOARD,
   [ROLES.TENANT_ADMIN]: ROUTES.SCHOOL_DASHBOARD, // tenant_admin is same as school_admin
   [ROLES.TEACHER]: ROUTES.TEACHER_DASHBOARD,

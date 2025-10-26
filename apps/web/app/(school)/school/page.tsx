@@ -9,7 +9,8 @@ import { tenantService, type TenantData } from '../../../lib/services/tenant.ser
 import { CreateStudentModal, type StudentFormData } from '../../../components/modals/create-student-modal';
 import { CreateUserModal, type UserFormData } from '../../../components/modals/create-user-modal';
 import { studentService } from '../../../lib/services/student.service';
-import { userService } from '../../../lib/services/user.service';
+import { userService, type User } from '../../../lib/services/user.service';
+import { classService, type Class } from '../../../lib/services/class.service';
 import { StatCard } from '@/components/dashboard/stat-card';
 
 export default function SchoolDashboardPage() {
@@ -21,37 +22,56 @@ export default function SchoolDashboardPage() {
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 
-  // Enhanced stats data
-  const stats = {
-    students: {
-      total: 245,
-      new: 12,
-      active: 238,
-      trend: { value: '+5.2%', isPositive: true },
-    },
-    staff: {
-      total: 32,
-      teachers: 24,
-      admin: 8,
-      trend: { value: '+2 this month', isPositive: true },
-    },
-    classes: {
-      total: 12,
-      active: 12,
-      avgSize: 20,
-    },
-    fees: {
-      pending: 45000,
-      collected: 180000,
-      total: 225000,
-      trend: { value: '+12.5%', isPositive: true },
-    },
-    attendance: {
-      today: 92.5,
-      thisWeek: 94.2,
-      thisMonth: 93.8,
-    },
-  };
+  // Real data states
+  const [students, setStudents] = useState<User[]>([]);
+  const [staff, setStaff] = useState<User[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  // Computed stats from real data
+  const stats = useMemo(() => {
+    const totalStudents = students.length;
+    const activeStudents = students.filter(s => s.isActive).length;
+    const totalStaff = staff.length;
+    const teachers = staff.filter(s => s.role === 'teacher').length;
+    const admins = staff.filter(s => s.role === 'tenant_admin').length;
+    const totalClasses = classes.length;
+    const activeClasses = classes.filter(c => c.isActive).length;
+
+    // Calculate average class size
+    const totalCapacity = classes.reduce((sum, c) => sum + (c.capacity || 0), 0);
+    const avgSize = totalClasses > 0 ? Math.round(totalCapacity / totalClasses) : 0;
+
+    return {
+      students: {
+        total: totalStudents,
+        active: activeStudents,
+        trend: { value: `${activeStudents} active`, isPositive: true },
+      },
+      staff: {
+        total: totalStaff,
+        teachers,
+        admin: admins,
+        trend: { value: `${teachers} teachers`, isPositive: true },
+      },
+      classes: {
+        total: totalClasses,
+        active: activeClasses,
+        avgSize,
+      },
+      fees: {
+        pending: 0,
+        collected: 0,
+        total: 0,
+        trend: { value: 'N/A', isPositive: true },
+      },
+      attendance: {
+        today: 0,
+        thisWeek: 0,
+        thisMonth: 0,
+      },
+    };
+  }, [students, staff, classes]);
 
   // Recent activities
   const recentActivities = [
@@ -76,23 +96,41 @@ export default function SchoolDashboardPage() {
     return hasRole;
   }, [user?.roles]);
 
-  // Fetch tenant data from backend
+  // Fetch all data from backend
   useEffect(() => {
-    const fetchTenantData = async () => {
+    const fetchAllData = async () => {
+      setLoadingData(true);
       try {
-        const data = await tenantService.getCurrentTenant();
-        setTenantData(data);
+        const [tenantData, usersData, classesData] = await Promise.all([
+          tenantService.getCurrentTenant(),
+          userService.getUsers(),
+          classService.getClasses(),
+        ]);
+
+        setTenantData(tenantData);
+
+        // Filter students and staff
+        const studentsList = usersData.filter(u => u.role === 'student');
+        const staffList = usersData.filter(u =>
+          u.role === 'teacher' || u.role === 'tenant_admin' || u.role === 'accountant'
+        );
+
+        setStudents(studentsList);
+        setStaff(staffList);
+        setClasses(classesData);
       } catch (error) {
-        console.error('Failed to fetch tenant data:', error);
+        console.error('Failed to fetch dashboard data:', error);
       } finally {
         setLoadingTenant(false);
+        setLoadingData(false);
       }
     };
 
     if (user?.tenantId) {
-      fetchTenantData();
+      fetchAllData();
     } else {
       setLoadingTenant(false);
+      setLoadingData(false);
     }
   }, [user]);
 
@@ -102,6 +140,12 @@ export default function SchoolDashboardPage() {
       await studentService.createStudent(studentData);
       setBanner('Student created successfully!');
       setTimeout(() => setBanner(null), 3000);
+      setIsStudentModalOpen(false);
+
+      // Refresh data
+      const usersData = await userService.getUsers();
+      const studentsList = usersData.filter(u => u.role === 'student');
+      setStudents(studentsList);
     } catch (error) {
       console.error('Failed to create student:', error);
       throw error;
@@ -113,6 +157,14 @@ export default function SchoolDashboardPage() {
       await userService.createUser(userData);
       setBanner('Staff member created successfully!');
       setTimeout(() => setBanner(null), 3000);
+      setIsStaffModalOpen(false);
+
+      // Refresh data
+      const usersData = await userService.getUsers();
+      const staffList = usersData.filter(u =>
+        u.role === 'teacher' || u.role === 'tenant_admin' || u.role === 'accountant'
+      );
+      setStaff(staffList);
     } catch (error) {
       console.error('Failed to create staff:', error);
       throw error;
@@ -212,18 +264,32 @@ export default function SchoolDashboardPage() {
       )}
 
       {/* Key Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Students"
-          value={stats.students.total}
-          icon={
-            <svg className="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-            </svg>
-          }
-          trend={stats.students.trend}
-          iconBgColor="bg-indigo-50 dark:bg-indigo-900/20"
-        />
+      {loadingData ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 animate-pulse"
+            >
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-3"></div>
+              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2"></div>
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Total Students"
+            value={stats.students.total}
+            icon={
+              <svg className="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+              </svg>
+            }
+            trend={stats.students.trend}
+            iconBgColor="bg-indigo-50 dark:bg-indigo-900/20"
+          />
         <StatCard
           title="Active Staff"
           value={stats.staff.total}
@@ -245,23 +311,24 @@ export default function SchoolDashboardPage() {
           }
           iconBgColor="bg-blue-50 dark:bg-blue-900/20"
         />
-        <StatCard
-          title="Fee Collection"
-          value={`${Math.round((stats.fees.collected / stats.fees.total) * 100)}%`}
-          icon={
-            <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
-                clipRule="evenodd"
-              />
-            </svg>
-          }
-          trend={stats.fees.trend}
-          iconBgColor="bg-amber-50 dark:bg-amber-900/20"
-        />
-      </div>
+          <StatCard
+            title="Fee Collection"
+            value={stats.fees.total > 0 ? `${Math.round((stats.fees.collected / stats.fees.total) * 100)}%` : 'N/A'}
+            icon={
+              <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            }
+            trend={stats.fees.trend}
+            iconBgColor="bg-amber-50 dark:bg-amber-900/20"
+          />
+        </div>
+      )}
 
       {/* Secondary Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

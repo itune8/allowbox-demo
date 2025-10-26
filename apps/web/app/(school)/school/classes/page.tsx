@@ -1,44 +1,58 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@repo/ui/button';
-
-type ClassItem = {
-  id: string;
-  name: string;
-  strength: number;
-  sections: number;
-  classTeacher: string;
-};
+import { classService, type Class } from '@/lib/services/class.service';
+import { userService } from '@/lib/services/user.service';
+import { CreateClassModal, type ClassFormData } from '@/components/modals/create-class-modal';
 
 export default function ClassesPage() {
   const router = useRouter();
-  const [classes, setClasses] = useState<ClassItem[]>([
-    { id: 'cls-1', name: 'Grade 1', strength: 25, sections: 1, classTeacher: 'Mr. James' },
-    { id: 'cls-2', name: 'Grade 2', strength: 28, sections: 1, classTeacher: 'Ms. Ada' },
-    { id: 'cls-3', name: 'Grade 3', strength: 22, sections: 1, classTeacher: 'Mrs. Bisi' },
-  ]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAddClass, setShowAddClass] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAddClass = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const sectionsCount = parseInt(formData.get('sections') as string) || 1;
+  useEffect(() => {
+    fetchClasses();
+  }, []);
 
-    const newClass: ClassItem = {
-      id: `cls-${Date.now()}`,
-      name: formData.get('name') as string,
-      strength: parseInt(formData.get('strength') as string) || 0,
-      sections: sectionsCount,
-      classTeacher: formData.get('teacher') as string,
-    };
+  const fetchClasses = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await classService.getClasses();
+      setClasses(data);
+    } catch (err) {
+      console.error('Failed to fetch classes:', err);
+      setError('Failed to load classes. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    setClasses([...classes, newClass]);
-    setShowAddClass(false);
-    setBanner(`Class "${newClass.name}" added successfully with ${sectionsCount} section(s)!`);
-    setTimeout(() => setBanner(null), 3000);
+  const handleAddClass = async (classData: ClassFormData) => {
+    try {
+      const newClass = await classService.createClass(classData);
+      setClasses([...classes, newClass]);
+      setBanner(`Class "${newClass.name}" added successfully with ${newClass.sections.length} section(s)!`);
+      setTimeout(() => setBanner(null), 3000);
+    } catch (err) {
+      console.error('Failed to create class:', err);
+      throw err; // Let modal handle the error
+    }
+  };
+
+  const getStudentCount = async (classId: string) => {
+    try {
+      const users = await userService.getUsers();
+      return users.filter(u => u.role === 'student' && u.classId === classId).length;
+    } catch (err) {
+      console.error('Failed to count students:', err);
+      return 0;
+    }
   };
 
   return (
@@ -59,6 +73,13 @@ export default function ClassesPage() {
         </div>
       )}
 
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Classes</h2>
@@ -67,149 +88,129 @@ export default function ClassesPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {classes.map((c, idx) => {
-          const attendance = 80 + ((idx * 3) % 15); // 80..94
-          const updated = new Date(Date.now() - (idx + 1) * 1000 * 60 * 60 * 24).toISOString().slice(0, 10);
-          return (
+      {/* Loading State */}
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
             <div
-              key={c.id}
-              className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-5 hover:shadow-md hover:-translate-y-1 transition-all duration-300 ease-in-out"
+              key={i}
+              className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-5 animate-pulse"
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-gray-900 dark:text-gray-100 font-semibold text-lg">{c.name}</div>
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 rounded-full text-sm text-indigo-600 dark:text-indigo-300 font-medium">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                  </svg>
-                  {c.strength}
-                </span>
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
-                  </svg>
-                  Teacher: {c.classTeacher}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
-                  </svg>
-                  Sections: {c.sections}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                  </svg>
-                  Avg Attendance: {attendance}%
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500">
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                  </svg>
-                  Updated: {updated}
-                </div>
-              </div>
-              <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-800">
-                <button
-                  className="w-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-200 text-sm font-medium px-3 py-2 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-800/40 transition-all flex items-center justify-center gap-2"
-                  onClick={() => router.push(`/school/classes/${c.id}`)}
-                >
-                  View Details
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
+              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3"></div>
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
               </div>
             </div>
-          );
-        })}
-      </div>
-
-      {/* Add Class Modal */}
-      {showAddClass && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full">
-            <div className="border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Add New Class</h3>
-              <button onClick={() => setShowAddClass(false)} className="text-gray-400 hover:text-gray-600">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <form onSubmit={handleAddClass} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Class Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                  placeholder="e.g., Grade 10"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Class Teacher <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="teacher"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                  placeholder="e.g., Mrs. Sarah Johnson"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Number of Sections <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="sections"
-                    required
-                    min="1"
-                    max="10"
-                    defaultValue="1"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">How many sections?</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Initial Strength
-                  </label>
-                  <input
-                    type="number"
-                    name="strength"
-                    min="0"
-                    max="200"
-                    defaultValue="0"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total students</p>
-                </div>
-              </div>
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                <p className="text-xs text-blue-800 dark:text-blue-200">
-                  ℹ️ Sections will be automatically created (e.g., Section A, Section B, etc.)
-                </p>
-              </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowAddClass(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">Add Class</Button>
-              </div>
-            </form>
+          ))}
+        </div>
+      ) : classes.length === 0 ? (
+        <div className="text-center py-12 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl">
+          <svg
+            className="mx-auto h-12 w-12 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+            />
+          </svg>
+          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No classes found</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Get started by creating your first class.
+          </p>
+          <div className="mt-6">
+            <Button onClick={() => setShowAddClass(true)}>
+              + Add Class
+            </Button>
           </div>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {classes.map((cls) => {
+            const updatedDate = new Date(cls.updatedAt).toLocaleDateString();
+            return (
+              <div
+                key={cls._id}
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-5 hover:shadow-md hover:-translate-y-1 transition-all duration-300 ease-in-out"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-gray-900 dark:text-gray-100 font-semibold text-lg">
+                    {cls.name}
+                  </div>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 rounded-full text-sm text-indigo-600 dark:text-indigo-300 font-medium">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                    </svg>
+                    Grade {cls.grade}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+                    </svg>
+                    Sections: {cls.sections.join(', ')}
+                  </div>
+                  {cls.capacity && (
+                    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
+                      </svg>
+                      Capacity: {cls.capacity}
+                    </div>
+                  )}
+                  {cls.description && (
+                    <div className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
+                      <svg className="w-3.5 h-3.5 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="line-clamp-2">{cls.description}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500">
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Updated: {updatedDate}
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-800">
+                  <button
+                    className="w-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-200 text-sm font-medium px-3 py-2 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-800/40 transition-all flex items-center justify-center gap-2"
+                    onClick={() => router.push(`/school/classes/${cls._id}`)}
+                  >
+                    View Details
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
+
+      {/* Add Class Modal */}
+      <CreateClassModal
+        isOpen={showAddClass}
+        onClose={() => setShowAddClass(false)}
+        onSubmit={handleAddClass}
+      />
     </section>
   );
 }

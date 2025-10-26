@@ -107,9 +107,8 @@ export default function ParentLayout({
 
   return (
     <ProtectedRoute>
-      <div className="relative min-h-screen flex transition-opacity duration-300 ease-in-out text-gray-900 dark:text-gray-100">
-        {/* Clean background */}
-        <div className="absolute inset-0 -z-10 bg-gray-50 dark:bg-gray-950" />
+      <div className="relative flex transition-opacity duration-300 ease-in-out text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-950">
+        {/* Clean background - moved to parent */}
 
         {/* Sidebar */}
         <Sidebar
@@ -124,8 +123,8 @@ export default function ParentLayout({
           }
         />
 
-        {/* Main content */}
-        <div className="flex-1 flex flex-col">
+        {/* Main content - add left margin to account for fixed sidebar */}
+        <div className="flex-1 flex flex-col ml-64">
           {/* Topbar */}
           <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-10 border-b border-gray-200 dark:border-gray-800 animate-slide-in-top">
             <div className="mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">

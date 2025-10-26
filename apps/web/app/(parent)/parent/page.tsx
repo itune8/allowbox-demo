@@ -4,106 +4,161 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../../contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { ROLES } from '@repo/config';
-import {
-  getCurrentSchoolId,
-  getEntities,
-  setParentChildren,
-  setInvoices,
-  type Student as StudentType,
-  type Invoice as InvoiceType,
-} from '../../../lib/data-store';
 import { StatCard } from '@/components/dashboard/stat-card';
+import { userService, type User } from '@/lib/services/user.service';
+import { feeService, type Invoice } from '@/lib/services/fee.service';
+import { attendanceService, type Attendance } from '@/lib/services/attendance.service';
+import { timetableService, type TimetableSlot } from '@/lib/services/timetable.service';
+import { subjectService, type Subject } from '@/lib/services/subject.service';
+import { classService, type Class } from '@/lib/services/class.service';
 
 export default function ParentDashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const schoolId = useMemo(() => getCurrentSchoolId(), []);
-  const [entities, setEntities] = useState(() => getEntities(schoolId));
 
-  const isParent = (user?.roles || []).includes(ROLES.PARENT) || (user?.roles || []).includes('student');
+  const [loading, setLoading] = useState(true);
+  const [children, setChildren] = useState<User[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [currentUserData, setCurrentUserData] = useState<User | null>(null);
+  const [myClass, setMyClass] = useState<Class | null>(null);
+  const [mySubjects, setMySubjects] = useState<Subject[]>([]);
+  const [myTimetable, setMyTimetable] = useState<TimetableSlot[]>([]);
+  const [myAttendance, setMyAttendance] = useState<Attendance[]>([]);
 
-  // Seed parent-children mapping if empty for mock parent
   useEffect(() => {
-    if (!user?.email) return;
-    const children = entities.parentChildren[user.email] || [];
-    if (children.length === 0 && entities.students.length > 0) {
-      const attach = entities.students.slice(0, Math.min(2, entities.students.length)).map((s) => s.id);
-      setParentChildren(schoolId, user.email, attach);
-      const sid = attach[0];
-      if (sid) {
-        const now = new Date();
-        const invs: InvoiceType[] = [
-          {
-            id: `inv-${Date.now()}-t1`,
-            studentId: sid,
-            title: 'Tuition Fee - Term 1',
-            amount: 1200,
-            due: new Date(now.getFullYear(), now.getMonth() + 1, 15).toISOString().slice(0, 10),
-            status: 'Pending',
-          },
-          {
-            id: `inv-${Date.now()}-act`,
-            studentId: sid,
-            title: 'Activity Fee',
-            amount: 150,
-            due: new Date(now.getFullYear(), now.getMonth(), 28).toISOString().slice(0, 10),
-            status: 'Paid',
-            paidAt: new Date(now.getTime() - 86400000 * 30).toISOString(),
-          },
-        ];
-        setInvoices(schoolId, sid, invs);
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Fetch current user with populated children field
+      const currentUser = await userService.getUserById(user?.id || '');
+      setCurrentUserData(currentUser);
+
+      // If current user is a student, fetch their own information
+      if (currentUser.role === 'student') {
+        // Fetch class info
+        if (currentUser.classId) {
+          const classIdStr = typeof currentUser.classId === 'string'
+            ? currentUser.classId
+            : currentUser.classId._id || currentUser.classId.toString();
+          const classData = await classService.getClassById(classIdStr);
+          setMyClass(classData);
+
+          // Fetch subjects for their class
+          const allSubjects = await subjectService.getSubjects();
+          const classSubjects = allSubjects.filter(subject =>
+            !subject.classes ||
+            subject.classes.length === 0 ||
+            subject.classes.includes(classIdStr)
+          );
+          setMySubjects(classSubjects);
+
+          // Fetch timetable if they have section
+          if (currentUser.section) {
+            const timetable = await timetableService.getSlotsByClass(classIdStr, currentUser.section);
+            setMyTimetable(timetable);
+          }
+        }
+
+        // Fetch their attendance (last 7 days)
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 6);
+        const attendance = await attendanceService.getAttendanceByStudent(
+          currentUser.id || currentUser._id || '',
+          startDate.toISOString().split('T')[0],
+          endDate.toISOString().split('T')[0]
+        );
+        setMyAttendance(attendance);
       }
-      setEntities(getEntities(schoolId));
+
+      // Get children from the user's children array
+      const childrenIds = currentUser.children || [];
+
+      // Fetch all children details
+      const myChildren: User[] = [];
+      if (childrenIds.length > 0) {
+        const allUsers = await userService.getUsers();
+        childrenIds.forEach(childId => {
+          const child = allUsers.find(u =>
+            (u.id || u._id) === (typeof childId === 'string' ? childId : childId.toString())
+          );
+          if (child) {
+            myChildren.push(child);
+          }
+        });
+      }
+      setChildren(myChildren);
+
+      // Fetch invoices for all children
+      const allInvoices: Invoice[] = [];
+      for (const child of myChildren) {
+        const childInvoices = await feeService.getInvoices({ studentId: child.id || child._id });
+        allInvoices.push(...childInvoices);
+      }
+      setInvoices(allInvoices);
+
+    } catch (err) {
+      console.error('Failed to fetch data:', err);
+    } finally {
+      setLoading(false);
     }
-  }, [entities.students, entities.parentChildren, schoolId, user?.email]);
+  };
 
-  const myChildren: StudentType[] = useMemo(() => {
-    if (!user?.email) return [];
-    const ids = entities.parentChildren[user.email] || [];
-    const map = new Map(entities.students.map((s) => [s.id, s] as const));
-    return ids.map((id) => map.get(id)).filter(Boolean) as StudentType[];
-  }, [entities.parentChildren, entities.students, user?.email]);
-
-  const invoicesByChild: Record<string, InvoiceType[]> = useMemo(() => {
-    const out: Record<string, InvoiceType[]> = {};
-    for (const c of myChildren) {
-      out[c.id] = entities.invoices[c.id] || [];
-    }
-    return out;
-  }, [entities.invoices, myChildren]);
-
-  const allInvoicesList = useMemo(
-    () => myChildren.flatMap((c) => (invoicesByChild[c.id] || []).map((inv) => ({ child: c, inv }))),
-    [invoicesByChild, myChildren]
-  );
+  const pendingInvoices = invoices.filter(inv => inv.status === 'pending' || inv.status === 'partial');
 
   const paidThisMonth = useMemo(() => {
-    const ym = new Date().toISOString().slice(0, 7);
-    return allInvoicesList
-      .filter(({ inv }) => inv.status === 'Paid' && (inv.paidAt || '').slice(0, 7) === ym)
-      .reduce((sum, { inv }) => sum + inv.amount, 0);
-  }, [allInvoicesList]);
+    const now = new Date();
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const thisMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
 
-  const pendingCount = useMemo(
-    () => allInvoicesList.filter(({ inv }) => inv.status === 'Pending').length,
-    [allInvoicesList]
-  );
+    return invoices
+      .filter(inv =>
+        inv.status === 'paid' &&
+        inv.paidDate &&
+        inv.paidDate >= thisMonthStart &&
+        inv.paidDate <= thisMonthEnd
+      )
+      .reduce((sum, inv) => sum + inv.paidAmount, 0);
+  }, [invoices]);
 
   const feeTotals = useMemo(() => {
-    let paid = 0,
-      pending = 0;
-    for (const { inv } of allInvoicesList) {
-      if (inv.status === 'Paid') paid += inv.amount;
-      else pending += inv.amount;
-    }
-    return { paid, pending, total: paid + pending };
-  }, [allInvoicesList]);
+    const paid = invoices
+      .filter(inv => inv.status === 'paid')
+      .reduce((sum, inv) => sum + inv.paidAmount, 0);
 
-  if (!isParent) {
+    const pending = invoices
+      .filter(inv => inv.status !== 'paid')
+      .reduce((sum, inv) => sum + (inv.totalAmount - inv.paidAmount), 0);
+
+    return { paid, pending, total: paid + pending };
+  }, [invoices]);
+
+  const attendancePercentage = useMemo(() => {
+    if (myAttendance.length === 0) return 0;
+    const presentDays = myAttendance.filter(a => a.status === 'present' || a.status === 'late').length;
+    return Math.round((presentDays / myAttendance.length) * 100);
+  }, [myAttendance]);
+
+  const todaysTimetable = useMemo(() => {
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    return myTimetable
+      .filter(slot => slot.day === today)
+      .sort((a, b) => a.period - b.period);
+  }, [myTimetable]);
+
+  const recentInvoices = invoices
+    .sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime())
+    .slice(0, 5);
+
+  if (loading) {
     return (
-      <div className="p-6">
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md p-4">
-          You do not have permission to view this page.
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center space-y-3">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+          <div className="text-gray-500">Loading dashboard...</div>
         </div>
       </div>
     );
@@ -115,15 +170,84 @@ export default function ParentDashboardPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Overview</h1>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          Welcome back, {user?.firstName}! Here's a summary of your children's activities.
+          Welcome back, {user?.firstName}!{' '}
+          {currentUserData?.role === 'student'
+            ? "Here's your class information and children's activities."
+            : "Here's a summary of your children's activities."}
         </p>
       </div>
+
+      {/* My Information (if logged in as student) */}
+      {currentUserData?.role === 'student' && (
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-bold">My Class Information</h2>
+              <p className="text-indigo-100 text-sm">
+                {myClass?.name} - Section {currentUserData.section}
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-3xl font-bold">{attendancePercentage}%</div>
+              <div className="text-sm text-indigo-100">Attendance</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* My Subjects */}
+            <div className="bg-white/10 backdrop-blur rounded-lg p-4">
+              <h3 className="font-semibold mb-2 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                </svg>
+                My Subjects ({mySubjects.length})
+              </h3>
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                {mySubjects.map(subject => (
+                  <div key={subject._id} className="text-xs bg-white/20 rounded px-2 py-1">
+                    {subject.name}
+                  </div>
+                ))}
+                {mySubjects.length === 0 && (
+                  <p className="text-sm text-indigo-100 col-span-2">No subjects assigned</p>
+                )}
+              </div>
+            </div>
+
+            {/* Today's Classes */}
+            <div className="bg-white/10 backdrop-blur rounded-lg p-4">
+              <h3 className="font-semibold mb-2 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                </svg>
+                Today's Classes ({todaysTimetable.length})
+              </h3>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {todaysTimetable.map(slot => {
+                  const subject = mySubjects.find(s => s._id === slot.subjectId);
+                  return (
+                    <div key={slot._id} className="text-xs bg-white/20 rounded px-2 py-1">
+                      <div className="font-medium">Period {slot.period}: {subject?.name || 'Unknown'}</div>
+                      {slot.startTime && slot.endTime && (
+                        <div className="text-indigo-100">{slot.startTime} - {slot.endTime}</div>
+                      )}
+                    </div>
+                  );
+                })}
+                {todaysTimetable.length === 0 && (
+                  <p className="text-sm text-indigo-100">No classes today</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Key Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
           title="Children Linked"
-          value={myChildren.length}
+          value={children.length}
           icon={
             <svg className="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
@@ -133,7 +257,7 @@ export default function ParentDashboardPage() {
         />
         <StatCard
           title="Pending Invoices"
-          value={pendingCount}
+          value={pendingInvoices.length}
           icon={
             <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
               <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
@@ -246,6 +370,7 @@ export default function ParentDashboardPage() {
                   className="w-full bg-gradient-to-t from-green-500 to-green-400 rounded-t"
                   style={{
                     height: `${feeTotals.total ? Math.round((feeTotals.paid / feeTotals.total) * 100) : 0}%`,
+                    minHeight: feeTotals.paid > 0 ? '20px' : '0px',
                   }}
                   title={`Paid: $${feeTotals.paid.toLocaleString()}`}
                 />
@@ -256,6 +381,7 @@ export default function ParentDashboardPage() {
                   className="w-full bg-gradient-to-t from-amber-500 to-amber-400 rounded-t"
                   style={{
                     height: `${feeTotals.total ? Math.round((feeTotals.pending / feeTotals.total) * 100) : 0}%`,
+                    minHeight: feeTotals.pending > 0 ? '20px' : '0px',
                   }}
                   title={`Pending: $${feeTotals.pending.toLocaleString()}`}
                 />
@@ -288,45 +414,55 @@ export default function ParentDashboardPage() {
             View All
           </button>
         </div>
-        {myChildren.length === 0 ? (
+        {children.length === 0 ? (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400">
             <div className="text-4xl mb-3">🗂️</div>
             <p>No children linked to your account yet.</p>
+          </div>
+        ) : recentInvoices.length === 0 ? (
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+            <div className="text-4xl mb-3">📋</div>
+            <p>No invoices found.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-gray-500 border-b border-gray-200 dark:border-gray-800">
                 <tr>
+                  <th className="py-2">Invoice #</th>
                   <th className="py-2">Child Name</th>
-                  <th className="py-2">Description</th>
                   <th className="py-2">Amount</th>
                   <th className="py-2">Due Date</th>
                   <th className="py-2">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {allInvoicesList.slice(0, 5).map(({ child, inv }) => (
-                  <tr key={inv.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
-                    <td className="py-3">{child.name}</td>
-                    <td className="py-3">{inv.title}</td>
-                    <td className="py-3 font-medium">${inv.amount}</td>
-                    <td className="py-3">{inv.due}</td>
-                    <td className="py-3">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded ${
-                          inv.status === 'Paid'
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                            : new Date(inv.due) < new Date()
-                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
-                        }`}
-                      >
-                        {inv.status === 'Paid' ? 'Paid' : new Date(inv.due) < new Date() ? 'Overdue' : 'Pending'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {recentInvoices.map((inv) => {
+                  const child = children.find(c => (c.id || c._id) === inv.studentId);
+                  const isOverdue = inv.status !== 'paid' && new Date(inv.dueDate) < new Date();
+
+                  return (
+                    <tr key={inv._id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                      <td className="py-3 font-mono text-xs">{inv.invoiceNumber}</td>
+                      <td className="py-3">{child ? `${child.firstName} ${child.lastName}` : 'N/A'}</td>
+                      <td className="py-3 font-medium">${inv.totalAmount.toLocaleString()}</td>
+                      <td className="py-3">{new Date(inv.dueDate).toLocaleDateString()}</td>
+                      <td className="py-3">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded ${
+                            inv.status === 'paid'
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                              : isOverdue
+                              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                              : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                          }`}
+                        >
+                          {inv.status === 'paid' ? 'Paid' : isOverdue ? 'Overdue' : 'Pending'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -18,6 +18,7 @@ export interface SidebarProps {
   defaultCollapsed?: boolean;
   footer?: ReactNode;
   className?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export const Sidebar = ({
@@ -28,13 +29,20 @@ export const Sidebar = ({
   defaultCollapsed = false,
   footer,
   className = '',
+  onCollapsedChange,
 }: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
+
+  const handleToggleCollapse = () => {
+    const newCollapsed = !isCollapsed;
+    setIsCollapsed(newCollapsed);
+    onCollapsedChange?.(newCollapsed);
+  };
 
   return (
     <aside
       className={cn(
-        "bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col sticky top-0 h-screen shadow-sm transition-all duration-300 ease-in-out",
+        "bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col fixed top-0 left-0 h-screen shadow-sm transition-all duration-300 ease-in-out z-40",
         isCollapsed ? "w-16" : "w-64",
         className
       )}
@@ -47,7 +55,7 @@ export const Sidebar = ({
           </span>
         )}
         <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          onClick={handleToggleCollapse}
           className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >

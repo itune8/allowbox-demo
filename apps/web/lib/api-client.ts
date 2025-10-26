@@ -31,6 +31,10 @@ class ApiClient {
     // Response interceptor
     this.client.interceptors.response.use(
       (response) => {
+        // Transform MongoDB _id to id for easier usage
+        if (response.data) {
+          response.data = this.transformMongoIds(response.data);
+        }
         return response;
       },
       (error) => {
@@ -44,6 +48,33 @@ class ApiClient {
         return Promise.reject(error);
       }
     );
+  }
+
+  // Transform MongoDB _id to id recursively
+  private transformMongoIds(data: any): any {
+    if (Array.isArray(data)) {
+      return data.map(item => this.transformMongoIds(item));
+    }
+
+    if (data && typeof data === 'object') {
+      const transformed = { ...data };
+
+      // If object has _id, copy it to id
+      if (transformed._id && !transformed.id) {
+        transformed.id = transformed._id;
+      }
+
+      // Recursively transform nested objects
+      Object.keys(transformed).forEach(key => {
+        if (transformed[key] && typeof transformed[key] === 'object') {
+          transformed[key] = this.transformMongoIds(transformed[key]);
+        }
+      });
+
+      return transformed;
+    }
+
+    return data;
   }
 
   get<T>(url: string, config?: AxiosRequestConfig) {

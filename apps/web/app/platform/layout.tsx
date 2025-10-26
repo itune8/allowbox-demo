@@ -3,10 +3,9 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar, type SidebarMenuItem } from '@repo/ui/sidebar';
 import { Button } from '@repo/ui/button';
-import { useAuth } from '../../../contexts/auth-context';
-import { ProtectedRoute } from '../../../components/protected-route';
+import { useAuth } from '../../contexts/auth-context';
+import { ProtectedRoute } from '../../components/protected-route';
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { tenantService, type TenantData } from '../../../lib/services/tenant.service';
 
 const sidebarMenu: SidebarMenuItem[] = [
   {
@@ -22,8 +21,18 @@ const sidebarMenu: SidebarMenuItem[] = [
     ),
   },
   {
-    key: 'students',
-    label: 'Students',
+    key: 'schools',
+    label: 'Schools',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    ),
+  },
+  {
+    key: 'users',
+    label: 'Users & Roles',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -34,30 +43,8 @@ const sidebarMenu: SidebarMenuItem[] = [
     ),
   },
   {
-    key: 'staff',
-    label: 'Staff',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="8.5" cy="7" r="4" />
-        <line x1="20" y1="8" x2="20" y2="14" />
-        <line x1="23" y1="11" x2="17" y2="11" />
-      </svg>
-    ),
-  },
-  {
-    key: 'classes',
-    label: 'Classes',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-      </svg>
-    ),
-  },
-  {
-    key: 'fees',
-    label: 'Fees & Billing',
+    key: 'finance',
+    label: 'Finance & Billing',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <line x1="12" y1="1" x2="12" y2="23" />
@@ -70,21 +57,10 @@ const sidebarMenu: SidebarMenuItem[] = [
     label: 'Reports',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <polyline points="10 9 9 9 8 9" />
-      </svg>
-    ),
-  },
-  {
-    key: 'settings',
-    label: 'Settings',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24" />
+        <path d="M3 3v18h18" />
+        <path d="M18 17V9" />
+        <path d="M13 17V5" />
+        <path d="M8 17v-3" />
       </svg>
     ),
   },
@@ -99,9 +75,19 @@ const sidebarMenu: SidebarMenuItem[] = [
       </svg>
     ),
   },
+  {
+    key: 'settings',
+    label: 'Settings',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 1v6m0 6v6m5.657-13.657l-4.243 4.243m-2.828 2.828l-4.243 4.243m16.97 1.414l-6-6m-6-6l-6-6" />
+      </svg>
+    ),
+  },
 ];
 
-export default function SchoolLayout({
+export default function PlatformLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -110,36 +96,15 @@ export default function SchoolLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const profileRef = useRef<HTMLDivElement | null>(null);
-  const [tenantData, setTenantData] = useState<TenantData | null>(null);
-  const [loadingTenant, setLoadingTenant] = useState(true);
 
   // Determine active menu item from pathname
   const activeItem = useMemo(() => {
-    if (pathname === '/school' || pathname === '/school/') return 'dashboard';
+    if (pathname === '/platform' || pathname === '/platform/') return 'dashboard';
     const segments = pathname.split('/').filter(Boolean);
     return segments[segments.length - 1] || 'dashboard';
   }, [pathname]);
-
-  // Fetch tenant data
-  useEffect(() => {
-    const fetchTenantData = async () => {
-      try {
-        const data = await tenantService.getCurrentTenant();
-        setTenantData(data);
-      } catch (error) {
-        console.error('Failed to fetch tenant data:', error);
-      } finally {
-        setLoadingTenant(false);
-      }
-    };
-
-    if (user?.tenantId) {
-      fetchTenantData();
-    } else {
-      setLoadingTenant(false);
-    }
-  }, [user]);
 
   // Close profile menu on outside click
   useEffect(() => {
@@ -155,20 +120,30 @@ export default function SchoolLayout({
 
   const handleMenuClick = (key: string) => {
     if (key === 'dashboard') {
-      router.push('/school');
+      router.push('/platform/dashboard');
     } else {
-      router.push(`/school/${key}`);
+      router.push(`/platform/${key}`);
     }
   };
 
+  // Check if user has platform access (super_admin, sales, support, finance)
+  const platformRoles = ['super_admin', 'sales', 'support', 'finance'];
+  const hasplatformAccess = user?.roles?.some(role => platformRoles.includes(role));
+
+  if (user && !hasplatformAccess) {
+    router.push('/school');
+    return null;
+  }
+
+  // Get user's primary role for platform
+  const userRole = user?.roles?.find(role => platformRoles.includes(role)) || 'super_admin';
+
   return (
     <ProtectedRoute>
-      <div className="relative flex transition-opacity duration-300 h-[900px] ease-in-out text-gray-900 dark:text-gray-100  dark:bg-gray-950">
-        {/* Clean background - moved to parent */}
-
+      <div className="relative flex transition-opacity duration-300 ease-in-out text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-950">
         {/* Sidebar */}
         <Sidebar
-          title={loadingTenant ? 'Loading...' : tenantData?.schoolName || 'Allowbox School'}
+          title="SuperAdmin Portal"
           menu={sidebarMenu}
           activeItem={activeItem}
           onItemClick={handleMenuClick}
@@ -180,20 +155,20 @@ export default function SchoolLayout({
         />
 
         {/* Main content - add left margin to account for fixed sidebar */}
-        <div className="flex-1 flex flex-col ml-64 h-max-screen overflow-hidden">
+        <div className="flex-1 flex flex-col ml-64">
           {/* Topbar */}
           <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-10 border-b border-gray-200 dark:border-gray-800 animate-slide-in-top">
             <div className="mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
               <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-                School Admin Dashboard
+                Platform Management
               </h1>
               <div className="flex items-center gap-3 relative" ref={profileRef}>
                 <button
                   className="flex items-center gap-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ease-smooth px-2 py-1"
                   onClick={() => setShowProfileMenu((s) => !s)}
                 >
-                  <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-900 dark:text-gray-100 font-semibold">
-                    {user?.firstName?.[0] ?? 'A'}
+                  <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold">
+                    {user?.firstName?.[0] ?? 'S'}{user?.lastName?.[0] ?? 'A'}
                   </div>
                   <span className="text-sm text-gray-900 dark:text-gray-100 hidden sm:block">
                     {user?.firstName} {user?.lastName}

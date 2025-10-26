@@ -26,9 +26,16 @@ export interface AuthResponse {
     role: string;
     tenantId?: string;
     permissions?: string[];
+    isFirstLogin?: boolean;
   };
   accessToken: string;
   refreshToken: string;
+}
+
+export interface ResetPasswordDto {
+  email: string;
+  oldPassword: string;
+  newPassword: string;
 }
 
 export interface CurrentUserResponse {
@@ -170,6 +177,14 @@ class AuthService {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Reset password (for first login or password change)
+   */
+  async resetPassword(data: ResetPasswordDto): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>('/auth/reset-password', data);
+    return response.data;
   }
 }
 

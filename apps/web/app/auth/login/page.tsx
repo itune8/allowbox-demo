@@ -6,6 +6,8 @@ import { useAuth } from '../../../contexts/auth-context';
 import { ROLE_DASHBOARDS } from '@repo/config';
 import Link from 'next/link';
 import { AuthLayout } from '../../../components/auth-layout';
+import { FirstLoginResetPasswordModal } from '../../../components/modals/first-login-reset-password-modal';
+import { authService } from '@/lib/services/auth.service';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -15,7 +17,9 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [shouldRedirect, setShouldRedirect] = useState(false);
-  const { login, user, loading: authLoading } = useAuth();
+  const [showFirstLoginModal, setShowFirstLoginModal] = useState(false);
+  const [loginCredentials, setLoginCredentials] = useState<{ email: string; password: string } | null>(null);
+  const { login, user, loading: authLoading, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -51,21 +55,57 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await login(email, password, rememberMe);
-      // User state will be updated by auth context
-      // Trigger redirect via useEffect
-      setShouldRedirect(true);
-    } catch (err) {
+      const response = await authService.login({ email, password });
+
+      // Check if this is first login (explicitly check === true)
+      if (response.user.isFirstLogin === true) {
+        console.log('First login detected - showing password reset modal');
+        setLoginCredentials({ email, password });
+        setShowFirstLoginModal(true);
+        setIsSubmitting(false);
+        // Logout to prevent access without password reset
+        await logout();
+      } else {
+        // Normal login flow
+        await login(email, password, rememberMe);
+        // User state will be updated by auth context
+        // Trigger redirect via useEffect
+        setShouldRedirect(true);
+      }
+    } catch (err: any) {
       console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'Invalid email or password');
+      const errorMessage = err.response?.data?.message || err.message || 'Invalid email or password';
+      setError(errorMessage);
       setIsSubmitting(false);
     }
+  };
+
+  const handlePasswordResetSuccess = async () => {
+    setShowFirstLoginModal(false);
+    setError('');
+
+    // Log out and require user to log in again with new password
+    await logout();
+    alert('Password reset successful! Please log in with your new password.');
+
+    // Clear form
+    setPassword('');
+    setLoginCredentials(null);
   };
 
   // Social login placeholder intentionally removed (unused)
 
   return (
     <AuthLayout>
+      {/* First Login Password Reset Modal */}
+      {showFirstLoginModal && loginCredentials && (
+        <FirstLoginResetPasswordModal
+          email={loginCredentials.email}
+          currentPassword={loginCredentials.password}
+          onSuccess={handlePasswordResetSuccess}
+        />
+      )}
+
       {/* Redirect on successful auth */}
       {user && (
         <Redirector user={user} />

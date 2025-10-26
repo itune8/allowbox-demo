@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@repo/ui/button';
+import { classService, type Class } from '@/lib/services/class.service';
+import { Portal } from '../portal';
 
 interface CreateStudentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (studentData: StudentFormData) => Promise<void>;
+  initialData?: Partial<StudentFormData>;
 }
 
 export interface StudentFormData {
@@ -21,24 +24,101 @@ export interface StudentFormData {
   parentEmail?: string;
   parentPhone?: string;
   studentId?: string;
+  classId?: string;
+  section?: string;
 }
 
-export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentModalProps) {
+export function CreateStudentModal({ isOpen, onClose, onSubmit, initialData }: CreateStudentModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [loadingClasses, setLoadingClasses] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [formData, setFormData] = useState<StudentFormData>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    dateOfBirth: '',
-    gender: 'male',
-    bloodGroup: '',
-    address: '',
-    phoneNumber: '',
-    parentEmail: '',
-    parentPhone: '',
-    studentId: '',
+    firstName: initialData?.firstName || '',
+    lastName: initialData?.lastName || '',
+    email: initialData?.email || '',
+    dateOfBirth: initialData?.dateOfBirth || '',
+    gender: initialData?.gender || 'male',
+    bloodGroup: initialData?.bloodGroup || '',
+    address: initialData?.address || '',
+    phoneNumber: initialData?.phoneNumber || '',
+    parentEmail: initialData?.parentEmail || '',
+    parentPhone: initialData?.parentPhone || '',
+    studentId: initialData?.studentId || '',
+    classId: initialData?.classId || '',
+    section: initialData?.section || '',
   });
+
+  // Update form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        firstName: initialData.firstName || '',
+        lastName: initialData.lastName || '',
+        email: initialData.email || '',
+        dateOfBirth: initialData.dateOfBirth || '',
+        gender: initialData.gender || 'male',
+        bloodGroup: initialData.bloodGroup || '',
+        address: initialData.address || '',
+        phoneNumber: initialData.phoneNumber || '',
+        parentEmail: initialData.parentEmail || '',
+        parentPhone: initialData.parentPhone || '',
+        studentId: initialData.studentId || '',
+        classId: initialData.classId || '',
+        section: initialData.section || '',
+      });
+    } else {
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        dateOfBirth: '',
+        gender: 'male',
+        bloodGroup: '',
+        address: '',
+        phoneNumber: '',
+        parentEmail: '',
+        parentPhone: '',
+        studentId: '',
+        classId: '',
+        section: '',
+      });
+    }
+  }, [initialData]);
+
+  // Fetch classes when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchClasses();
+    }
+  }, [isOpen]);
+
+  // Update selected class when classId changes
+  useEffect(() => {
+    if (formData.classId) {
+      const foundClass = classes.find(c => c._id === formData.classId);
+      setSelectedClass(foundClass || null);
+      // Reset section if class changes
+      if (!foundClass?.sections.includes(formData.section || '')) {
+        setFormData(prev => ({ ...prev, section: '' }));
+      }
+    } else {
+      setSelectedClass(null);
+    }
+  }, [formData.classId, classes]);
+
+  const fetchClasses = async () => {
+    setLoadingClasses(true);
+    try {
+      const fetchedClasses = await classService.getClasses();
+      setClasses(fetchedClasses);
+    } catch (err) {
+      console.error('Failed to fetch classes:', err);
+    } finally {
+      setLoadingClasses(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -67,6 +147,8 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
         parentEmail: '',
         parentPhone: '',
         studentId: '',
+        classId: '',
+        section: '',
       });
       onClose();
     } catch (err) {
@@ -79,10 +161,11 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900">Add New Student</h2>
+    <Portal>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[9999] overflow-y-auto pt-20 pb-20" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full mx-4" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center z-10 rounded-t-lg">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Add New Student</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
@@ -224,6 +307,56 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
               </select>
             </div>
 
+            {/* Class */}
+            <div>
+              <label htmlFor="classId" className="block text-sm font-medium text-gray-700 mb-1">
+                Class <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="classId"
+                name="classId"
+                value={formData.classId}
+                onChange={handleChange}
+                required
+                disabled={loadingClasses}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900 disabled:bg-gray-100"
+              >
+                <option value="">
+                  {loadingClasses ? 'Loading classes...' : 'Select class...'}
+                </option>
+                {classes.map(cls => (
+                  <option key={cls._id} value={cls._id}>
+                    {cls.name} (Grade {cls.grade})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Section */}
+            <div>
+              <label htmlFor="section" className="block text-sm font-medium text-gray-700 mb-1">
+                Section <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="section"
+                name="section"
+                value={formData.section}
+                onChange={handleChange}
+                required
+                disabled={!selectedClass || !selectedClass.sections.length}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900 disabled:bg-gray-100"
+              >
+                <option value="">
+                  {!formData.classId ? 'Select class first...' : 'Select section...'}
+                </option>
+                {selectedClass?.sections.map(section => (
+                  <option key={section} value={section}>
+                    Section {section}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Phone Number */}
             <div>
               <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
@@ -305,5 +438,6 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit }: CreateStudentM
         </form>
       </div>
     </div>
+    </Portal>
   );
 }
