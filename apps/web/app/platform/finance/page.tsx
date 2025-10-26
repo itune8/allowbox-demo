@@ -139,8 +139,8 @@ export default function FinancePage() {
     };
     const badge = badges[status] || badges.pending;
     return (
-      <span className={`text-xs px-2 py-1 rounded font-medium ${badge.bg} ${badge.text}`}>
-        {badge.label}
+      <span className={`text-xs px-2 py-1 rounded font-medium ${badge?.bg} ${badge?.text}`}>
+        {badge?.label}
       </span>
     );
   };
