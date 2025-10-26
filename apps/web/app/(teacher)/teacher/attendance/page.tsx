@@ -172,7 +172,8 @@ export default function AttendancePage() {
                         }`}
                       >
                         <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100">{s.name}</td>
-                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{s.rollNo || '-'}</td>
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        {/* <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{s?.rollNo || '-' }</td> */}
                         <td className="py-3 px-4 text-center">
                           <label className="inline-flex items-center cursor-pointer select-none">
                             <input

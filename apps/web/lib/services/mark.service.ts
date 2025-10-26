@@ -114,8 +114,8 @@ class MarkService {
       return null;
     }
 
-    const student = marks[0].student;
-    const exam = marks[0].exam;
+    const student = marks[0]?.student;
+    const exam = marks[0]?.exam;
 
     const marksData = marks.map(mark => ({
       subjectName: mark.subject?.name || '',

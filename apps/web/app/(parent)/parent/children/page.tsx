@@ -115,7 +115,7 @@ export default function ChildrenPage() {
         try {
           const timetable = await timetableService.getSlotsByClass(classId);
           if (timetable.length > 0) {
-            const teacherId = timetable[0].teacherId;
+            const teacherId = timetable[0]?.teacherId;
             const teacher = teachers.find(t => (t.id || t._id) === teacherId);
             if (teacher) {
               teacherMap.set(classId, teacher);

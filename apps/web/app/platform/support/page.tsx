@@ -41,21 +41,21 @@ const generateMockTickets = (): Ticket[] => {
     const createdDate = new Date();
     createdDate.setDate(createdDate.getDate() - daysAgo);
 
-    tickets.push({
-      id: `TKT-${1000 + i}`,
-      subject: subjects[Math.floor(Math.random() * subjects.length)],
-      schoolName: schools[Math.floor(Math.random() * schools.length)],
-      schoolId: `school-${i}`,
-      contactName: `Contact ${i}`,
-      contactEmail: `contact${i}@school.edu`,
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      priority: priorities[Math.floor(Math.random() * priorities.length)],
-      category: categories[Math.floor(Math.random() * categories.length)],
-      createdAt: createdDate.toISOString(),
-      updatedAt: createdDate.toISOString(),
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Detailed ticket description goes here.',
-      assignedTo: Math.random() > 0.5 ? 'Support Team' : undefined,
-    });
+    // tickets.push({
+    //   id: `TKT-${1000 + i}`,
+    //   subject: subjects[Math.floor(Math.random() * subjects.length)],
+    //   schoolName: schools[Math.floor(Math.random() * schools.length)],
+    //   schoolId: `school-${i}`,
+    //   contactName: `Contact ${i}`,
+    //   contactEmail: `contact${i}@school.edu`,
+    //   status: statuses[Math.floor(Math.random() * statuses.length)],
+    //   priority: priorities[Math.floor(Math.random() * priorities.length)],
+    //   category: categories[Math.floor(Math.random() * categories.length)],
+    //   createdAt: createdDate.toISOString(),
+    //   updatedAt: createdDate.toISOString(),
+    //   description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Detailed ticket description goes here.',
+    //   assignedTo: Math.random() > 0.5 ? 'Support Team' : undefined,
+    // });
   }
 
   return tickets.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

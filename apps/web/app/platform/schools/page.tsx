@@ -81,8 +81,8 @@ export default function SchoolsPage() {
     };
     const badge = badges[status] || badges.trial;
     return (
-      <span className={`text-xs px-2 py-1 rounded font-medium ${badge.bg} ${badge.text}`}>
-        {badge.label}
+      <span className={`text-xs px-2 py-1 rounded font-medium ${badge?.bg} ${badge?.text}`}>
+        {badge?.label}
       </span>
     );
   };
@@ -96,7 +96,7 @@ export default function SchoolsPage() {
     };
     const badge = badges[plan] || badges.free;
     return (
-      <span className={`text-xs px-2 py-1 rounded font-medium ${badge.bg} ${badge.text}`}>
+      <span className={`text-xs px-2 py-1 rounded font-medium ${badge?.bg} ${badge?.text}`}>
         {plan.toUpperCase()}
       </span>
     );

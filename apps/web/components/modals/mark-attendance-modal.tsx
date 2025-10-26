@@ -88,7 +88,7 @@ export function MarkAttendanceModal({ isOpen, onClose, classId, section, onSucce
       await attendanceService.bulkMarkAttendance({
         classId,
         section,
-        date,
+        date: date + (period ? `|${period}` : ''),
         period,
         attendanceRecords: students.map(s => ({
           studentId: s.studentId,
