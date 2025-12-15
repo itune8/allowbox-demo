@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar, type SidebarMenuItem } from '@repo/ui/sidebar';
 import { useAuth } from '../../../contexts/auth-context';
 import { ProtectedRoute } from '../../../components/protected-route';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 // Icons as components for cleaner code
 const DashboardIcon = () => (
@@ -169,6 +169,15 @@ export default function ParentLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobileApp, setIsMobileApp] = useState(false);
+
+  // Detect if running inside mobile WebView
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const mobileApp = localStorage.getItem('isMobileApp') === 'true';
+      setIsMobileApp(mobileApp);
+    }
+  }, []);
 
   // Determine active menu item from pathname
   const activeItem = useMemo(() => {
@@ -190,6 +199,19 @@ export default function ParentLayout({
   };
 
   const userName = user ? `${user.firstName} ${user.lastName}` : 'Parent';
+
+  // If running in mobile app WebView, render simplified layout without sidebar/nav
+  if (isMobileApp) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+          <main className="p-4 min-h-screen">
+            {children}
+          </main>
+        </div>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>
