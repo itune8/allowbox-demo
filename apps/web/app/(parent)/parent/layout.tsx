@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar, type SidebarMenuItem } from '@repo/ui/sidebar';
 import { useAuth } from '../../../contexts/auth-context';
 import { ProtectedRoute } from '../../../components/protected-route';
-import { useMemo, useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 // Icons as components for cleaner code
 const DashboardIcon = () => (
@@ -171,14 +171,10 @@ export default function ParentLayout({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileApp, setIsMobileApp] = useState(false);
 
-  // Detect if running inside mobile WebView
+  // Check if running inside mobile WebView - must have ReactNativeWebView object
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Check both localStorage flag AND ReactNativeWebView to confirm we're in WebView
-      const mobileAppFlag = localStorage.getItem('isMobileApp') === 'true';
-      const hasReactNativeWebView = !!(window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView;
-      setIsMobileApp(mobileAppFlag && hasReactNativeWebView);
-    }
+    const hasReactNativeWebView = !!(window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView;
+    setIsMobileApp(hasReactNativeWebView);
   }, []);
 
   // Determine active menu item from pathname
