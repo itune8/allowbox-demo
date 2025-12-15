@@ -8,6 +8,7 @@ import { ProtectedRoute } from '../../../components/protected-route';
 import { useRef, useState, useEffect } from 'react';
 
 const sidebarMenu: SidebarMenuItem[] = [
+  // Overview
   {
     key: 'dashboard',
     label: 'Dashboard',
@@ -20,9 +21,12 @@ const sidebarMenu: SidebarMenuItem[] = [
       </svg>
     ),
   },
+
+  // Schedule Section
+  { key: 'section-schedule', label: 'Schedule', isSection: true },
   {
     key: 'timetable',
-    label: 'Timetable',
+    label: 'My Timetable',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -41,9 +45,44 @@ const sidebarMenu: SidebarMenuItem[] = [
       </svg>
     ),
   },
+
+  // Teaching Section
+  { key: 'section-teaching', label: 'Teaching', isSection: true },
+  {
+    key: 'grades',
+    label: 'Grades & Results',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+        <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
+      </svg>
+    ),
+  },
   {
     key: 'homework',
     label: 'Homework',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <path d="M14 2v6h6" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+      </svg>
+    ),
+  },
+  {
+    key: 'diary',
+    label: 'Daily Diary',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+      </svg>
+    ),
+  },
+  {
+    key: 'lesson-plans',
+    label: 'Lesson Plans',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
@@ -51,16 +90,59 @@ const sidebarMenu: SidebarMenuItem[] = [
       </svg>
     ),
   },
+
+  // Personal Section
+  { key: 'section-personal', label: 'Personal', isSection: true },
+  {
+    key: 'leave-requests',
+    label: 'Leave Requests',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+        <path d="M9 16l2 2 4-4" />
+      </svg>
+    ),
+  },
+
+  // Communication Section
+  { key: 'section-comms', label: 'Communication', isSection: true },
+  {
+    key: 'messages',
+    label: 'Messages',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    ),
+  },
+  {
+    key: 'events',
+    label: 'School Events',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+        <circle cx="12" cy="15" r="2" />
+      </svg>
+    ),
+  },
+
+  // Reports Section
+  { key: 'section-reports', label: 'Analytics', isSection: true },
   {
     key: 'reports',
     label: 'Reports',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <polyline points="10 9 9 9 8 9" />
+        <path d="M3 3v18h18" />
+        <path d="M18 17V9" />
+        <path d="M13 17V5" />
+        <path d="M8 17v-3" />
       </svg>
     ),
   },
@@ -106,9 +188,7 @@ export default function TeacherLayout({
 
   return (
     <ProtectedRoute>
-      <div className="relative min-h-screen flex transition-opacity duration-300 ease-in-out text-gray-900 dark:text-gray-100">
-        {/* Clean background */}
-        <div className="absolute inset-0 -z-10 bg-gray-50 dark:bg-gray-950" />
+      <div className="relative min-h-screen flex transition-opacity duration-300 ease-in-out text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-950">
 
         {/* Sidebar */}
         <Sidebar
@@ -123,8 +203,8 @@ export default function TeacherLayout({
           }
         />
 
-        {/* Main content */}
-        <div className="flex-1 flex flex-col">
+        {/* Main content - add left margin to account for fixed sidebar */}
+        <div className="flex-1 flex flex-col ml-64">
           {/* Topbar */}
           <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-10 border-b border-gray-200 dark:border-gray-800 animate-slide-in-top">
             <div className="mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -168,7 +248,7 @@ export default function TeacherLayout({
           </header>
 
           {/* Page content */}
-          <main className="mx-auto w-full p-4 sm:p-6 lg:p-8">
+          <main className="mx-auto w-full p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-64px)]">
             {children}
           </main>
         </div>

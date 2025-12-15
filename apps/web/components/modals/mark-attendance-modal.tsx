@@ -26,7 +26,7 @@ export function MarkAttendanceModal({ isOpen, onClose, classId, section, onSucce
   const [loading, setLoading] = useState(false);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [error, setError] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0] ?? '');
   const [period, setPeriod] = useState<number | undefined>(undefined);
   const [students, setStudents] = useState<StudentAttendance[]>([]);
 

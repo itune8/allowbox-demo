@@ -68,8 +68,8 @@ export default function ParentDashboardPage() {
         startDate.setDate(startDate.getDate() - 6);
         const attendance = await attendanceService.getAttendanceByStudent(
           currentUser.id || currentUser._id || '',
-          startDate.toISOString().split('T')[0],
-          endDate.toISOString().split('T')[0]
+          startDate.toISOString().split('T')[0] ?? '',
+          endDate.toISOString().split('T')[0] ?? ''
         );
         setMyAttendance(attendance);
       }

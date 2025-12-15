@@ -128,6 +128,20 @@ class UserService {
   }
 
   /**
+   * Get all students
+   */
+  async getStudents(): Promise<User[]> {
+    return this.getUsersByRole('student');
+  }
+
+  /**
+   * Get all teachers
+   */
+  async getTeachers(): Promise<User[]> {
+    return this.getUsersByRole('teacher');
+  }
+
+  /**
    * Block a user from logging in
    */
   async blockUser(userId: string): Promise<{ message: string; user: User }> {
@@ -140,6 +154,29 @@ class UserService {
    */
   async unblockUser(userId: string): Promise<{ message: string; user: User }> {
     const response = await apiClient.patch<{ message: string; user: User }>(`/users/${userId}/unblock`);
+    return response.data;
+  }
+
+  /**
+   * Get platform staff users (super_admin, sales, support, finance)
+   */
+  async getPlatformUsers(): Promise<User[]> {
+    const response = await apiClient.get<User[]>('/users/platform');
+    return response.data;
+  }
+
+  /**
+   * Create a platform staff user
+   */
+  async createPlatformUser(userData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    role: string;
+    phone?: string;
+  }): Promise<User> {
+    const response = await apiClient.post<User>('/users/platform', userData);
     return response.data;
   }
 }

@@ -8,6 +8,7 @@ export interface SidebarMenuItem {
   label: string;
   icon?: ReactNode;
   href?: string;
+  isSection?: boolean; // If true, renders as a section header
 }
 
 export interface SidebarProps {
@@ -79,28 +80,41 @@ export const Sidebar = ({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 overflow-auto">
-        {menu.map((item) => (
-          <button
-            key={item.key}
-            onClick={() => onItemClick?.(item.key)}
-            className={cn(
-              "group w-full flex items-center gap-3 px-4 py-3 rounded-r-xl border-l-4 transition-all ease-in-out duration-300 transform",
-              activeItem === item.key
-                ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-semibold border-gray-900 dark:border-gray-100"
-                : "text-gray-600 dark:text-gray-400 border-transparent hover:bg-gray-900 dark:hover:bg-gray-100 hover:text-white dark:hover:text-gray-900 hover:border-gray-900 dark:hover:border-gray-100 hover:pl-5 hover:-translate-y-0.5",
-              isCollapsed && "justify-center px-2"
-            )}
-            title={isCollapsed ? item.label : undefined}
-          >
-            {item.icon && (
-              <span className={cn("flex-shrink-0", isCollapsed && "mx-auto")}>
-                {item.icon}
-              </span>
-            )}
-            {!isCollapsed && <span className="truncate">{item.label}</span>}
-          </button>
-        ))}
+      <nav className="flex-1 py-2 overflow-auto">
+        {menu.map((item) =>
+          item.isSection ? (
+            // Section header
+            !isCollapsed && (
+              <div
+                key={item.key}
+                className="px-4 pt-4 pb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
+              >
+                {item.label}
+              </div>
+            )
+          ) : (
+            // Regular menu item
+            <button
+              key={item.key}
+              onClick={() => onItemClick?.(item.key)}
+              className={cn(
+                "group w-full flex items-center gap-3 px-4 py-2.5 border-l-4 transition-all ease-in-out duration-200",
+                activeItem === item.key
+                  ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-semibold border-indigo-600 dark:border-indigo-400"
+                  : "text-gray-600 dark:text-gray-400 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600",
+                isCollapsed && "justify-center px-2"
+              )}
+              title={isCollapsed ? item.label : undefined}
+            >
+              {item.icon && (
+                <span className={cn("flex-shrink-0", isCollapsed && "mx-auto")}>
+                  {item.icon}
+                </span>
+              )}
+              {!isCollapsed && <span className="truncate">{item.label}</span>}
+            </button>
+          )
+        )}
       </nav>
 
       {/* Footer */}

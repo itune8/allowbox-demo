@@ -4,6 +4,7 @@ import { StudentFormData } from '../../components/modals/create-student-modal';
 
 export interface StudentResponse {
   id: string;
+  _id?: string; // MongoDB ID
   firstName: string;
   lastName: string;
   email?: string;
@@ -17,6 +18,9 @@ export interface StudentResponse {
   classId?: string;
   isActive: boolean;
 }
+
+// Alias for backward compatibility
+export type Student = StudentResponse;
 
 class StudentService {
   /**
@@ -83,6 +87,14 @@ class StudentService {
    */
   async deleteStudent(studentId: string): Promise<void> {
     await apiClient.delete(`/users/${studentId}`);
+  }
+
+  /**
+   * Get students by class ID
+   */
+  async getStudentsByClass(classId: string): Promise<StudentResponse[]> {
+    const allStudents = await this.getStudents();
+    return allStudents.filter(student => student.classId === classId);
   }
 }
 

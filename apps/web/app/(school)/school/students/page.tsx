@@ -539,7 +539,7 @@ export default function StudentsPage() {
           firstName: editingStudent.firstName,
           lastName: editingStudent.lastName,
           email: editingStudent.email,
-          dateOfBirth: editingStudent.dateOfBirth ? (typeof editingStudent.dateOfBirth === 'string' ? editingStudent.dateOfBirth : new Date(editingStudent.dateOfBirth).toISOString().split('T')[0]) : '',
+          dateOfBirth: editingStudent.dateOfBirth ? (typeof editingStudent.dateOfBirth === 'string' ? editingStudent.dateOfBirth : (new Date(editingStudent.dateOfBirth).toISOString().split('T')[0] ?? '')) : '',
           gender: editingStudent.gender,
           bloodGroup: editingStudent.bloodGroup,
           address: editingStudent.address,
