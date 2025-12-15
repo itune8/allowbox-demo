@@ -43,23 +43,39 @@ export const MobileBottomNav = ({
   activeItem?: string;
   onItemClick?: (key: string) => void;
 }) => {
+  // Optimistic active state for immediate feedback
+  const [optimisticActive, setOptimisticActive] = useState<string | null>(null);
+
+  // Sync optimistic state with actual activeItem
+  useEffect(() => {
+    setOptimisticActive(null);
+  }, [activeItem]);
+
+  const handleClick = (key: string) => {
+    setOptimisticActive(key); // Immediate visual feedback
+    onItemClick?.(key);
+  };
+
+  // Use optimistic state if set, otherwise use actual activeItem
+  const displayActive = optimisticActive || activeItem;
+
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 z-50 safe-area-bottom">
       <div className="flex items-center justify-around h-16 px-2">
         {items.slice(0, 5).map((item) => (
           <button
             key={item.key}
-            onClick={() => onItemClick?.(item.key)}
+            onClick={() => handleClick(item.key)}
             className={cn(
-              "flex flex-col items-center justify-center flex-1 h-full py-1 px-1 rounded-lg transition-all",
-              activeItem === item.key
+              "flex flex-col items-center justify-center flex-1 h-full py-1 px-1 rounded-lg transition-colors duration-100",
+              displayActive === item.key
                 ? "text-indigo-600 dark:text-indigo-400"
                 : "text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
             )}
           >
             <span className={cn(
-              "mb-0.5 transition-transform",
-              activeItem === item.key && "scale-110"
+              "mb-0.5 transition-transform duration-100",
+              displayActive === item.key && "scale-110"
             )}>
               {item.icon}
             </span>
@@ -102,6 +118,30 @@ const MobileMenu = ({
   user?: SidebarProps["user"];
   onLogout?: () => void;
 }) => {
+  // Optimistic active state for immediate feedback
+  const [optimisticActive, setOptimisticActive] = useState<string | null>(null);
+
+  // Sync optimistic state with actual activeItem
+  useEffect(() => {
+    setOptimisticActive(null);
+  }, [activeItem]);
+
+  // Reset optimistic state when menu closes
+  useEffect(() => {
+    if (!isOpen) {
+      setOptimisticActive(null);
+    }
+  }, [isOpen]);
+
+  const handleClick = (key: string) => {
+    setOptimisticActive(key); // Immediate visual feedback
+    onItemClick?.(key);
+    onClose();
+  };
+
+  // Use optimistic state if set, otherwise use actual activeItem
+  const displayActive = optimisticActive || activeItem;
+
   // Prevent body scroll when menu is open
   useEffect(() => {
     if (isOpen) {
@@ -170,13 +210,10 @@ const MobileMenu = ({
             ) : (
               <button
                 key={item.key}
-                onClick={() => {
-                  onItemClick?.(item.key);
-                  onClose();
-                }}
+                onClick={() => handleClick(item.key)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 transition-all",
-                  activeItem === item.key
+                  "w-full flex items-center gap-3 px-4 py-3 transition-colors duration-100",
+                  displayActive === item.key
                     ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-r-4 border-indigo-600"
                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                 )}
@@ -248,6 +285,22 @@ export const Sidebar = ({
 }: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Optimistic active state for immediate feedback on desktop
+  const [optimisticActive, setOptimisticActive] = useState<string | null>(null);
+
+  // Sync optimistic state with actual activeItem
+  useEffect(() => {
+    setOptimisticActive(null);
+  }, [activeItem]);
+
+  const handleDesktopClick = (key: string) => {
+    setOptimisticActive(key); // Immediate visual feedback
+    onItemClick?.(key);
+  };
+
+  // Use optimistic state if set, otherwise use actual activeItem
+  const displayActive = optimisticActive || activeItem;
 
   const handleToggleCollapse = () => {
     const newCollapsed = !isCollapsed;
@@ -374,11 +427,11 @@ export const Sidebar = ({
             ) : (
               <button
                 key={item.key}
-                onClick={() => onItemClick?.(item.key)}
+                onClick={() => handleDesktopClick(item.key)}
                 className={cn(
-                  "group w-full flex items-center gap-3 py-2.5 transition-all duration-200 relative",
+                  "group w-full flex items-center gap-3 py-2.5 transition-colors duration-100 relative",
                   isCollapsed ? "justify-center px-2 mx-2 rounded-lg" : "px-4",
-                  activeItem === item.key
+                  displayActive === item.key
                     ? isCollapsed
                       ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
                       : "bg-gradient-to-r from-indigo-50 to-transparent dark:from-indigo-900/20 dark:to-transparent text-indigo-600 dark:text-indigo-400 border-r-[3px] border-indigo-600 dark:border-indigo-400"
@@ -387,8 +440,8 @@ export const Sidebar = ({
                 title={isCollapsed ? item.label : undefined}
               >
                 <span className={cn(
-                  "flex-shrink-0 transition-transform duration-200",
-                  activeItem === item.key && "scale-110"
+                  "flex-shrink-0 transition-transform duration-100",
+                  displayActive === item.key && "scale-110"
                 )}>
                   {item.icon}
                 </span>
