@@ -81,9 +81,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (verifyError) {
           console.error('⚠️ Token verification failed:', verifyError);
-          // Token is invalid, clear everything
-          await authService.logout();
-          setUser(null);
+
+          // In mobile app, don't logout immediately - trust the injected tokens
+          const isMobileApp = localStorage.getItem('isMobileApp') === 'true';
+          if (isMobileApp) {
+            console.log('📱 Mobile app detected, keeping user session');
+            // Keep the user logged in with stored data
+          } else {
+            // Token is invalid, clear everything
+            await authService.logout();
+            setUser(null);
+          }
         }
       } else if (token && !storedUser) {
         // We have token but no stored user, fetch from API

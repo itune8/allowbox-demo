@@ -40,8 +40,11 @@ class ApiClient {
       (error) => {
         // Handle errors globally
         if (error.response?.status === 401) {
-          // Redirect to login if unauthorized
-          if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+          // Don't redirect if we're in the mobile app - let the mobile app handle auth
+          const isMobileApp = typeof window !== 'undefined' && localStorage.getItem('isMobileApp') === 'true';
+
+          // Redirect to login if unauthorized (but not in mobile app)
+          if (typeof window !== 'undefined' && !window.location.pathname.includes('/login') && !isMobileApp) {
             window.location.href = '/auth/login';
           }
         }
