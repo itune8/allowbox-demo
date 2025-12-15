@@ -174,8 +174,10 @@ export default function ParentLayout({
   // Detect if running inside mobile WebView
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const mobileApp = localStorage.getItem('isMobileApp') === 'true';
-      setIsMobileApp(mobileApp);
+      // Check both localStorage flag AND ReactNativeWebView to confirm we're in WebView
+      const mobileAppFlag = localStorage.getItem('isMobileApp') === 'true';
+      const hasReactNativeWebView = !!(window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView;
+      setIsMobileApp(mobileAppFlag && hasReactNativeWebView);
     }
   }, []);
 
