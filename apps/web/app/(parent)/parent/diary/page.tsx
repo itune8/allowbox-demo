@@ -153,17 +153,17 @@ export default function ParentDiaryPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Daily Diary</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            View daily updates from your child's teachers
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Daily Diary</h1>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+            View daily updates from teachers
           </p>
         </div>
         {children.length > 1 && (
           <select
-            className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+            className="border border-gray-300 dark:border-gray-700 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-w-0 max-w-[120px] sm:max-w-none"
             value={selectedChild?._id || selectedChild?.id || ''}
             onChange={(e) => {
               const child = children.find((c) => (c._id || c.id) === e.target.value);
@@ -180,16 +180,16 @@ export default function ParentDiaryPage() {
       </div>
 
       {selectedChild && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-lg">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-base sm:text-lg flex-shrink-0">
               {selectedChild.firstName?.[0]}
             </div>
-            <div>
-              <div className="font-semibold text-gray-900 dark:text-gray-100">
+            <div className="min-w-0">
+              <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">
                 {selectedChild.firstName} {selectedChild.lastName}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                 {selectedChild.classId?.name || 'No class assigned'}
               </div>
             </div>
@@ -277,9 +277,9 @@ export default function ParentDiaryPage() {
       )}
 
       {selectedDiary && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => setSelectedDiary(null)} />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-lg p-6">
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-2xl">{typeIcons[selectedDiary.type]}</span>
               <div>

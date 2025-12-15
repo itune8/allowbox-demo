@@ -131,12 +131,12 @@ export default function ParentSupportPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Support Center</h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          Get help with your questions and manage support tickets
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Support Center</h1>
+        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+          Get help and manage support tickets
         </p>
       </div>
 
@@ -150,12 +150,12 @@ export default function ParentSupportPage() {
       )}
 
       {/* Support Tickets */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">My Support Tickets</h3>
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2 sm:gap-3">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">My Support Tickets</h3>
           <div className="flex items-center gap-2">
             <select
-              className="border border-gray-300 bg-white text-gray-900 rounded-md px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+              className="border border-gray-300 bg-white text-gray-900 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
               value={filter}
               onChange={(e) => setFilter(e.target.value as 'All' | TicketStatus)}
             >
@@ -164,11 +164,44 @@ export default function ParentSupportPage() {
                 <option key={s} value={s}>{s.replace('_', ' ')}</option>
               ))}
             </select>
-            <Button onClick={() => setShowForm(true)}>New Ticket</Button>
+            <Button onClick={() => setShowForm(true)} className="text-xs sm:text-sm px-2 sm:px-4">
+              <span className="hidden sm:inline">New </span>Ticket
+            </Button>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile Cards View */}
+        <div className="sm:hidden space-y-3">
+          {filteredTickets.length === 0 ? (
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+              No tickets yet. Create one if you need assistance!
+            </div>
+          ) : (
+            filteredTickets.map((ticket) => (
+              <div
+                key={ticket._id}
+                className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 cursor-pointer active:bg-gray-100 dark:active:bg-gray-700 transition-all touch-manipulation"
+                onClick={() => setSelectedTicket(ticket)}
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate flex-1">
+                    {ticket.subject}
+                  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded flex-shrink-0 ${statusColors[ticket.status]}`}>
+                    {ticket.status.replace('_', ' ')}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>{categoryLabels[ticket.category]}</span>
+                  <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr className="text-left text-gray-500 dark:text-gray-400">
@@ -213,19 +246,19 @@ export default function ParentSupportPage() {
       </div>
 
       {/* FAQ Section */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
           Frequently Asked Questions
         </h3>
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {faqs.map((faq, idx) => (
             <div
               key={idx}
-              className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 hover:shadow-md transition-all cursor-pointer"
+              className="border border-gray-200 dark:border-gray-800 rounded-lg p-3 sm:p-4 hover:shadow-md transition-all cursor-pointer active:bg-gray-50 dark:active:bg-gray-800 touch-manipulation"
               onClick={() => setExpandedFAQ(expandedFAQ === idx ? null : idx)}
             >
-              <div className="flex items-center justify-between">
-                <div className="font-medium text-gray-900 dark:text-gray-100">{faq.q}</div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">{faq.q}</div>
                 <svg
                   className={`w-5 h-5 text-gray-400 transition-transform ${expandedFAQ === idx ? 'rotate-180' : ''}`}
                   fill="none"
@@ -245,9 +278,9 @@ export default function ParentSupportPage() {
 
       {/* Create Ticket Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
           <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={() => setShowForm(false)} />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-lg p-6 animate-zoom-in">
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 animate-zoom-in">
             <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
               Create Support Ticket
             </h3>
@@ -316,9 +349,9 @@ export default function ParentSupportPage() {
 
       {/* View Ticket Modal */}
       {selectedTicket && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
           <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={() => setSelectedTicket(null)} />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 animate-zoom-in">
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 animate-zoom-in">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <span className="text-xs text-gray-500 font-mono">{selectedTicket.ticketNumber}</span>

@@ -63,21 +63,21 @@ export default function TeacherDashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header Section */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1 sm:gap-2">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Overview</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Welcome back, {user?.firstName}! Here's your teaching summary.
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Overview</h1>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Welcome back, {user?.firstName}! <span className="hidden sm:inline">Here's your teaching summary.</span>
             </p>
           </div>
         </div>
       </div>
 
       {/* Key Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
         <StatCard
           title="My Students"
           value={studentsInSelectedClass.length}
@@ -116,30 +116,30 @@ export default function TeacherDashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
           <button
             onClick={() => router.push('/teacher/homework')}
-            className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group"
+            className="flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 active:scale-95 transition-all group touch-manipulation"
           >
             <svg
-              className="w-8 h-8 text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 mb-2"
+              className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 mb-1 sm:mb-2"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Add Homework</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">Homework</span>
           </button>
 
           <button
             onClick={() => router.push('/teacher/attendance')}
-            className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-300 dark:border-gray-700 hover:border-green-500 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all group"
+            className="flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-green-500 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 active:scale-95 transition-all group touch-manipulation"
           >
             <svg
-              className="w-8 h-8 text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400 mb-2"
+              className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400 mb-1 sm:mb-2"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -149,15 +149,15 @@ export default function TeacherDashboardPage() {
                 clipRule="evenodd"
               />
             </svg>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Mark Attendance</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">Attendance</span>
           </button>
 
           <button
             onClick={() => router.push('/teacher/timetable')}
-            className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group"
+            className="flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 active:scale-95 transition-all group touch-manipulation"
           >
             <svg
-              className="w-8 h-8 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-2"
+              className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-1 sm:mb-2"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -167,32 +167,32 @@ export default function TeacherDashboardPage() {
                 clipRule="evenodd"
               />
             </svg>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">View Timetable</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">Timetable</span>
           </button>
 
           <button
             onClick={() => router.push('/teacher/reports')}
-            className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-300 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all group"
+            className="flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 active:scale-95 transition-all group touch-manipulation"
           >
             <svg
-              className="w-8 h-8 text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 mb-2"
+              className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 mb-1 sm:mb-2"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
               <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
             </svg>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">View Reports</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">Reports</span>
           </button>
         </div>
       </div>
 
       {/* Today's Schedule and Activity Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Today's Schedule</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">Today's Schedule</h3>
             <select
-              className="border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-gray-400"
+              className="border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-gray-400 min-w-0 max-w-[140px] sm:max-w-none"
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
             >
@@ -204,28 +204,28 @@ export default function TeacherDashboardPage() {
             </select>
           </div>
           {scheduleToday.length === 0 ? (
-            <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl py-10 text-gray-500 text-sm flex flex-col items-center justify-center">
-              <div className="text-3xl mb-2">📭</div>
+            <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl py-8 sm:py-10 text-gray-500 text-sm flex flex-col items-center justify-center">
+              <div className="text-2xl sm:text-3xl mb-2">📭</div>
               No sessions today
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {scheduleToday.map((t) => (
                 <div
                   key={t.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-800 rounded-lg hover:shadow-md transition-all"
+                  className="flex items-center justify-between p-3 sm:p-4 border border-gray-200 dark:border-gray-800 rounded-lg hover:shadow-md active:bg-gray-50 dark:active:bg-gray-800 transition-all gap-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-indigo-500" />
-                    <div>
-                      <div className="font-medium text-gray-900 dark:text-gray-100">{t.subject}</div>
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">{t.subject}</div>
                       <div className="text-xs text-gray-500">
                         {t.start} - {t.end}
                       </div>
                     </div>
                   </div>
-                  <Button size="sm" onClick={() => router.push('/teacher/attendance')}>
-                    Take Attendance
+                  <Button size="sm" className="flex-shrink-0 text-xs sm:text-sm px-2 sm:px-3" onClick={() => router.push('/teacher/attendance')}>
+                    <span className="hidden sm:inline">Take </span>Attendance
                   </Button>
                 </div>
               ))}
@@ -233,20 +233,20 @@ export default function TeacherDashboardPage() {
           )}
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Activity</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">Recent Activity</h3>
           <div className="space-y-3">
             {[
               { id: 1, icon: '✓', text: 'Attendance marked for Grade 6', time: '2h ago' },
               { id: 2, icon: '✎', text: 'Homework created: Algebra Worksheet', time: '5h ago' },
               { id: 3, icon: '📅', text: 'Timetable synced for the week', time: '1d ago' },
             ].map((i) => (
-              <div key={i.id} className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-md bg-gray-100 dark:bg-gray-800 grid place-items-center text-gray-600">
+              <div key={i.id} className="flex items-start gap-2 sm:gap-3">
+                <div className="w-6 h-6 rounded-md bg-gray-100 dark:bg-gray-800 grid place-items-center text-gray-600 flex-shrink-0 text-sm">
                   {i.icon}
                 </div>
-                <div>
-                  <div className="text-sm text-gray-800 dark:text-gray-200">{i.text}</div>
+                <div className="min-w-0">
+                  <div className="text-xs sm:text-sm text-gray-800 dark:text-gray-200 line-clamp-2">{i.text}</div>
                   <div className="text-xs text-gray-400">{i.time}</div>
                 </div>
               </div>

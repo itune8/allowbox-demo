@@ -131,17 +131,17 @@ export default function ParentGradesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Grades & Report Cards</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Grades & Results</h1>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
             View your child's academic performance
           </p>
         </div>
         {children.length > 1 && (
           <select
-            className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+            className="border border-gray-300 dark:border-gray-700 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-w-0 max-w-[120px] sm:max-w-none"
             value={selectedChild?._id || selectedChild?.id || ''}
             onChange={(e) => {
               const child = children.find((c) => (c._id || c.id) === e.target.value);
@@ -158,16 +158,16 @@ export default function ParentGradesPage() {
       </div>
 
       {selectedChild && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-lg">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-base sm:text-lg flex-shrink-0">
               {selectedChild.firstName?.[0]}
             </div>
-            <div>
-              <div className="font-semibold text-gray-900 dark:text-gray-100">
+            <div className="min-w-0">
+              <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">
                 {selectedChild.firstName} {selectedChild.lastName}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                 {selectedChild.classId?.name || 'No class assigned'}
               </div>
             </div>
@@ -227,10 +227,33 @@ export default function ParentGradesPage() {
 
           {grades.length > 0 && (
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="font-semibold text-gray-900 dark:text-gray-100">Recent Grades</h2>
+              <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base">Recent Grades</h2>
               </div>
-              <div className="overflow-x-auto">
+              {/* Mobile Card View */}
+              <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                {grades.map((grade) => (
+                  <div key={grade._id} className="p-3 active:bg-gray-50 dark:active:bg-gray-800 transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                          {grade.assessmentName || grade.type}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate">{grade.subjectId?.name}</div>
+                      </div>
+                      <span className={`font-bold text-lg ml-2 ${gradeColors[grade.grade] || ''}`}>
+                        {grade.grade}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-gray-500">
+                      <span>Score: {grade.score}/{grade.maxScore}</span>
+                      <span>{grade.assessmentDate ? new Date(grade.assessmentDate).toLocaleDateString() : '-'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop Table View */}
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr className="text-left text-gray-500">
@@ -275,12 +298,12 @@ export default function ParentGradesPage() {
 
       {/* Report Card Detail Modal */}
       {selectedReport && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
           <div
             className="absolute inset-0 bg-black/40 animate-fade-in"
             onClick={() => setSelectedReport(null)}
           />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 animate-zoom-in">
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 animate-zoom-in">
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">

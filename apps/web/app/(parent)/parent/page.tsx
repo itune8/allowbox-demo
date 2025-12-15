@@ -165,69 +165,71 @@ export default function ParentDashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Overview</h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Overview</h1>
+        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
           Welcome back, {user?.firstName}!{' '}
-          {currentUserData?.role === 'student'
-            ? "Here's your class information and children's activities."
-            : "Here's a summary of your children's activities."}
+          <span className="hidden sm:inline">
+            {currentUserData?.role === 'student'
+              ? "Here's your class information and children's activities."
+              : "Here's a summary of your children's activities."}
+          </span>
         </p>
       </div>
 
       {/* My Information (if logged in as student) */}
       {currentUserData?.role === 'student' && (
-        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-bold">My Class Information</h2>
-              <p className="text-indigo-100 text-sm">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-4 sm:p-6 text-white">
+          <div className="flex items-center justify-between mb-4 gap-3">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg sm:text-xl font-bold truncate">My Class Information</h2>
+              <p className="text-indigo-100 text-xs sm:text-sm truncate">
                 {myClass?.name} - Section {currentUserData.section}
               </p>
             </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold">{attendancePercentage}%</div>
-              <div className="text-sm text-indigo-100">Attendance</div>
+            <div className="text-right flex-shrink-0">
+              <div className="text-2xl sm:text-3xl font-bold">{attendancePercentage}%</div>
+              <div className="text-xs sm:text-sm text-indigo-100">Attendance</div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* My Subjects */}
-            <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <div className="bg-white/10 backdrop-blur rounded-lg p-3 sm:p-4">
+              <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm sm:text-base">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
                 </svg>
                 My Subjects ({mySubjects.length})
               </h3>
-              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-2 max-h-28 sm:max-h-32 overflow-y-auto">
                 {mySubjects.map(subject => (
-                  <div key={subject._id} className="text-xs bg-white/20 rounded px-2 py-1">
+                  <div key={subject._id} className="text-xs bg-white/20 rounded px-2 py-1 truncate">
                     {subject.name}
                   </div>
                 ))}
                 {mySubjects.length === 0 && (
-                  <p className="text-sm text-indigo-100 col-span-2">No subjects assigned</p>
+                  <p className="text-xs sm:text-sm text-indigo-100 col-span-2">No subjects assigned</p>
                 )}
               </div>
             </div>
 
             {/* Today's Classes */}
-            <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <div className="bg-white/10 backdrop-blur rounded-lg p-3 sm:p-4">
+              <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm sm:text-base">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                 </svg>
                 Today's Classes ({todaysTimetable.length})
               </h3>
-              <div className="space-y-1 max-h-32 overflow-y-auto">
+              <div className="space-y-1 max-h-28 sm:max-h-32 overflow-y-auto">
                 {todaysTimetable.map(slot => {
                   const subject = mySubjects.find(s => s._id === slot.subjectId);
                   return (
                     <div key={slot._id} className="text-xs bg-white/20 rounded px-2 py-1">
-                      <div className="font-medium">Period {slot.period}: {subject?.name || 'Unknown'}</div>
+                      <div className="font-medium truncate">Period {slot.period}: {subject?.name || 'Unknown'}</div>
                       {slot.startTime && slot.endTime && (
                         <div className="text-indigo-100">{slot.startTime} - {slot.endTime}</div>
                       )}
@@ -235,7 +237,7 @@ export default function ParentDashboardPage() {
                   );
                 })}
                 {todaysTimetable.length === 0 && (
-                  <p className="text-sm text-indigo-100">No classes today</p>
+                  <p className="text-xs sm:text-sm text-indigo-100">No classes today</p>
                 )}
               </div>
             </div>
@@ -244,7 +246,7 @@ export default function ParentDashboardPage() {
       )}
 
       {/* Key Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
         <StatCard
           title="Children Linked"
           value={children.length}
@@ -288,29 +290,29 @@ export default function ParentDashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
           <button
             onClick={() => router.push('/parent/children')}
-            className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-300 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group"
+            className="flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 active:scale-95 transition-all group touch-manipulation"
           >
             <svg
-              className="w-8 h-8 text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 mb-2"
+              className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 mb-1 sm:mb-2"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
               <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
             </svg>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">View Children</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">Children</span>
           </button>
 
           <button
             onClick={() => router.push('/parent/fees')}
-            className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-300 dark:border-gray-700 hover:border-green-500 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all group"
+            className="flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-green-500 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 active:scale-95 transition-all group touch-manipulation"
           >
             <svg
-              className="w-8 h-8 text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400 mb-2"
+              className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400 mb-1 sm:mb-2"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -321,29 +323,29 @@ export default function ParentDashboardPage() {
                 clipRule="evenodd"
               />
             </svg>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Pay Fees</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">Pay Fees</span>
           </button>
 
           <button
             onClick={() => router.push('/parent/payments')}
-            className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group"
+            className="flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 active:scale-95 transition-all group touch-manipulation"
           >
             <svg
-              className="w-8 h-8 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-2"
+              className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-1 sm:mb-2"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
               <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" />
             </svg>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Payment History</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">History</span>
           </button>
 
           <button
             onClick={() => router.push('/parent/support')}
-            className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-300 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all group"
+            className="flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 active:scale-95 transition-all group touch-manipulation"
           >
             <svg
-              className="w-8 h-8 text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 mb-2"
+              className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 mb-1 sm:mb-2"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -353,21 +355,21 @@ export default function ParentDashboardPage() {
                 clipRule="evenodd"
               />
             </svg>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Get Support</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">Support</span>
           </button>
         </div>
       </div>
 
       {/* Fee Overview */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Fee Overview</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div className="md:col-span-2">
-            <div className="h-40 flex items-end gap-3">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">Fee Overview</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+          <div className="sm:col-span-2 order-2 sm:order-1">
+            <div className="h-32 sm:h-40 flex items-end gap-4 sm:gap-3">
               <div className="flex-1">
                 <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 text-center">Paid</div>
                 <div
-                  className="w-full bg-gradient-to-t from-green-500 to-green-400 rounded-t"
+                  className="w-full bg-gradient-to-t from-green-500 to-green-400 rounded-t transition-all"
                   style={{
                     height: `${feeTotals.total ? Math.round((feeTotals.paid / feeTotals.total) * 100) : 0}%`,
                     minHeight: feeTotals.paid > 0 ? '20px' : '0px',
@@ -378,7 +380,7 @@ export default function ParentDashboardPage() {
               <div className="flex-1">
                 <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 text-center">Pending</div>
                 <div
-                  className="w-full bg-gradient-to-t from-amber-500 to-amber-400 rounded-t"
+                  className="w-full bg-gradient-to-t from-amber-500 to-amber-400 rounded-t transition-all"
                   style={{
                     height: `${feeTotals.total ? Math.round((feeTotals.pending / feeTotals.total) * 100) : 0}%`,
                     minHeight: feeTotals.pending > 0 ? '20px' : '0px',
@@ -388,84 +390,124 @@ export default function ParentDashboardPage() {
               </div>
             </div>
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="w-3 h-3 rounded-full bg-green-500" /> Paid: ${feeTotals.paid.toLocaleString()}
+          <div className="space-y-2 order-1 sm:order-2 flex sm:block gap-3 sm:gap-0 flex-wrap">
+            <div className="flex items-center gap-2 text-xs sm:text-sm">
+              <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500 flex-shrink-0" />
+              <span>Paid: ${feeTotals.paid.toLocaleString()}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="w-3 h-3 rounded-full bg-amber-500" /> Pending: $
-              {feeTotals.pending.toLocaleString()}
+            <div className="flex items-center gap-2 text-xs sm:text-sm">
+              <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-amber-500 flex-shrink-0" />
+              <span>Pending: ${feeTotals.pending.toLocaleString()}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              Total: ${feeTotals.total.toLocaleString()}
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500">
+              <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+              <span>Total: ${feeTotals.total.toLocaleString()}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Recent Invoices */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Invoices</h3>
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Invoices</h3>
           <button
             onClick={() => router.push('/parent/fees')}
-            className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+            className="text-xs sm:text-sm text-indigo-600 dark:text-indigo-400 hover:underline active:opacity-70 touch-manipulation"
           >
             View All
           </button>
         </div>
         {children.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            <div className="text-4xl mb-3">🗂️</div>
-            <p>No children linked to your account yet.</p>
+          <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400">
+            <div className="text-3xl sm:text-4xl mb-3">🗂️</div>
+            <p className="text-sm sm:text-base">No children linked to your account yet.</p>
           </div>
         ) : recentInvoices.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            <div className="text-4xl mb-3">📋</div>
-            <p>No invoices found.</p>
+          <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400">
+            <div className="text-3xl sm:text-4xl mb-3">📋</div>
+            <p className="text-sm sm:text-base">No invoices found.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-gray-500 border-b border-gray-200 dark:border-gray-800">
-                <tr>
-                  <th className="py-2">Invoice #</th>
-                  <th className="py-2">Child Name</th>
-                  <th className="py-2">Amount</th>
-                  <th className="py-2">Due Date</th>
-                  <th className="py-2">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {recentInvoices.map((inv) => {
-                  const child = children.find(c => (c.id || c._id) === inv.studentId);
-                  const isOverdue = inv.status !== 'paid' && new Date(inv.dueDate) < new Date();
+          <>
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3">
+              {recentInvoices.map((inv) => {
+                const child = children.find(c => (c.id || c._id) === inv.studentId);
+                const isOverdue = inv.status !== 'paid' && new Date(inv.dueDate) < new Date();
 
-                  return (
-                    <tr key={inv._id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
-                      <td className="py-3 font-mono text-xs">{inv.invoiceNumber}</td>
-                      <td className="py-3">{child ? `${child.firstName} ${child.lastName}` : 'N/A'}</td>
-                      <td className="py-3 font-medium">${inv.totalAmount.toLocaleString()}</td>
-                      <td className="py-3">{new Date(inv.dueDate).toLocaleDateString()}</td>
-                      <td className="py-3">
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded ${
-                            inv.status === 'paid'
-                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                              : isOverdue
-                              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                              : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
-                          }`}
-                        >
-                          {inv.status === 'paid' ? 'Paid' : isOverdue ? 'Overdue' : 'Pending'}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                return (
+                  <div key={inv._id} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 active:bg-gray-100 dark:active:bg-gray-800 transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {child ? `${child.firstName} ${child.lastName}` : 'N/A'}
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono">{inv.invoiceNumber}</div>
+                      </div>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ml-2 ${
+                          inv.status === 'paid'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                            : isOverdue
+                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                        }`}
+                      >
+                        {inv.status === 'paid' ? 'Paid' : isOverdue ? 'Overdue' : 'Pending'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Due: {new Date(inv.dueDate).toLocaleDateString()}</span>
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">${inv.totalAmount.toLocaleString()}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Desktop Table View */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-gray-500 border-b border-gray-200 dark:border-gray-800">
+                  <tr>
+                    <th className="py-2">Invoice #</th>
+                    <th className="py-2">Child Name</th>
+                    <th className="py-2">Amount</th>
+                    <th className="py-2">Due Date</th>
+                    <th className="py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {recentInvoices.map((inv) => {
+                    const child = children.find(c => (c.id || c._id) === inv.studentId);
+                    const isOverdue = inv.status !== 'paid' && new Date(inv.dueDate) < new Date();
+
+                    return (
+                      <tr key={inv._id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                        <td className="py-3 font-mono text-xs">{inv.invoiceNumber}</td>
+                        <td className="py-3">{child ? `${child.firstName} ${child.lastName}` : 'N/A'}</td>
+                        <td className="py-3 font-medium">${inv.totalAmount.toLocaleString()}</td>
+                        <td className="py-3">{new Date(inv.dueDate).toLocaleDateString()}</td>
+                        <td className="py-3">
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded ${
+                              inv.status === 'paid'
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                                : isOverdue
+                                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                            }`}
+                          >
+                            {inv.status === 'paid' ? 'Paid' : isOverdue ? 'Overdue' : 'Pending'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

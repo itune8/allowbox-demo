@@ -197,19 +197,28 @@ export default function TeacherLayout({
 
         {/* Main content */}
         <div className={`transition-all duration-300 ${sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-64'}`}>
-          {/* Mobile Header */}
-          <header className="md:hidden sticky top-0 z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 h-14 flex items-center justify-between">
-            <div className="ml-12">
+          {/* Mobile Header - Enhanced for mobile app feel */}
+          <header className="md:hidden sticky top-0 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 h-14 flex items-center justify-between safe-area-top">
+            <div className="ml-12 flex-1 min-w-0">
               <h1 className="text-base font-semibold text-gray-900 dark:text-white truncate">
                 Teacher Portal
               </h1>
             </div>
-            <div className="flex items-center gap-2">
-              <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+            <div className="flex items-center gap-1">
+              {/* Mobile Search Button */}
+              <button className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-all touch-manipulation">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+              </button>
+              {/* Notifications */}
+              <button className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-all relative touch-manipulation">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                   <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-900"></span>
               </button>
             </div>
           </header>
@@ -254,8 +263,8 @@ export default function TeacherLayout({
             </div>
           </header>
 
-          {/* Page content */}
-          <main className="p-4 md:p-6 pb-20 md:pb-6 min-h-[calc(100vh-56px)] md:min-h-[calc(100vh-64px)]">
+          {/* Page content - Enhanced mobile spacing */}
+          <main className="p-3 sm:p-4 md:p-6 pb-24 md:pb-6 min-h-[calc(100vh-56px)] md:min-h-[calc(100vh-64px)] safe-area-bottom">
             {children}
           </main>
         </div>

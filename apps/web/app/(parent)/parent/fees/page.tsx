@@ -137,37 +137,37 @@ export default function FeesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Fees</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Manage and track fee payments for your children
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Fees</h1>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Track fee payments for your children
           </p>
         </div>
-        <Button onClick={downloadFeeStatement} variant="outline">
-          Download Statement
+        <Button onClick={downloadFeeStatement} variant="outline" className="text-xs sm:text-sm px-3 sm:px-4">
+          <span className="hidden sm:inline">Download </span>Statement
         </Button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Fees</div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-5">
+          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Total</div>
+          <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">
             ${stats.total.toLocaleString()}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Paid</div>
-          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-5">
+          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Paid</div>
+          <div className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400 truncate">
             ${stats.paid.toLocaleString()}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Pending</div>
-          <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-5">
+          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Pending</div>
+          <div className="text-lg sm:text-2xl font-bold text-amber-600 dark:text-amber-400 truncate">
             ${stats.pending.toLocaleString()}
           </div>
         </div>
@@ -196,13 +196,13 @@ export default function FeesPage() {
       </div>
 
       {/* Fee Invoices Table */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Fee Invoices</h3>
-          <div className="flex gap-2">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2 flex-wrap">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">Fee Invoices</h3>
+          <div className="flex gap-1 sm:gap-2">
             <button
               onClick={() => setSelectedFilter('all')}
-              className={`px-3 py-1 text-sm rounded ${
+              className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded touch-manipulation ${
                 selectedFilter === 'all'
                   ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
                   : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
@@ -212,7 +212,7 @@ export default function FeesPage() {
             </button>
             <button
               onClick={() => setSelectedFilter('pending')}
-              className={`px-3 py-1 text-sm rounded ${
+              className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded touch-manipulation ${
                 selectedFilter === 'pending'
                   ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                   : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
@@ -222,7 +222,7 @@ export default function FeesPage() {
             </button>
             <button
               onClick={() => setSelectedFilter('paid')}
-              className={`px-3 py-1 text-sm rounded ${
+              className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded touch-manipulation ${
                 selectedFilter === 'paid'
                   ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                   : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'

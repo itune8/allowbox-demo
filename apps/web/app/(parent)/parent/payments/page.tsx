@@ -84,32 +84,32 @@ export default function PaymentsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Payment History</h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          View your payment transactions and download receipts
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Payment History</h1>
+        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+          View transactions and download receipts
         </p>
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 rounded-xl p-5">
-          <div className="text-sm font-medium text-green-800 dark:text-green-300">Total Paid This Year</div>
-          <div className="text-3xl font-bold text-green-900 dark:text-green-200 mt-2">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 rounded-xl p-3 sm:p-5">
+          <div className="text-xs sm:text-sm font-medium text-green-800 dark:text-green-300">Paid (Year)</div>
+          <div className="text-lg sm:text-3xl font-bold text-green-900 dark:text-green-200 mt-1 sm:mt-2 truncate">
             ${totalPaidYear.toLocaleString()}
           </div>
         </div>
-        <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border border-amber-200 dark:border-amber-800 rounded-xl p-5">
-          <div className="text-sm font-medium text-amber-800 dark:text-amber-300">Pending Amount</div>
-          <div className="text-3xl font-bold text-amber-900 dark:text-amber-200 mt-2">
+        <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 sm:p-5">
+          <div className="text-xs sm:text-sm font-medium text-amber-800 dark:text-amber-300">Pending</div>
+          <div className="text-lg sm:text-3xl font-bold text-amber-900 dark:text-amber-200 mt-1 sm:mt-2 truncate">
             ${pendingAmt.toLocaleString()}
           </div>
         </div>
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800 rounded-xl p-5">
-          <div className="text-sm font-medium text-blue-800 dark:text-blue-300">Success Rate</div>
-          <div className="text-3xl font-bold text-blue-900 dark:text-blue-200 mt-2">{successRate}%</div>
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 sm:p-5">
+          <div className="text-xs sm:text-sm font-medium text-blue-800 dark:text-blue-300">Success</div>
+          <div className="text-lg sm:text-3xl font-bold text-blue-900 dark:text-blue-200 mt-1 sm:mt-2">{successRate}%</div>
         </div>
       </div>
 
@@ -216,9 +216,9 @@ export default function PaymentsPage() {
 
       {/* Refund Modal */}
       {refundFor && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => setRefundFor(null)} />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-md p-6 animate-zoom-in">
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6 animate-zoom-in">
             <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Request Refund</h3>
             <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">
               {refundFor.inv.title} — {refundFor.child.name} — ${refundFor.inv.amount}

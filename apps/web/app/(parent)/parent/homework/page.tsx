@@ -141,17 +141,17 @@ export default function ParentHomeworkPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Homework</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            View and track your child's homework assignments
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Homework</h1>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+            View and track your child's homework
           </p>
         </div>
         {children.length > 1 && (
           <select
-            className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+            className="border border-gray-300 dark:border-gray-700 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-w-0 max-w-[120px] sm:max-w-none"
             value={selectedChild?._id || selectedChild?.id || ''}
             onChange={(e) => {
               const child = children.find((c) => (c._id || c.id) === e.target.value);
@@ -168,16 +168,16 @@ export default function ParentHomeworkPage() {
       </div>
 
       {selectedChild && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-lg">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-base sm:text-lg flex-shrink-0">
               {selectedChild.firstName?.[0]}
             </div>
-            <div>
-              <div className="font-semibold text-gray-900 dark:text-gray-100">
+            <div className="min-w-0">
+              <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">
                 {selectedChild.firstName} {selectedChild.lastName}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                 {selectedChild.classId?.name || 'No class assigned'}
               </div>
             </div>
@@ -192,15 +192,15 @@ export default function ParentHomeworkPage() {
       )}
 
       {homework.length === 0 ? (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8 text-center">
-          <div className="text-4xl mb-3">📝</div>
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">No Homework</h3>
-          <p className="text-gray-500">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 sm:p-8 text-center">
+          <div className="text-3xl sm:text-4xl mb-3">📝</div>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2 text-sm sm:text-base">No Homework</h3>
+          <p className="text-gray-500 text-xs sm:text-sm">
             Your child's homework assignments will appear here once assigned by teachers.
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {homework.map((hw) => {
             const submission = submissions.find(s => s.homeworkId._id === hw._id);
             const isPastDue = new Date(hw.dueDate) < new Date();
@@ -208,25 +208,25 @@ export default function ParentHomeworkPage() {
             return (
               <div
                 key={hw._id}
-                className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4"
+                className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-4 active:bg-gray-50 dark:active:bg-gray-800 transition-colors"
               >
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">{typeIcons[hw.type]}</span>
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">{hw.title}</h3>
-                        <div className="text-sm text-gray-500 mt-1">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <span className="text-xl sm:text-2xl flex-shrink-0">{typeIcons[hw.type]}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">{hw.title}</h3>
+                        <div className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1 truncate">
                           {hw.subjectId?.name} • {hw.classId?.name}
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex-shrink-0">
                         {submission ? (
-                          <span className={`px-2 py-1 rounded text-xs ${submissionStatusColors[submission.status]}`}>
+                          <span className={`px-2 py-0.5 sm:py-1 rounded text-xs ${submissionStatusColors[submission.status]}`}>
                             {submission.status}
                           </span>
                         ) : (
-                          <span className={`px-2 py-1 rounded text-xs ${isPastDue ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                          <span className={`px-2 py-0.5 sm:py-1 rounded text-xs ${isPastDue ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'}`}>
                             {isPastDue ? 'Overdue' : 'Pending'}
                           </span>
                         )}
@@ -234,16 +234,16 @@ export default function ParentHomeworkPage() {
                     </div>
 
                     {hw.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{hw.description}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">{hw.description}</p>
                     )}
 
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
-                      <div className="text-sm text-gray-500">
-                        Due: {new Date(hw.dueDate).toLocaleDateString()} at{' '}
-                        {new Date(hw.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <div className="flex items-center justify-between mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-100 dark:border-gray-800 gap-2">
+                      <div className="text-xs sm:text-sm text-gray-500 truncate">
+                        Due: {new Date(hw.dueDate).toLocaleDateString()}<span className="hidden sm:inline"> at{' '}
+                        {new Date(hw.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                       {submission?.status === SubmissionStatus.GRADED && (
-                        <div className="text-sm font-medium">
+                        <div className="text-xs sm:text-sm font-medium flex-shrink-0">
                           Score: {submission.score}/{submission.maxScore}
                         </div>
                       )}

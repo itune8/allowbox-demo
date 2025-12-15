@@ -156,12 +156,12 @@ export default function ChildrenPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Children</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">My Children</h1>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
             View and manage your linked children's profiles
           </p>
         </div>
@@ -169,19 +169,19 @@ export default function ChildrenPage() {
 
       {/* Children Grid */}
       {children.length === 0 ? (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center">
-          <div className="text-4xl mb-3">🗂️</div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 sm:p-12 text-center">
+          <div className="text-3xl sm:text-4xl mb-3">🗂️</div>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
             No children linked yet
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4">
             {user?.roles?.includes('student') || (user as any)?.role === 'student'
               ? 'You are logged in as a student. To view children, please log in with a parent account.'
               : 'Contact your school administrator to link your children\'s accounts to your parent profile.'}
           </p>
           {user?.roles?.includes('student') || (user as any)?.role === 'student' ? (
-            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
+            <div className="mt-4 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-left">
+              <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-300">
                 <strong>Note:</strong> If you are a parent, ask the school administrator to:
                 <br />
                 1. Create a parent account for you
@@ -194,24 +194,24 @@ export default function ChildrenPage() {
           ) : null}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
           {children.map((child) => {
             const teacher = getClassTeacher(child);
 
             return (
               <div
                 key={child.id || child._id}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-all"
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-4 sm:p-6 hover:shadow-md active:bg-gray-50 dark:active:bg-gray-800 transition-all touch-manipulation"
               >
-                <div className="flex items-center mb-4">
-                  <div className="h-14 w-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold grid place-items-center text-xl">
+                <div className="flex items-center mb-3 sm:mb-4">
+                  <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold grid place-items-center text-lg sm:text-xl flex-shrink-0">
                     {child.firstName?.[0]}{child.lastName?.[0]}
                   </div>
-                  <div className="ml-4 flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <div className="ml-3 sm:ml-4 flex-1 min-w-0">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
                       {child.firstName} {child.lastName}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                       {typeof child.classId === 'object' && child.classId?.name
                         ? `${child.classId.name}${child.section ? ` - Section ${child.section}` : ''}`
                         : child.section
@@ -219,7 +219,7 @@ export default function ChildrenPage() {
                         : 'Not assigned'}
                     </p>
                     {child.studentId && (
-                      <p className="text-xs text-gray-500 dark:text-gray-500 font-mono mt-0.5">
+                      <p className="text-xs text-gray-500 dark:text-gray-500 font-mono mt-0.5 truncate">
                         ID: {child.studentId}
                       </p>
                     )}
@@ -228,14 +228,14 @@ export default function ChildrenPage() {
 
                 {/* Teacher Information */}
                 {teacher && (
-                  <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-800">
-                    <div className="flex items-center gap-2 text-sm">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-indigo-500">
+                  <div className="mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-200 dark:border-gray-800">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-indigo-500 flex-shrink-0">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                         <circle cx="12" cy="7" r="4" />
                       </svg>
-                      <span className="text-gray-600 dark:text-gray-400">Class Teacher:</span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                      <span className="text-gray-600 dark:text-gray-400">Teacher:</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
                         {teacher.firstName} {teacher.lastName}
                       </span>
                     </div>
@@ -245,7 +245,7 @@ export default function ChildrenPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full"
+                  className="w-full text-sm active:scale-[0.98] transition-transform"
                   onClick={() => router.push(`/parent/children/${child.id || child._id}`)}
                 >
                   View Profile
