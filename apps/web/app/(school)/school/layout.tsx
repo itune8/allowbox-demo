@@ -215,13 +215,6 @@ export default function SchoolLayout({
   const [tenantData, setTenantData] = useState<TenantData | null>(null);
   const [loadingTenant, setLoadingTenant] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isMobileApp, setIsMobileApp] = useState(false);
-
-  // Check if running inside mobile WebView - must have ReactNativeWebView object
-  useEffect(() => {
-    const hasReactNativeWebView = !!(window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView;
-    setIsMobileApp(hasReactNativeWebView);
-  }, []);
 
   // Determine active menu item from pathname
   const activeItem = useMemo(() => {
@@ -263,19 +256,6 @@ export default function SchoolLayout({
   };
 
   const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
-
-  // If running in mobile app WebView, render simplified layout without sidebar/nav
-  if (isMobileApp) {
-    return (
-      <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-          <main className="p-4 min-h-screen">
-            {children}
-          </main>
-        </div>
-      </ProtectedRoute>
-    );
-  }
 
   return (
     <ProtectedRoute>

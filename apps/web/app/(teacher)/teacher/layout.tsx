@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar, type SidebarMenuItem } from '@repo/ui/sidebar';
 import { useAuth } from '../../../contexts/auth-context';
 import { ProtectedRoute } from '../../../components/protected-route';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 // Icons as components for cleaner code
 const DashboardIcon = () => (
@@ -153,13 +153,6 @@ export default function TeacherLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isMobileApp, setIsMobileApp] = useState(false);
-
-  // Check if running inside mobile WebView - must have ReactNativeWebView object
-  useEffect(() => {
-    const hasReactNativeWebView = !!(window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView;
-    setIsMobileApp(hasReactNativeWebView);
-  }, []);
 
   // Determine active menu item from pathname
   const activeItem = useMemo(() => {
@@ -181,19 +174,6 @@ export default function TeacherLayout({
   };
 
   const userName = user ? `${user.firstName} ${user.lastName}` : 'Teacher';
-
-  // If running in mobile app WebView, render simplified layout without sidebar/nav
-  if (isMobileApp) {
-    return (
-      <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-          <main className="p-4 min-h-screen">
-            {children}
-          </main>
-        </div>
-      </ProtectedRoute>
-    );
-  }
 
   return (
     <ProtectedRoute>
