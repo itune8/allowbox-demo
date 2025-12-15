@@ -176,11 +176,11 @@ export default function TeacherDiaryPage() {
   ).length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Daily Diary</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Daily Diary</h1>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
             Create diary entries for students
           </p>
         </div>
@@ -190,8 +190,9 @@ export default function TeacherDiaryPage() {
             setShowAddModal(true);
           }}
           disabled={!selectedClassId}
+          className="text-xs sm:text-sm"
         >
-          + New Entry
+          + <span className="hidden sm:inline">New </span>Entry
         </Button>
       </div>
 
@@ -202,12 +203,12 @@ export default function TeacherDiaryPage() {
       )}
 
       {/* Class Selection */}
-      <div className="flex gap-4 items-center">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Select Class:</label>
+      <div className="flex gap-2 sm:gap-4 items-center flex-wrap">
+        <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Select Class:</label>
         <select
           value={selectedClassId}
           onChange={(e) => setSelectedClassId(e.target.value)}
-          className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900"
+          className="border border-gray-300 dark:border-gray-700 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white dark:bg-gray-900"
         >
           <option value="">Select a class</option>
           {classes.map((cls) => (
@@ -220,18 +221,18 @@ export default function TeacherDiaryPage() {
 
       {/* Stats */}
       {selectedClassId && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{diaries.length}</div>
-            <div className="text-sm text-gray-500">Total Entries</div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-4">
+            <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{diaries.length}</div>
+            <div className="text-xs sm:text-sm text-gray-500">Total</div>
           </div>
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-700 p-4">
-            <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{pendingAck}</div>
-            <div className="text-sm text-yellow-600 dark:text-yellow-400">Pending Acknowledgement</div>
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-700 p-3 sm:p-4">
+            <div className="text-xl sm:text-2xl font-bold text-yellow-700 dark:text-yellow-300">{pendingAck}</div>
+            <div className="text-xs sm:text-sm text-yellow-600 dark:text-yellow-400">Pending</div>
           </div>
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-700 p-4">
-            <div className="text-2xl font-bold text-green-700 dark:text-green-300">{acknowledged}</div>
-            <div className="text-sm text-green-600 dark:text-green-400">Acknowledged</div>
+          <div className="bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-700 p-3 sm:p-4">
+            <div className="text-xl sm:text-2xl font-bold text-green-700 dark:text-green-300">{acknowledged}</div>
+            <div className="text-xs sm:text-sm text-green-600 dark:text-green-400">Ack'd</div>
           </div>
         </div>
       )}
@@ -314,7 +315,7 @@ export default function TeacherDiaryPage() {
 
       {/* Add Diary Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4">
           <div className="bg-white dark:bg-gray-900 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 dark:border-gray-800">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -426,8 +427,8 @@ export default function TeacherDiaryPage() {
 
       {/* View Diary Modal */}
       {selectedDiary && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl max-w-lg w-full">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{typeIcons[selectedDiary.type]}</span>

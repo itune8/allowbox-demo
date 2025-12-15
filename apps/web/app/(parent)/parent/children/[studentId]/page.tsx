@@ -148,22 +148,22 @@ export default function StudentProfilePage() {
   const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="outline" onClick={() => router.push('/parent/children')}>
-          ← Back
+      <div className="flex items-center gap-3 sm:gap-4">
+        <Button variant="outline" onClick={() => router.push('/parent/children')} className="text-sm px-2 sm:px-3">
+          ← <span className="hidden sm:inline">Back</span>
         </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold grid place-items-center text-2xl">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold grid place-items-center text-lg sm:text-2xl flex-shrink-0">
               {student.firstName?.[0]}{student.lastName?.[0]}
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">
                 {student.firstName} {student.lastName}
               </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                 {typeof student.classId === 'object' && student.classId?.name
                   ? `${student.classId.name}${student.section ? ` - Section ${student.section}` : ''}`
                   : 'No class assigned'}
@@ -174,20 +174,20 @@ export default function StudentProfilePage() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-800">
-        <nav className="flex gap-2 overflow-x-auto">
+      <div className="border-b border-gray-200 dark:border-gray-800 -mx-3 sm:mx-0 px-3 sm:px-0">
+        <nav className="flex gap-1 sm:gap-2 overflow-x-auto scrollbar-hide">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors ${
+              className={`px-2 sm:px-4 py-2 sm:py-3 font-medium text-xs sm:text-sm whitespace-nowrap border-b-2 transition-colors touch-manipulation ${
                 activeTab === tab.id
                   ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
                   : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               }`}
             >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.label}
+              <span className="mr-1 sm:mr-2">{tab.icon}</span>
+              <span className="hidden sm:inline">{tab.label}</span>
             </button>
           ))}
         </nav>
@@ -196,12 +196,12 @@ export default function StudentProfilePage() {
       {/* Tab Content */}
       <div className="mt-6">
         {activeTab === 'details' && (
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          <div className="space-y-4 sm:space-y-6">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
                 Student Information
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="text-sm text-gray-600 dark:text-gray-400">Student ID</label>
                   <p className="text-gray-900 dark:text-gray-100 font-medium">{student.studentId || 'N/A'}</p>
@@ -246,28 +246,28 @@ export default function StudentProfilePage() {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Attendance Rate</div>
-                <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-6">
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Attendance</div>
+                <div className="text-xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
                   {attendanceStats.percentage}%
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-gray-500 mt-1 hidden sm:block">
                   {attendanceStats.present} / {attendanceStats.total} days
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Subjects Enrolled</div>
-                <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-6">
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Subjects</div>
+                <div className="text-xl sm:text-3xl font-bold text-indigo-600 dark:text-indigo-400">
                   {subjects.length}
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Fees Paid</div>
-                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-6">
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Fees Paid</div>
+                <div className="text-xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
                   ${feeStats.paid}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-gray-500 mt-1 hidden sm:block">
                   of ${feeStats.total} total
                 </div>
               </div>
@@ -276,23 +276,23 @@ export default function StudentProfilePage() {
         )}
 
         {activeTab === 'attendance' && (
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Attendance Records ({new Date().getFullYear()})
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Attendance ({new Date().getFullYear()})
               </h2>
-              <div className="flex gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-gray-600 dark:text-gray-400">Present ({attendanceStats.present})</span>
+              <div className="flex gap-3 sm:gap-4 text-xs sm:text-sm flex-wrap">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
+                  <span className="text-gray-600 dark:text-gray-400">{attendanceStats.present}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="text-gray-600 dark:text-gray-400">Absent ({attendanceStats.absent})</span>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full"></div>
+                  <span className="text-gray-600 dark:text-gray-400">{attendanceStats.absent}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <span className="text-gray-600 dark:text-gray-400">Late ({attendanceStats.late})</span>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-500 rounded-full"></div>
+                  <span className="text-gray-600 dark:text-gray-400">{attendanceStats.late}</span>
                 </div>
               </div>
             </div>
@@ -338,16 +338,16 @@ export default function StudentProfilePage() {
         )}
 
         {activeTab === 'subjects' && (
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">Enrolled Subjects</h2>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 sm:mb-6">Enrolled Subjects</h2>
             {subjects.length === 0 ? (
               <p className="text-center text-gray-500 py-8">No subjects assigned</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
                 {subjects.map(subject => (
                   <div
                     key={subject._id}
-                    className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    className="border border-gray-200 dark:border-gray-800 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow"
                   >
                     <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{subject.name}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{subject.code}</p>
@@ -414,10 +414,10 @@ export default function StudentProfilePage() {
         )}
 
         {activeTab === 'fees' && (
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Fee Invoices</h2>
-              <div className="flex gap-4 text-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">Fee Invoices</h2>
+              <div className="flex gap-3 sm:gap-4 text-xs sm:text-sm flex-wrap">
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">Total: </span>
                   <span className="font-semibold text-gray-900 dark:text-gray-100">${feeStats.total}</span>
@@ -427,7 +427,7 @@ export default function StudentProfilePage() {
                   <span className="font-semibold text-green-600 dark:text-green-400">${feeStats.paid}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Pending: </span>
+                  <span className="text-gray-600 dark:text-gray-400">Due: </span>
                   <span className="font-semibold text-amber-600 dark:text-amber-400">${feeStats.pending}</span>
                 </div>
               </div>

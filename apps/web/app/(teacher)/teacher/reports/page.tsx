@@ -196,60 +196,60 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reports</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            View performance analytics and trends for your classes
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Reports</h1>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+            View performance analytics
           </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={printPDF}>
-            Export PDF
+        <div className="flex gap-2 sm:gap-3">
+          <Button variant="outline" onClick={printPDF} className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Export </span>PDF
           </Button>
-          <Button variant="outline" onClick={downloadCSV}>
-            Download CSV
+          <Button variant="outline" onClick={downloadCSV} className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Download </span>CSV
           </Button>
         </div>
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <SectionCard title="Attendance % by Class" data={attendancePct} />
-        <SectionCard title="Homework Completion Rate" data={homeworkRate} />
-        <SectionCard title="Student Performance Trend" data={perfTrend} />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+        <SectionCard title="Attendance %" data={attendancePct} />
+        <SectionCard title="Homework Rate" data={homeworkRate} />
+        <SectionCard title="Performance Trend" data={perfTrend} />
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-          <div className="text-sm font-medium text-blue-800 dark:text-blue-300">Average Attendance</div>
-          <div className="text-3xl font-bold text-blue-900 dark:text-blue-200 mt-2">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 sm:p-6">
+          <div className="text-xs sm:text-sm font-medium text-blue-800 dark:text-blue-300">Attendance</div>
+          <div className="text-xl sm:text-3xl font-bold text-blue-900 dark:text-blue-200 mt-1 sm:mt-2">
             {attendancePct.length > 0
               ? Math.round(attendancePct.reduce((a, b) => a + b, 0) / attendancePct.length)
               : 0}
             %
           </div>
-          <div className="text-xs text-blue-700 dark:text-blue-400 mt-1">Last 5 weeks</div>
+          <div className="text-xs text-blue-700 dark:text-blue-400 mt-1 hidden sm:block">Last 5 weeks</div>
         </div>
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
-          <div className="text-sm font-medium text-green-800 dark:text-green-300">Homework Completion</div>
-          <div className="text-3xl font-bold text-green-900 dark:text-green-200 mt-2">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 rounded-xl p-3 sm:p-6">
+          <div className="text-xs sm:text-sm font-medium text-green-800 dark:text-green-300">Homework</div>
+          <div className="text-xl sm:text-3xl font-bold text-green-900 dark:text-green-200 mt-1 sm:mt-2">
             {homeworkRate.length > 0
               ? Math.round(homeworkRate.reduce((a, b) => a + b, 0) / homeworkRate.length)
               : 0}
             %
           </div>
-          <div className="text-xs text-green-700 dark:text-green-400 mt-1">Last 5 weeks</div>
+          <div className="text-xs text-green-700 dark:text-green-400 mt-1 hidden sm:block">Last 5 weeks</div>
         </div>
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-800 rounded-xl p-6">
-          <div className="text-sm font-medium text-purple-800 dark:text-purple-300">Overall Performance</div>
-          <div className="text-3xl font-bold text-purple-900 dark:text-purple-200 mt-2">
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-800 rounded-xl p-3 sm:p-6">
+          <div className="text-xs sm:text-sm font-medium text-purple-800 dark:text-purple-300">Performance</div>
+          <div className="text-xl sm:text-3xl font-bold text-purple-900 dark:text-purple-200 mt-1 sm:mt-2">
             {perfTrend.length > 0 ? Math.round(perfTrend.reduce((a, b) => a + b, 0) / perfTrend.length) : 0}%
           </div>
-          <div className="text-xs text-purple-700 dark:text-purple-400 mt-1">Last 5 weeks</div>
+          <div className="text-xs text-purple-700 dark:text-purple-400 mt-1 hidden sm:block">Last 5 weeks</div>
         </div>
       </div>
     </div>

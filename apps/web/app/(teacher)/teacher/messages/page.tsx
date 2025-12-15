@@ -122,16 +122,16 @@ export default function TeacherMessagesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Messages</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Communicate with parents and view school announcements
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Messages</h1>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Communicate with parents
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)}>+ Send Message</Button>
+        <Button onClick={() => setShowForm(true)} className="text-xs sm:text-sm">+ <span className="hidden sm:inline">Send </span>Message</Button>
       </div>
 
       {error && (
@@ -144,9 +144,9 @@ export default function TeacherMessagesPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-800">
+      <div className="flex gap-1 sm:gap-2 border-b border-gray-200 dark:border-gray-800">
         <button
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors touch-manipulation ${
             activeTab === 'inbox'
               ? 'border-indigo-600 text-indigo-600'
               : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -156,7 +156,7 @@ export default function TeacherMessagesPage() {
           Inbox ({messages.length})
         </button>
         <button
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors touch-manipulation ${
             activeTab === 'sent'
               ? 'border-indigo-600 text-indigo-600'
               : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -231,9 +231,9 @@ export default function TeacherMessagesPage() {
 
       {/* Compose Message Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
           <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={() => setShowForm(false)} />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 animate-zoom-in">
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 animate-zoom-in">
             <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
               Send Message to Parents
             </h3>
@@ -319,12 +319,12 @@ export default function TeacherMessagesPage() {
 
       {/* View Message Modal */}
       {selectedMessage && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
           <div
             className="absolute inset-0 bg-black/40 animate-fade-in"
             onClick={() => setSelectedMessage(null)}
           />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 animate-zoom-in">
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 animate-zoom-in">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">

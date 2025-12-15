@@ -134,18 +134,18 @@ export default function ParentLessonPlansPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Lesson Plans</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Lesson Plans</h1>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
             Track your child's learning progress
           </p>
         </div>
         {children.length > 1 && (
           <select
-            className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+            className="border border-gray-300 dark:border-gray-700 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-w-0 max-w-[120px] sm:max-w-none"
             value={selectedChild?._id || selectedChild?.id || ''}
             onChange={(e) => {
               const child = children.find((c) => (c._id || c.id) === e.target.value);
@@ -170,16 +170,16 @@ export default function ParentLessonPlansPage() {
       {selectedChild && (
         <>
           {/* Child Info Card */}
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-lg">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-base sm:text-lg flex-shrink-0">
                 {selectedChild.firstName[0]}
               </div>
-              <div>
-                <div className="font-semibold text-gray-900 dark:text-gray-100">
+              <div className="min-w-0">
+                <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">
                   {selectedChild.firstName} {selectedChild.lastName}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                   {selectedChild.classId?.name || 'No class assigned'}{' '}
                   {selectedChild.section ? `(Section ${selectedChild.section})` : ''}
                 </div>
@@ -189,31 +189,31 @@ export default function ParentLessonPlansPage() {
 
           {/* Progress Stats */}
           {progress && (
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
                 Learning Progress
               </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-4">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4 mb-3 sm:mb-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {progress.total}
                   </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Total Lessons</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">Total</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{progress.completed}</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Completed</div>
+                  <div className="text-lg sm:text-2xl font-bold text-green-600">{progress.completed}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">Done</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">{progress.inProgress}</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">In Progress</div>
+                  <div className="text-lg sm:text-2xl font-bold text-yellow-600">{progress.inProgress}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">Active</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{progress.scheduled}</div>
+                <div className="text-center hidden sm:block">
+                  <div className="text-lg sm:text-2xl font-bold text-blue-600">{progress.scheduled}</div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">Scheduled</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-indigo-600">
+                <div className="text-center hidden sm:block">
+                  <div className="text-lg sm:text-2xl font-bold text-indigo-600">
                     {progress.completionPercentage}%
                   </div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">Completion</div>
@@ -230,20 +230,20 @@ export default function ParentLessonPlansPage() {
           )}
 
           {/* Two columns: Upcoming and Recent */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Upcoming Lessons */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
                 Upcoming Lessons
               </h3>
               {upcomingLessons.length === 0 ? (
                 <p className="text-gray-500 dark:text-gray-400 text-sm">No upcoming lessons</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {upcomingLessons.map((lesson) => (
                     <div
                       key={lesson._id}
-                      className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 transition-colors touch-manipulation"
                       onClick={() => setSelectedPlan(lesson)}
                     >
                       <div className="flex items-start justify-between">
@@ -267,18 +267,18 @@ export default function ParentLessonPlansPage() {
             </div>
 
             {/* Recent Completed */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
                 Recently Completed
               </h3>
               {recentLessons.length === 0 ? (
                 <p className="text-gray-500 dark:text-gray-400 text-sm">No completed lessons yet</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {recentLessons.map((lesson) => (
                     <div
                       key={lesson._id}
-                      className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 transition-colors touch-manipulation"
                       onClick={() => setSelectedPlan(lesson)}
                     >
                       <div className="flex items-start justify-between">
@@ -303,8 +303,8 @@ export default function ParentLessonPlansPage() {
           </div>
 
           {/* All Lesson Plans */}
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
               All Lessons ({lessonPlans.length})
             </h3>
             {lessonPlans.length === 0 ? (
@@ -312,11 +312,11 @@ export default function ParentLessonPlansPage() {
                 No lesson plans available for this class yet.
               </p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {lessonPlans.map((plan) => (
                   <div
                     key={plan._id}
-                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:shadow-md transition-all"
+                    className="p-3 sm:p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:shadow-md active:bg-gray-50 dark:active:bg-gray-800 transition-all touch-manipulation"
                     onClick={() => setSelectedPlan(plan)}
                   >
                     <div className="flex items-start justify-between mb-2">
@@ -344,12 +344,12 @@ export default function ParentLessonPlansPage() {
 
       {/* Lesson Detail Modal */}
       {selectedPlan && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
           <div
             className="absolute inset-0 bg-black/40 animate-fade-in"
             onClick={() => setSelectedPlan(null)}
           />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 animate-zoom-in">
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 animate-zoom-in">
             <div className="flex items-start justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {selectedPlan.title}

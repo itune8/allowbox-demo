@@ -42,36 +42,36 @@ export default function AttendancePage() {
   const percent = total ? Math.round((presentCount / total) * 100) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Attendance</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Mark student attendance for your classes</p>
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Attendance</h1>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">Mark student attendance for your classes</p>
         </div>
       </div>
 
       {/* Main Card */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-6">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-4 sm:p-6">
         {/* Controls */}
-        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-700 dark:text-gray-300 font-medium" htmlFor="att-date">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <label className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-medium" htmlFor="att-date">
               Date
             </label>
             <input
               id="att-date"
               type="date"
-              className="border border-gray-300 bg-white text-gray-900 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+              className="border border-gray-300 bg-white text-gray-900 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-400 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
               value={today}
               onChange={(e) => setToday(e.target.value)}
             />
-            <label className="text-sm text-gray-700 dark:text-gray-300 font-medium" htmlFor="att-class">
+            <label className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-medium" htmlFor="att-class">
               Class
             </label>
             <select
               id="att-class"
-              className="border border-gray-300 bg-white text-gray-900 rounded-md px-3 py-2 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+              className="border border-gray-300 bg-white text-gray-900 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 max-w-[100px] sm:max-w-none"
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
             >
@@ -85,54 +85,56 @@ export default function AttendancePage() {
         </div>
 
         {/* Analytics Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="rounded-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 p-4">
-            <div className="text-sm font-medium text-green-800 dark:text-green-300">Present</div>
-            <div className="text-3xl font-bold text-green-900 dark:text-green-200 mt-1">{presentCount}</div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+          <div className="rounded-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 p-2 sm:p-4">
+            <div className="text-xs sm:text-sm font-medium text-green-800 dark:text-green-300">Present</div>
+            <div className="text-xl sm:text-3xl font-bold text-green-900 dark:text-green-200 mt-1">{presentCount}</div>
           </div>
-          <div className="rounded-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border border-red-200 dark:border-red-800 p-4">
-            <div className="text-sm font-medium text-red-800 dark:text-red-300">Absent</div>
-            <div className="text-3xl font-bold text-red-900 dark:text-red-200 mt-1">{total - presentCount}</div>
+          <div className="rounded-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border border-red-200 dark:border-red-800 p-2 sm:p-4">
+            <div className="text-xs sm:text-sm font-medium text-red-800 dark:text-red-300">Absent</div>
+            <div className="text-xl sm:text-3xl font-bold text-red-900 dark:text-red-200 mt-1">{total - presentCount}</div>
           </div>
-          <div className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800 p-4">
-            <div className="text-sm font-medium text-blue-800 dark:text-blue-300">Attendance Rate</div>
-            <div className="text-3xl font-bold text-blue-900 dark:text-blue-200 mt-1">{percent}%</div>
-            <div className="mt-2 h-2 rounded-full bg-blue-200 dark:bg-blue-900 overflow-hidden">
+          <div className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800 p-2 sm:p-4">
+            <div className="text-xs sm:text-sm font-medium text-blue-800 dark:text-blue-300">Rate</div>
+            <div className="text-xl sm:text-3xl font-bold text-blue-900 dark:text-blue-200 mt-1">{percent}%</div>
+            <div className="mt-1 sm:mt-2 h-1.5 sm:h-2 rounded-full bg-blue-200 dark:bg-blue-900 overflow-hidden">
               <div className="h-full bg-blue-600 dark:bg-blue-400 transition-all" style={{ width: `${percent}%` }} />
             </div>
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4 gap-2 sm:gap-0">
+          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             {students.length} {students.length === 1 ? 'student' : 'students'}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               size="sm"
               variant="outline"
               disabled={total === 0}
+              className="text-xs sm:text-sm"
               onClick={() => {
                 const map = Object.fromEntries(students.map((s) => [s.id, true] as const));
                 setLocal(map);
               }}
             >
-              Mark All Present
+              <span className="hidden sm:inline">Mark </span>All Present
             </Button>
             <Button
               size="sm"
               variant="outline"
               disabled={total === 0}
+              className="text-xs sm:text-sm"
               onClick={() => {
                 const map = Object.fromEntries(students.map((s) => [s.id, false] as const));
                 setLocal(map);
               }}
             >
-              Clear All
+              Clear<span className="hidden sm:inline"> All</span>
             </Button>
-            <Button size="sm" onClick={() => setConfirm(true)} disabled={total === 0}>
-              Save Attendance
+            <Button size="sm" onClick={() => setConfirm(true)} disabled={total === 0} className="text-xs sm:text-sm">
+              Save
             </Button>
           </div>
         </div>
@@ -207,8 +209,8 @@ export default function AttendancePage() {
 
       {/* Confirm Modal */}
       {confirm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fade-in">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-96 shadow-lg animate-zoom-in">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fade-in p-3 sm:p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 sm:p-6 w-full max-w-sm shadow-lg animate-zoom-in">
             <div className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">
               Confirm Attendance Submission?
             </div>
