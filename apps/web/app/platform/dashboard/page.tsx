@@ -2,6 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import {
+  Building2,
+  Users,
+  TrendingUp,
+  DollarSign,
+  Plus,
+  AlertCircle,
+  Clock,
+  Info,
+  CheckCircle2,
+  Loader2
+} from 'lucide-react';
 import { useAuth } from '../../../contexts/auth-context';
 import { hasPermission } from '../../../lib/permissions';
 import { schoolService, type School } from '../../../lib/services/superadmin/school.service';
@@ -171,199 +185,283 @@ export default function DashboardPage() {
   const getSeverityColor = (severity: Alert['severity']) => {
     switch (severity) {
       case 'high':
-        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800';
+        return 'bg-red-100 text-red-700 border-red-200';
       case 'medium':
-        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800';
+        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
       case 'low':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800';
+        return 'bg-blue-100 text-blue-700 border-blue-200';
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+      <div className="flex items-center justify-center min-h-[400px] bg-white">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          >
+            <Loader2 className="h-12 w-12 text-indigo-600" />
+          </motion.div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h2>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Overview of your platform metrics and alerts</p>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-6 bg-white min-h-screen p-6"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="flex items-center justify-between"
+      >
+        <div className="flex items-center gap-4">
+          <Icon3D gradient={gradients.indigo} size="lg">
+            <Building2 className="w-6 h-6" />
+          </Icon3D>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+            <p className="text-gray-600 mt-1">Overview of your platform metrics and alerts</p>
+          </div>
         </div>
         {canCreateSchools && (
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => router.push('/platform/schools')}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 font-medium"
+            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 font-medium"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+            <Plus className="w-5 h-5" />
             Add School
-          </button>
+          </motion.button>
         )}
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Schools</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">{metrics?.totalSchools || 0}</p>
-              <div className="flex items-center gap-4 mt-2">
-                <span className="text-xs text-green-600 dark:text-green-400">{metrics?.activeSchools} active</span>
-                <span className="text-xs text-gray-500 dark:text-gray-500">{metrics?.inactiveSchools} inactive</span>
-              </div>
-            </div>
-            <div className="h-12 w-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-          </div>
-        </div>
+        <AnimatedStatCard
+          title="Total Schools"
+          value={metrics?.totalSchools || 0}
+          icon={<Building2 className="w-6 h-6 text-indigo-600" />}
+          iconBgColor="bg-indigo-50"
+          trend={{
+            value: `${metrics?.activeSchools} active`,
+            isPositive: true
+          }}
+          delay={0}
+        />
 
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Students</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">{metrics?.totalStudents.toLocaleString() || 0}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">{metrics?.totalTeachers.toLocaleString()} teachers</p>
-            </div>
-            <div className="h-12 w-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
+        <AnimatedStatCard
+          title="Total Students"
+          value={metrics?.totalStudents.toLocaleString() || '0'}
+          icon={<Users className="w-6 h-6 text-emerald-600" />}
+          iconBgColor="bg-emerald-50"
+          trend={{
+            value: `${metrics?.totalTeachers.toLocaleString()} teachers`,
+            isPositive: true
+          }}
+          delay={1}
+        />
 
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Monthly Revenue (MRR)</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">{formatCurrency(metrics?.mrr || 0)}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">ARR: {formatCurrency(metrics?.arr || 0)}</p>
-            </div>
-            <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </div>
-          </div>
-        </div>
+        <AnimatedStatCard
+          title="Monthly Revenue (MRR)"
+          value={formatCurrency(metrics?.mrr || 0)}
+          icon={<TrendingUp className="w-6 h-6 text-blue-600" />}
+          iconBgColor="bg-blue-50"
+          trend={{
+            value: `ARR: ${formatCurrency(metrics?.arr || 0)}`,
+            isPositive: true
+          }}
+          delay={2}
+        />
 
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">{formatCurrency(metrics?.totalRevenue || 0)}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">All time</p>
-            </div>
-            <div className="h-12 w-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
+        <AnimatedStatCard
+          title="Total Revenue"
+          value={formatCurrency(metrics?.totalRevenue || 0)}
+          icon={<DollarSign className="w-6 h-6 text-purple-600" />}
+          iconBgColor="bg-purple-50"
+          trend={{
+            value: 'All time',
+            isPositive: true
+          }}
+          delay={3}
+        />
       </div>
 
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+      <GlassCard className="bg-white">
+        <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Alerts & Notifications</h3>
-            <span className="text-sm text-gray-500 dark:text-gray-400">{alerts.length} alert{alerts.length !== 1 ? 's' : ''}</span>
+            <div className="flex items-center gap-3">
+              <Icon3D gradient={gradients.rose} size="sm">
+                <AlertCircle className="w-4 h-4" />
+              </Icon3D>
+              <h3 className="text-lg font-semibold text-gray-900">Alerts & Notifications</h3>
+            </div>
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.5, type: 'spring' }}
+              className="text-sm text-gray-500"
+            >
+              {alerts.length} alert{alerts.length !== 1 ? 's' : ''}
+            </motion.span>
           </div>
         </div>
 
-        <div className="divide-y divide-gray-200 dark:divide-gray-800">
-          {alerts.length === 0 ? (
-            <div className="px-6 py-8 text-center">
-              <svg className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="mt-2 text-gray-500 dark:text-gray-400">No alerts at this time</p>
-            </div>
-          ) : (
-            alerts.slice(0, 10).map(alert => (
-              <div
-                key={alert.id}
-                className={`px-6 py-4 flex items-start gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer border-l-4 ${getSeverityColor(alert.severity)}`}
-                onClick={() => router.push('/platform/schools')}
+        <div className="divide-y divide-gray-200">
+          <AnimatePresence mode="popLayout">
+            {alerts.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="px-6 py-8 text-center"
               >
-                <div className="flex-shrink-0 mt-0.5">{getAlertIcon(alert.type)}</div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{alert.schoolName}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{alert.message}</p>
-                </div>
-                <div className="flex-shrink-0">
-                  <span className={`text-xs px-2 py-1 rounded font-medium ${
-                    alert.severity === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
-                    alert.severity === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
-                    'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                  }`}>{alert.severity}</span>
-                </div>
-              </div>
-            ))
-          )}
+                <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-400" />
+                <p className="mt-2 text-gray-500">No alerts at this time</p>
+              </motion.div>
+            ) : (
+              alerts.slice(0, 10).map((alert, index) => (
+                <motion.div
+                  key={alert.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.5)', x: 4 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`px-6 py-4 flex items-start gap-4 transition-colors cursor-pointer border-l-4 ${getSeverityColor(alert.severity)}`}
+                  onClick={() => router.push('/platform/schools')}
+                >
+                  <motion.div
+                    className="flex-shrink-0 mt-0.5"
+                    whileHover={{ scale: 1.2, rotate: 10 }}
+                  >
+                    {getAlertIcon(alert.type)}
+                  </motion.div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">{alert.schoolName}</p>
+                    <p className="text-sm text-gray-600 mt-1">{alert.message}</p>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: index * 0.05 + 0.2 }}
+                      className={`text-xs px-2 py-1 rounded font-medium ${
+                        alert.severity === 'high' ? 'bg-red-100 text-red-700' :
+                        alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-blue-100 text-blue-700'
+                      }`}
+                    >
+                      {alert.severity}
+                    </motion.span>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </AnimatePresence>
         </div>
 
         {alerts.length > 10 && (
-          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 text-center">
-            <button className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium">
+          <div className="px-6 py-4 border-t border-gray-200 text-center">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+            >
               View all {alerts.length} alerts
-            </button>
+            </motion.button>
           </div>
         )}
-      </div>
+      </GlassCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Subscription Distribution</h3>
+        <GlassCard className="bg-white p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Icon3D gradient={gradients.purple} size="sm">
+              <TrendingUp className="w-4 h-4" />
+            </Icon3D>
+            <h3 className="text-lg font-semibold text-gray-900">Subscription Distribution</h3>
+          </div>
           <div className="space-y-3">
-            {['free', 'basic', 'premium', 'enterprise'].map(plan => {
+            {['free', 'basic', 'premium', 'enterprise'].map((plan, index) => {
               const count = schools.filter(s => s.subscriptionPlan === plan).length;
               const percentage = schools.length > 0 ? (count / schools.length) * 100 : 0;
               return (
-                <div key={plan}>
+                <motion.div
+                  key={plan}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 + 0.5 }}
+                >
                   <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-gray-700 dark:text-gray-300 capitalize font-medium">{plan}</span>
-                    <span className="text-gray-600 dark:text-gray-400">{count} schools ({percentage.toFixed(0)}%)</span>
+                    <span className="text-gray-700 capitalize font-medium">{plan}</span>
+                    <span className="text-gray-600">{count} schools ({percentage.toFixed(0)}%)</span>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div className={`h-2 rounded-full ${plan === 'free' ? 'bg-gray-400' : plan === 'basic' ? 'bg-blue-500' : plan === 'premium' ? 'bg-purple-500' : 'bg-indigo-600'}`} style={{ width: `${percentage}%` }} />
-                  </div>
-                </div>
+                  <motion.div
+                    className="w-full bg-gray-200 rounded-full h-2 overflow-hidden"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${percentage}%` }}
+                      transition={{ delay: index * 0.05, duration: 0.8, ease: 'easeOut' }}
+                      className={`h-2 rounded-full ${plan === 'free' ? 'bg-gray-400' : plan === 'basic' ? 'bg-blue-500' : plan === 'premium' ? 'bg-purple-500' : 'bg-indigo-600'}`}
+                    />
+                  </motion.div>
+                </motion.div>
               );
             })}
           </div>
-        </div>
+        </GlassCard>
 
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Status Overview</h3>
+        <GlassCard className="bg-white p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Icon3D gradient={gradients.emerald} size="sm">
+              <CheckCircle2 className="w-4 h-4" />
+            </Icon3D>
+            <h3 className="text-lg font-semibold text-gray-900">Status Overview</h3>
+          </div>
           <div className="space-y-3">
-            {['trial', 'active', 'suspended', 'cancelled'].map(status => {
+            {['trial', 'active', 'suspended', 'cancelled'].map((status, index) => {
               const count = schools.filter(s => s.subscriptionStatus === status).length;
               const percentage = schools.length > 0 ? (count / schools.length) * 100 : 0;
               return (
-                <div key={status}>
+                <motion.div
+                  key={status}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
                   <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-gray-700 dark:text-gray-300 capitalize font-medium">{status}</span>
-                    <span className="text-gray-600 dark:text-gray-400">{count} schools ({percentage.toFixed(0)}%)</span>
+                    <span className="text-gray-700 capitalize font-medium">{status}</span>
+                    <span className="text-gray-600">{count} schools ({percentage.toFixed(0)}%)</span>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div className={`h-2 rounded-full ${status === 'trial' ? 'bg-blue-500' : status === 'active' ? 'bg-green-500' : status === 'suspended' ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${percentage}%` }} />
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${percentage}%` }}
+                      transition={{ duration: 1, delay: index * 0.05, ease: 'easeOut' }}
+                      className={`h-2 rounded-full ${status === 'trial' ? 'bg-blue-500' : status === 'active' ? 'bg-green-500' : status === 'suspended' ? 'bg-yellow-500' : 'bg-red-500'}`}
+                    />
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
-        </div>
+        </GlassCard>
       </div>
-    </div>
+    </motion.div>
   );
 }

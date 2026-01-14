@@ -1,7 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
+import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import {
+  Settings,
+  Building2,
+  DollarSign,
+  Shield,
+  Bell,
+  CreditCard,
+  Users,
+  Clock,
+  Mail,
+  Sliders,
+  Lock,
+  AlertCircle,
+  CheckCircle2,
+} from 'lucide-react';
 
 interface PlatformSettings {
   platformName: string;
@@ -103,334 +120,506 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="rounded-full h-12 w-12 border-b-2 border-gray-500"
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-6"
+    >
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Platform Settings</h2>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Configure platform settings and preferences
-          </p>
+        <div className="flex items-center gap-4">
+          <Icon3D gradient={gradients.gray} size="lg">
+            <Settings className="w-6 h-6" />
+          </Icon3D>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Platform Settings</h2>
+            <p className="text-gray-600 mt-1">
+              Configure platform settings and preferences
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
-          {hasChanges && (
-            <span className="text-sm text-yellow-600 dark:text-yellow-400">Unsaved changes</span>
-          )}
-          <Button variant="outline" onClick={() => setShowResetConfirm(true)}>
-            Reset to Defaults
-          </Button>
-          <Button onClick={handleSave} disabled={saving || !hasChanges}>
-            {saving ? 'Saving...' : 'Save Changes'}
-          </Button>
+          <AnimatePresence>
+            {hasChanges && (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="text-sm text-amber-600 font-medium"
+              >
+                Unsaved changes
+              </motion.span>
+            )}
+          </AnimatePresence>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button variant="outline" onClick={() => setShowResetConfirm(true)}>
+              Reset to Defaults
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button onClick={handleSave} disabled={saving || !hasChanges}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </motion.div>
         </div>
       </div>
 
       {/* Save Message */}
-      {saveMessage && (
-        <div
-          className={`p-4 rounded-lg ${
-            saveMessage.type === 'success'
-              ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300'
-              : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
-          }`}
-        >
-          {saveMessage.text}
-        </div>
-      )}
+      <AnimatePresence>
+        {saveMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className={`p-4 rounded-lg flex items-center gap-3 ${
+              saveMessage.type === 'success'
+                ? 'bg-green-50 border border-green-200 text-green-700'
+                : 'bg-red-50 border border-red-200 text-red-700'
+            }`}
+          >
+            {saveMessage.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5" />
+            ) : (
+              <AlertCircle className="w-5 h-5" />
+            )}
+            {saveMessage.text}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* General Settings */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          General Settings
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Platform Name
-            </label>
-            <input
-              type="text"
-              value={settings.platformName}
-              onChange={(e) => updateSetting('platformName', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <GlassCard className="bg-white">
+          <div className="flex items-center gap-3 mb-4">
+            <Icon3D gradient={gradients.gray} size="md">
+              <Building2 className="w-4 h-4" />
+            </Icon3D>
+            <h3 className="text-lg font-semibold text-gray-900">
+              General Settings
+            </h3>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Support Email
-            </label>
-            <input
-              type="email"
-              value={settings.supportEmail}
-              onChange={(e) => updateSetting('supportEmail', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Platform Name
+              </label>
+              <input
+                type="text"
+                value={settings.platformName}
+                onChange={(e) => updateSetting('platformName', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all"
+              />
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Support Email
+              </label>
+              <input
+                type="email"
+                value={settings.supportEmail}
+                onChange={(e) => updateSetting('supportEmail', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all"
+              />
+            </motion.div>
           </div>
-        </div>
-      </div>
+        </GlassCard>
+      </motion.div>
 
       {/* Platform Control */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Platform Control
-        </h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Maintenance Mode</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                When enabled, only admins can access the platform
-              </p>
-            </div>
-            <button
-              onClick={() => updateSetting('maintenanceMode', !settings.maintenanceMode)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.maintenanceMode ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-700'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.maintenanceMode ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <GlassCard className="bg-white">
+          <div className="flex items-center gap-3 mb-4">
+            <Icon3D gradient={gradients.gray} size="md">
+              <Shield className="w-4 h-4" />
+            </Icon3D>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Platform Control
+            </h3>
           </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Allow New School Registrations
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Enable or disable new school sign-ups
-              </p>
-            </div>
-            <button
-              onClick={() => updateSetting('allowNewRegistrations', !settings.allowNewRegistrations)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.allowNewRegistrations ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-700'
-              }`}
+          <div className="space-y-4">
+            <motion.div
+              className="flex items-center justify-between"
+              whileHover={{ x: 4 }}
+              transition={{ duration: 0.2 }}
             >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.allowNewRegistrations ? 'translate-x-6' : 'translate-x-1'
+              <div>
+                <p className="text-sm font-medium text-gray-900">Maintenance Mode</p>
+                <p className="text-sm text-gray-600">
+                  When enabled, only admins can access the platform
+                </p>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => updateSetting('maintenanceMode', !settings.maintenanceMode)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  settings.maintenanceMode ? 'bg-red-600' : 'bg-gray-300'
                 }`}
-              />
-            </button>
+              >
+                <motion.span
+                  animate={{
+                    x: settings.maintenanceMode ? 24 : 4,
+                  }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  className="inline-block h-4 w-4 rounded-full bg-white"
+                />
+              </motion.button>
+            </motion.div>
+            <motion.div
+              className="flex items-center justify-between"
+              whileHover={{ x: 4 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  Allow New School Registrations
+                </p>
+                <p className="text-sm text-gray-600">
+                  Enable or disable new school sign-ups
+                </p>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => updateSetting('allowNewRegistrations', !settings.allowNewRegistrations)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  settings.allowNewRegistrations ? 'bg-gray-600' : 'bg-gray-300'
+                }`}
+              >
+                <motion.span
+                  animate={{
+                    x: settings.allowNewRegistrations ? 24 : 4,
+                  }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  className="inline-block h-4 w-4 rounded-full bg-white"
+                />
+              </motion.button>
+            </motion.div>
           </div>
-        </div>
-      </div>
+        </GlassCard>
+      </motion.div>
 
       {/* Pricing Settings */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Pricing & Plans</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Default Plan for New Schools
-            </label>
-            <select
-              value={settings.defaultPlan}
-              onChange={(e) => updateSetting('defaultPlan', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="free">Free</option>
-              <option value="basic">Basic</option>
-              <option value="premium">Premium</option>
-              <option value="enterprise">Enterprise</option>
-            </select>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <GlassCard className="bg-white">
+          <div className="flex items-center gap-3 mb-4">
+            <Icon3D gradient={gradients.gray} size="md">
+              <DollarSign className="w-4 h-4" />
+            </Icon3D>
+            <h3 className="text-lg font-semibold text-gray-900">Pricing & Plans</h3>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Trial Duration (days)
-            </label>
-            <input
-              type="number"
-              value={settings.trialDuration}
-              onChange={(e) => updateSetting('trialDuration', parseInt(e.target.value) || 0)}
-              min={0}
-              max={90}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Default Plan for New Schools
+              </label>
+              <select
+                value={settings.defaultPlan}
+                onChange={(e) => updateSetting('defaultPlan', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all"
+              >
+                <option value="free">Free</option>
+                <option value="basic">Basic</option>
+                <option value="premium">Premium</option>
+                <option value="enterprise">Enterprise</option>
+              </select>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Trial Duration (days)
+              </label>
+              <input
+                type="number"
+                value={settings.trialDuration}
+                onChange={(e) => updateSetting('trialDuration', parseInt(e.target.value) || 0)}
+                min={0}
+                max={90}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all"
+              />
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Price per Student (USD/month)
+              </label>
+              <input
+                type="number"
+                value={settings.studentPricing}
+                onChange={(e) => updateSetting('studentPricing', parseFloat(e.target.value) || 0)}
+                step="0.01"
+                min={0}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all"
+              />
+            </motion.div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Price per Student (USD/month)
-            </label>
-            <input
-              type="number"
-              value={settings.studentPricing}
-              onChange={(e) => updateSetting('studentPricing', parseFloat(e.target.value) || 0)}
-              step="0.01"
-              min={0}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-        </div>
-      </div>
+        </GlassCard>
+      </motion.div>
 
       {/* Limits */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Platform Limits
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Max Students per School
-            </label>
-            <input
-              type="number"
-              value={settings.maxStudentsPerSchool}
-              onChange={(e) => updateSetting('maxStudentsPerSchool', parseInt(e.target.value) || 0)}
-              min={100}
-              step={100}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">Maximum number of students allowed per school</p>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+      >
+        <GlassCard className="bg-white">
+          <div className="flex items-center gap-3 mb-4">
+            <Icon3D gradient={gradients.gray} size="md">
+              <Sliders className="w-4 h-4" />
+            </Icon3D>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Platform Limits
+            </h3>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              API Rate Limit (requests/min)
-            </label>
-            <input
-              type="number"
-              value={settings.apiRateLimit}
-              onChange={(e) => updateSetting('apiRateLimit', parseInt(e.target.value) || 0)}
-              min={100}
-              step={100}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">Maximum API requests per minute per tenant</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Max Students per School
+              </label>
+              <input
+                type="number"
+                value={settings.maxStudentsPerSchool}
+                onChange={(e) => updateSetting('maxStudentsPerSchool', parseInt(e.target.value) || 0)}
+                min={100}
+                step={100}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all"
+              />
+              <p className="text-xs text-gray-500 mt-1">Maximum number of students allowed per school</p>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                API Rate Limit (requests/min)
+              </label>
+              <input
+                type="number"
+                value={settings.apiRateLimit}
+                onChange={(e) => updateSetting('apiRateLimit', parseInt(e.target.value) || 0)}
+                min={100}
+                step={100}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all"
+              />
+              <p className="text-xs text-gray-500 mt-1">Maximum API requests per minute per tenant</p>
+            </motion.div>
           </div>
-        </div>
-      </div>
+        </GlassCard>
+      </motion.div>
 
       {/* Notifications */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Notifications & Integrations
-        </h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Email Notifications</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Receive email alerts for important events
-              </p>
-            </div>
-            <button
-              onClick={() => updateSetting('emailNotifications', !settings.emailNotifications)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.emailNotifications ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-700'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.emailNotifications ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.5 }}
+      >
+        <GlassCard className="bg-white">
+          <div className="flex items-center gap-3 mb-4">
+            <Icon3D gradient={gradients.gray} size="md">
+              <Bell className="w-4 h-4" />
+            </Icon3D>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Notifications & Integrations
+            </h3>
           </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Slack Integration</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Send notifications to Slack</p>
-            </div>
-            <button
-              onClick={() => updateSetting('slackIntegration', !settings.slackIntegration)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.slackIntegration ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-700'
-              }`}
+          <div className="space-y-4">
+            <motion.div
+              className="flex items-center justify-between"
+              whileHover={{ x: 4 }}
+              transition={{ duration: 0.2 }}
             >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.slackIntegration ? 'translate-x-6' : 'translate-x-1'
+              <div>
+                <p className="text-sm font-medium text-gray-900">Email Notifications</p>
+                <p className="text-sm text-gray-600">
+                  Receive email alerts for important events
+                </p>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => updateSetting('emailNotifications', !settings.emailNotifications)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  settings.emailNotifications ? 'bg-gray-600' : 'bg-gray-300'
                 }`}
-              />
-            </button>
+              >
+                <motion.span
+                  animate={{
+                    x: settings.emailNotifications ? 24 : 4,
+                  }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  className="inline-block h-4 w-4 rounded-full bg-white"
+                />
+              </motion.button>
+            </motion.div>
+            <motion.div
+              className="flex items-center justify-between"
+              whileHover={{ x: 4 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div>
+                <p className="text-sm font-medium text-gray-900">Slack Integration</p>
+                <p className="text-sm text-gray-600">Send notifications to Slack</p>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => updateSetting('slackIntegration', !settings.slackIntegration)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  settings.slackIntegration ? 'bg-gray-600' : 'bg-gray-300'
+                }`}
+              >
+                <motion.span
+                  animate={{
+                    x: settings.slackIntegration ? 24 : 4,
+                  }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  className="inline-block h-4 w-4 rounded-full bg-white"
+                />
+              </motion.button>
+            </motion.div>
           </div>
-        </div>
-      </div>
+        </GlassCard>
+      </motion.div>
 
       {/* Billing & Suspension */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Billing & Suspension
-        </h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Auto-suspend for Non-payment
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Automatically suspend schools with overdue payments
-              </p>
-            </div>
-            <button
-              onClick={() => updateSetting('autoSuspendNonPayment', !settings.autoSuspendNonPayment)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.autoSuspendNonPayment ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-700'
-              }`}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.6 }}
+      >
+        <GlassCard className="bg-white">
+          <div className="flex items-center gap-3 mb-4">
+            <Icon3D gradient={gradients.gray} size="md">
+              <CreditCard className="w-4 h-4" />
+            </Icon3D>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Billing & Suspension
+            </h3>
+          </div>
+          <div className="space-y-4">
+            <motion.div
+              className="flex items-center justify-between"
+              whileHover={{ x: 4 }}
+              transition={{ duration: 0.2 }}
             >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.autoSuspendNonPayment ? 'translate-x-6' : 'translate-x-1'
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  Auto-suspend for Non-payment
+                </p>
+                <p className="text-sm text-gray-600">
+                  Automatically suspend schools with overdue payments
+                </p>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => updateSetting('autoSuspendNonPayment', !settings.autoSuspendNonPayment)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  settings.autoSuspendNonPayment ? 'bg-gray-600' : 'bg-gray-300'
                 }`}
+              >
+                <motion.span
+                  animate={{
+                    x: settings.autoSuspendNonPayment ? 24 : 4,
+                  }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  className="inline-block h-4 w-4 rounded-full bg-white"
+                />
+              </motion.button>
+            </motion.div>
+            <motion.div
+              className="max-w-xs"
+              whileHover={{ scale: 1.01 }}
+              transition={{ duration: 0.2 }}
+            >
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Suspension Grace Period (days)
+              </label>
+              <input
+                type="number"
+                value={settings.suspensionGracePeriod}
+                onChange={(e) => updateSetting('suspensionGracePeriod', parseInt(e.target.value) || 0)}
+                min={0}
+                max={30}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all"
               />
-            </button>
+              <p className="text-xs text-gray-500 mt-1">Days before suspension after payment is overdue</p>
+            </motion.div>
           </div>
-          <div className="max-w-xs">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Suspension Grace Period (days)
-            </label>
-            <input
-              type="number"
-              value={settings.suspensionGracePeriod}
-              onChange={(e) => updateSetting('suspensionGracePeriod', parseInt(e.target.value) || 0)}
-              min={0}
-              max={30}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">Days before suspension after payment is overdue</p>
-          </div>
-        </div>
-      </div>
+        </GlassCard>
+      </motion.div>
 
       {/* Mobile Save Button */}
-      <div className="md:hidden flex justify-end pb-6">
-        <Button onClick={handleSave} disabled={saving || !hasChanges} className="w-full">
-          {saving ? 'Saving...' : 'Save Changes'}
-        </Button>
-      </div>
+      <motion.div
+        className="md:hidden flex justify-end pb-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.7 }}
+      >
+        <motion.div className="w-full" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button onClick={handleSave} disabled={saving || !hasChanges} className="w-full">
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </motion.div>
+      </motion.div>
 
       {/* Reset Confirmation Modal */}
-      {showResetConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowResetConfirm(false)} />
-          <div className="relative bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              Reset to Defaults?
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              This will reset all settings to their default values. This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setShowResetConfirm(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleReset} className="bg-red-600 hover:bg-red-700">
-                Reset Settings
-              </Button>
-            </div>
+      <AnimatePresence>
+        {showResetConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setShowResetConfirm(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', duration: 0.5 }}
+              className="relative bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <Icon3D gradient={gradients.gray} size="md">
+                  <AlertCircle className="w-4 h-4" />
+                </Icon3D>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Reset to Defaults?
+                </h3>
+              </div>
+              <p className="text-sm text-gray-600 mb-6">
+                This will reset all settings to their default values. This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3">
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button variant="outline" onClick={() => setShowResetConfirm(false)}>
+                    Cancel
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button onClick={handleReset} className="bg-red-600 hover:bg-red-700">
+                    Reset Settings
+                  </Button>
+                </motion.div>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

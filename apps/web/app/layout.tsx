@@ -23,22 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {/* Set initial theme before hydration to avoid flash of incorrect theme */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-            (function(){
-              try {
-                var stored = localStorage.getItem('theme');
-                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-                var theme = stored || (prefersDark ? 'dark' : 'light');
-                if (theme === 'dark') { document.documentElement.classList.add('dark'); }
-              } catch (e) { /* ignore */ }
-            })();
-          `}}
-        />
         <Providers>{children}</Providers>
       </body>
     </html>

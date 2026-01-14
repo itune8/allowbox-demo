@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../../contexts/auth-context';
 import { getCurrentSchoolId, getEntities, setAttendance } from '../../../../lib/data-store';
 import { Button } from '@repo/ui/button';
+import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import { Users, CheckCircle2, XCircle, TrendingUp } from 'lucide-react';
 
 export default function AttendancePage() {
   const { user } = useAuth();
@@ -44,34 +47,49 @@ export default function AttendancePage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center justify-between gap-3 flex-wrap"
+      >
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Attendance</h1>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">Mark student attendance for your classes</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            Attendance
+            <Icon3D gradient={gradients.blue} size="sm">
+              <Users className="w-3.5 h-3.5" />
+            </Icon3D>
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Mark student attendance for your classes</p>
         </div>
-      </div>
+      </motion.div>
 
       {/* Main Card */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-4 sm:p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <GlassCard className="p-4 sm:p-6 bg-white/95" hover={false}>
         {/* Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <label className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-medium" htmlFor="att-date">
+            <label className="text-xs sm:text-sm text-gray-700 font-medium" htmlFor="att-date">
               Date
             </label>
             <input
               id="att-date"
               type="date"
-              className="border border-gray-300 bg-white text-gray-900 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-400 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+              className="border border-gray-300 bg-white text-gray-900 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-400"
               value={today}
               onChange={(e) => setToday(e.target.value)}
             />
-            <label className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-medium" htmlFor="att-class">
+            <label className="text-xs sm:text-sm text-gray-700 font-medium" htmlFor="att-class">
               Class
             </label>
             <select
               id="att-class"
-              className="border border-gray-300 bg-white text-gray-900 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 max-w-[100px] sm:max-w-none"
+              className="border border-gray-300 bg-white text-gray-900 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm max-w-[100px] sm:max-w-none"
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
             >
@@ -85,27 +103,38 @@ export default function AttendancePage() {
         </div>
 
         {/* Analytics Summary */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
-          <div className="rounded-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 p-2 sm:p-4">
-            <div className="text-xs sm:text-sm font-medium text-green-800 dark:text-green-300">Present</div>
-            <div className="text-xl sm:text-3xl font-bold text-green-900 dark:text-green-200 mt-1">{presentCount}</div>
-          </div>
-          <div className="rounded-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border border-red-200 dark:border-red-800 p-2 sm:p-4">
-            <div className="text-xs sm:text-sm font-medium text-red-800 dark:text-red-300">Absent</div>
-            <div className="text-xl sm:text-3xl font-bold text-red-900 dark:text-red-200 mt-1">{total - presentCount}</div>
-          </div>
-          <div className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800 p-2 sm:p-4">
-            <div className="text-xs sm:text-sm font-medium text-blue-800 dark:text-blue-300">Rate</div>
-            <div className="text-xl sm:text-3xl font-bold text-blue-900 dark:text-blue-200 mt-1">{percent}%</div>
-            <div className="mt-1 sm:mt-2 h-1.5 sm:h-2 rounded-full bg-blue-200 dark:bg-blue-900 overflow-hidden">
-              <div className="h-full bg-blue-600 dark:bg-blue-400 transition-all" style={{ width: `${percent}%` }} />
-            </div>
-          </div>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6"
+        >
+          <AnimatedStatCard
+            title="Present"
+            value={presentCount}
+            icon={<CheckCircle2 className="w-5 h-5 text-green-600" />}
+            iconBgColor="bg-green-50"
+            delay={0}
+          />
+          <AnimatedStatCard
+            title="Absent"
+            value={total - presentCount}
+            icon={<XCircle className="w-5 h-5 text-red-600" />}
+            iconBgColor="bg-red-50"
+            delay={1}
+          />
+          <AnimatedStatCard
+            title="Attendance Rate"
+            value={`${percent}%`}
+            icon={<TrendingUp className="w-5 h-5 text-blue-600" />}
+            iconBgColor="bg-blue-50"
+            delay={2}
+          />
+        </motion.div>
 
         {/* Quick Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4 gap-2 sm:gap-0">
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+          <div className="text-xs sm:text-sm text-gray-600">
             {students.length} {students.length === 1 ? 'student' : 'students'}
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -141,102 +170,149 @@ export default function AttendancePage() {
 
         {/* Student List */}
         {students.length === 0 ? (
-          <div className="text-sm text-gray-600 dark:text-gray-300 text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            No students found for this class.
-          </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-sm text-gray-600 text-center py-12 bg-blue-50/40 border border-blue-100 rounded-xl"
+          >
+            <Users className="w-12 h-12 mx-auto text-blue-300 mb-3" />
+            <p className="font-medium text-gray-900">No students found</p>
+            <p className="text-gray-500">for this class.</p>
+          </motion.div>
         ) : (
-          <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="border border-gray-200 rounded-lg overflow-hidden"
+          >
             <div className="overflow-x-auto max-h-[500px]">
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0">
+                <thead className="bg-blue-50 sticky top-0">
                   <tr>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
                       Student Name
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Roll No
-                    </th>
-                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">
                       Status
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                  {students.map((s) => {
-                    const present = Boolean(local[s.id]);
-                    return (
-                      <tr
-                        key={s.id}
-                        className={`transition-colors ${
-                          present
-                            ? 'bg-green-50/50 dark:bg-green-900/10'
-                            : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
-                      >
-                        <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100">{s.name}</td>
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        {/* <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{s?.rollNo || '-' }</td> */}
-                        <td className="py-3 px-4 text-center">
-                          <label className="inline-flex items-center cursor-pointer select-none">
-                            <input
-                              type="checkbox"
-                              className="sr-only"
-                              checked={present}
-                              onChange={() => setLocal((m) => ({ ...m, [s.id]: !present }))}
-                            />
-                            <span
-                              className={`w-11 h-6 flex items-center bg-gray-300 dark:bg-gray-700 rounded-full p-1 duration-200 ease-in-out ${
-                                present ? '!bg-green-500' : ''
-                              }`}
-                            >
-                              <span
-                                className={`bg-white w-4 h-4 rounded-full shadow transform duration-200 ease-in-out ${
-                                  present ? 'translate-x-5' : ''
-                                }`}
+                <tbody className="divide-y divide-gray-200">
+                  <AnimatePresence>
+                    {students.map((s, index) => {
+                      const present = Boolean(local[s.id]);
+                      return (
+                        <motion.tr
+                          key={s.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05, duration: 0.3 }}
+                          className={`transition-colors ${
+                            present
+                              ? 'bg-green-50/70'
+                              : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <td className="py-3 px-4 text-sm text-gray-900">{s.name}</td>
+                          <td className="py-3 px-4 text-center">
+                            <label className="inline-flex items-center cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={present}
+                                onChange={() => setLocal((m) => ({ ...m, [s.id]: !present }))}
                               />
-                            </span>
-                          </label>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                              <motion.span
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={`w-11 h-6 flex items-center bg-gray-300 rounded-full p-1 duration-200 ease-in-out ${
+                                  present ? '!bg-green-500' : ''
+                                }`}
+                              >
+                                <motion.span
+                                  animate={{ x: present ? 20 : 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="bg-white w-4 h-4 rounded-full shadow"
+                                />
+                              </motion.span>
+                            </label>
+                          </td>
+                        </motion.tr>
+                      );
+                    })}
+                  </AnimatePresence>
                 </tbody>
               </table>
             </div>
-          </div>
+          </motion.div>
         )}
-      </div>
+        </GlassCard>
+      </motion.div>
 
       {/* Confirm Modal */}
-      {confirm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fade-in p-3 sm:p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 sm:p-6 w-full max-w-sm shadow-lg animate-zoom-in">
-            <div className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">
-              Confirm Attendance Submission?
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-              This will save attendance for the selected class and date.
-            </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Present: <span className="font-semibold text-green-600">{presentCount}</span> | Absent:{' '}
-              <span className="font-semibold text-red-600">{total - presentCount}</span>
-            </div>
-            <div className="flex items-center justify-end gap-2">
-              <Button variant="outline" onClick={() => setConfirm(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  setAttendance(schoolId, today, selectedClass, local);
-                  setConfirm(false);
-                }}
+      <AnimatePresence>
+        {confirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] p-3 sm:p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-sm shadow-xl border border-gray-100"
+            >
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className="text-lg font-semibold mb-2 text-gray-900"
               >
-                Confirm
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+                Confirm Attendance Submission?
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.15 }}
+                className="text-sm text-gray-600 mb-1"
+              >
+                This will save attendance for the selected class and date.
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="text-sm text-gray-500 mb-4"
+              >
+                Present: <span className="font-semibold text-green-600">{presentCount}</span> | Absent:{' '}
+                <span className="font-semibold text-red-600">{total - presentCount}</span>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.25 }}
+                className="flex items-center justify-end gap-2"
+              >
+                <Button variant="outline" onClick={() => setConfirm(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    setAttendance(schoolId, today, selectedClass, local);
+                    setConfirm(false);
+                  }}
+                >
+                  Confirm
+                </Button>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

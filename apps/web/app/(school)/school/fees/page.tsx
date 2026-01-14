@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
 import {
   feeService,
@@ -14,6 +15,36 @@ import {
 } from '../../../../lib/services/fee.service';
 import { classService, Class } from '../../../../lib/services/class.service';
 import { studentService, Student } from '../../../../lib/services/student.service';
+import { GlassCard, AnimatedStatCard, Icon3D } from '../../../../components/ui';
+import { Portal } from '../../../../components/portal';
+import {
+  DollarSign,
+  Receipt,
+  CreditCard,
+  Plus,
+  X,
+  Filter,
+  Trash2,
+  Edit,
+  FileText,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  TrendingUp,
+  Wallet,
+  GraduationCap,
+  Users,
+  Calendar,
+  Tag,
+  MessageSquare,
+  Hash,
+  Percent,
+  Banknote,
+  Sparkles,
+  Building2,
+  BookOpen,
+  RefreshCw,
+} from 'lucide-react';
 
 interface InvoiceFormData {
   studentId: string;
@@ -344,115 +375,195 @@ export default function FeesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-10 h-10 border-3 border-amber-500 border-t-transparent rounded-full"
+        />
       </div>
     );
   }
 
   return (
-    <section className="space-y-6">
-      {banner && (
-        <div className="bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800 px-4 py-2 rounded animate-fade-in">
-          {banner}
-        </div>
-      )}
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="space-y-6"
+    >
+      {/* Banner */}
+      <AnimatePresence>
+        {banner && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="glass-strong rounded-xl border border-green-200 px-4 py-3 flex items-center gap-3"
+          >
+            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+            <span className="text-green-800 font-medium">{banner}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-300">
-          {error}
-          <button onClick={() => setError(null)} className="ml-2 underline">Dismiss</button>
-        </div>
-      )}
+      {/* Error */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="glass-strong rounded-xl border border-red-200 px-4 py-3 text-red-700 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5" />
+              <span>{error}</span>
+            </div>
+            <button onClick={() => setError(null)} className="p-1 hover:bg-red-100 rounded-lg transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Fees & Billing</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Manage fee structures, invoices, and payments
-          </p>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Icon3D gradient="from-yellow-500 to-amber-500" size="lg">
+            <DollarSign className="w-6 h-6" />
+          </Icon3D>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Fees & Billing</h1>
+            <p className="text-sm text-gray-500">Manage fee structures, invoices, and payments</p>
+          </div>
         </div>
-        <Button onClick={activeTab === 'invoices' ? handleCreateInvoice : handleAddStructure}>
-          {activeTab === 'invoices' ? '+ Create Invoice' : '+ Add Fee Structure'}
-        </Button>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button
+            onClick={activeTab === 'invoices' ? handleCreateInvoice : handleAddStructure}
+            className="shadow-lg shadow-amber-500/25"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            {activeTab === 'invoices' ? 'Create Invoice' : 'Add Fee Structure'}
+          </Button>
+        </motion.div>
       </div>
 
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</div>
-            <div className="text-sm text-gray-500">Total Invoices</div>
-          </div>
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-            <div className="text-2xl font-bold text-green-600">${stats.totalPaid.toLocaleString()}</div>
-            <div className="text-sm text-gray-500">Collected</div>
-          </div>
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-            <div className="text-2xl font-bold text-yellow-600">${stats.totalPending.toLocaleString()}</div>
-            <div className="text-sm text-gray-500">Pending</div>
-          </div>
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-            <div className="text-2xl font-bold text-red-600">{stats.overdue}</div>
-            <div className="text-sm text-gray-500">Overdue</div>
-          </div>
+          <AnimatedStatCard
+            title="Total Invoices"
+            value={stats.total}
+            icon={<FileText className="w-5 h-5 text-amber-600" />}
+            iconBgColor="bg-amber-100"
+            delay={0}
+          />
+          <AnimatedStatCard
+            title="Collected"
+            value={`$${stats.totalPaid.toLocaleString()}`}
+            icon={<CheckCircle className="w-5 h-5 text-green-600" />}
+            iconBgColor="bg-green-100"
+            delay={1}
+          />
+          <AnimatedStatCard
+            title="Pending"
+            value={`$${stats.totalPending.toLocaleString()}`}
+            icon={<Clock className="w-5 h-5 text-yellow-600" />}
+            iconBgColor="bg-yellow-100"
+            delay={2}
+          />
+          <AnimatedStatCard
+            title="Overdue"
+            value={stats.overdue}
+            icon={<AlertCircle className="w-5 h-5 text-red-600" />}
+            iconBgColor="bg-red-100"
+            delay={3}
+          />
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-800">
-        <button
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+      <div className="flex gap-2 border-b border-gray-200">
+        <motion.button
+          whileHover={{ y: -1 }}
+          whileTap={{ scale: 0.98 }}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${
             activeTab === 'invoices'
-              ? 'border-indigo-600 text-indigo-600'
+              ? 'border-amber-500 text-amber-600'
               : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
           onClick={() => setActiveTab('invoices')}
         >
+          <Receipt className="w-4 h-4" />
           Invoices ({invoices.length})
-        </button>
-        <button
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+        </motion.button>
+        <motion.button
+          whileHover={{ y: -1 }}
+          whileTap={{ scale: 0.98 }}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${
             activeTab === 'structures'
-              ? 'border-indigo-600 text-indigo-600'
+              ? 'border-amber-500 text-amber-600'
               : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
           onClick={() => setActiveTab('structures')}
         >
+          <Wallet className="w-4 h-4" />
           Fee Structures ({feeStructures.length})
-        </button>
+        </motion.button>
       </div>
 
       {/* Content */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+      <GlassCard hover={false} className="overflow-hidden">
         {activeTab === 'invoices' ? (
           invoices.length === 0 ? (
-            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-              <div className="text-4xl mb-3">💰</div>
-              <p>No invoices created yet.</p>
-              <Button className="mt-4" onClick={handleCreateInvoice}>Create First Invoice</Button>
+            <div className="p-12 text-center">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 200 }}
+              >
+                <Receipt className="mx-auto w-16 h-16 text-gray-300" />
+              </motion.div>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">No invoices created yet</h3>
+              <p className="mt-2 text-sm text-gray-500">Get started by creating your first invoice.</p>
+              <div className="mt-6">
+                <Button onClick={handleCreateInvoice}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Invoice
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr className="text-left text-gray-500 dark:text-gray-400">
-                    <th className="py-3 px-4">Invoice #</th>
-                    <th className="py-3 px-4">Student</th>
-                    <th className="py-3 px-4">Amount</th>
-                    <th className="py-3 px-4">Paid</th>
-                    <th className="py-3 px-4">Due Date</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Actions</th>
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100/80">
+                  <tr className="text-left">
+                    <th className="py-4 px-4 font-semibold text-gray-700">Invoice #</th>
+                    <th className="py-4 px-4 font-semibold text-gray-700">Student</th>
+                    <th className="py-4 px-4 font-semibold text-gray-700">Amount</th>
+                    <th className="py-4 px-4 font-semibold text-gray-700">Paid</th>
+                    <th className="py-4 px-4 font-semibold text-gray-700">Due Date</th>
+                    <th className="py-4 px-4 font-semibold text-gray-700">Status</th>
+                    <th className="py-4 px-4 font-semibold text-gray-700 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {invoices.map((invoice) => (
-                    <tr key={invoice._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <td className="py-3 px-4 font-medium">{invoice.invoiceNumber}</td>
-                      <td className="py-3 px-4">
+                <tbody className="divide-y divide-gray-100">
+                  {invoices.map((invoice, index) => (
+                    <motion.tr
+                      key={invoice._id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.03 }}
+                      whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.8)' }}
+                      className="group transition-all"
+                    >
+                      <td className="py-4 px-4 font-medium font-mono text-gray-900">{invoice.invoiceNumber}</td>
+                      <td className="py-4 px-4">
                         {invoice.student ? (
                           <div>
-                            <div className="font-medium text-gray-900 dark:text-gray-100">
+                            <div className="font-medium text-gray-900">
                               {invoice.student.firstName} {invoice.student.lastName}
                             </div>
                             <div className="text-xs text-gray-500">{invoice.student.studentId}</div>
@@ -461,27 +572,39 @@ export default function FeesPage() {
                           <span className="text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 font-medium">${invoice.totalAmount.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-green-600">${invoice.paidAmount.toLocaleString()}</td>
-                      <td className="py-3 px-4">{new Date(invoice.dueDate).toLocaleDateString()}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded text-xs ${statusColors[invoice.status]}`}>
-                          {invoice.status}
+                      <td className="py-4 px-4 font-semibold text-gray-900">${invoice.totalAmount.toLocaleString()}</td>
+                      <td className="py-4 px-4 text-green-600 font-medium">${invoice.paidAmount.toLocaleString()}</td>
+                      <td className="py-4 px-4 text-gray-600">{new Date(invoice.dueDate).toLocaleDateString()}</td>
+                      <td className="py-4 px-4">
+                        <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${statusColors[invoice.status]}`}>
+                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                         </span>
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="flex gap-2">
+                      <td className="py-4 px-4">
+                        <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                           {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-                            <Button variant="outline" size="sm" onClick={() => handleRecordPayment(invoice)}>
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => handleRecordPayment(invoice)}
+                              className="px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors flex items-center gap-1"
+                            >
+                              <CreditCard className="w-3.5 h-3.5" />
                               Pay
-                            </Button>
+                            </motion.button>
                           )}
-                          <Button variant="outline" size="sm" onClick={() => handleDeleteInvoice(invoice._id)} className="text-red-600">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleDeleteInvoice(invoice._id)}
+                            className="px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                             Delete
-                          </Button>
+                          </motion.button>
                         </div>
                       </td>
-                    </tr>
+                    </motion.tr>
                   ))}
                 </tbody>
               </table>
@@ -489,433 +612,1094 @@ export default function FeesPage() {
           )
         ) : (
           feeStructures.length === 0 ? (
-            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-              <div className="text-4xl mb-3">📋</div>
-              <p>No fee structures defined yet.</p>
-              <Button className="mt-4" onClick={handleAddStructure}>Add First Fee Structure</Button>
+            <div className="p-12 text-center">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 200 }}
+              >
+                <Wallet className="mx-auto w-16 h-16 text-gray-300" />
+              </motion.div>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">No fee structures defined yet</h3>
+              <p className="mt-2 text-sm text-gray-500">Create fee structures to start generating invoices.</p>
+              <div className="mt-6">
+                <Button onClick={handleAddStructure}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add First Fee Structure
+                </Button>
+              </div>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100 dark:divide-gray-800">
-              {feeStructures.map((structure) => (
-                <div key={structure._id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800">
+            <div className="divide-y divide-gray-100">
+              {feeStructures.map((structure, index) => (
+                <motion.div
+                  key={structure._id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.8)' }}
+                  className="p-5 group transition-all"
+                >
                   <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-gray-900 dark:text-gray-100">{structure.name}</h3>
-                        <span className={`px-2 py-0.5 rounded text-xs ${structure.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-semibold text-gray-900 group-hover:text-amber-600 transition-colors">
+                          {structure.name}
+                        </h3>
+                        <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${structure.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
                           {structure.isActive ? 'Active' : 'Inactive'}
                         </span>
                         {structure.isRecurring && (
-                          <span className="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">
-                            Recurring ({structure.frequency})
+                          <span className="px-2 py-0.5 rounded-lg text-xs font-medium bg-blue-100 text-blue-700 flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            {structure.frequency}
                           </span>
                         )}
                       </div>
                       {structure.description && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{structure.description}</p>
+                        <p className="text-sm text-gray-600 mb-2">{structure.description}</p>
                       )}
-                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                        <span>Class: {structure.class?.name || structure.classId}</span>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <FileText className="w-3.5 h-3.5" />
+                          {structure.class?.name || structure.classId}
+                        </span>
                         <span>Year: {structure.academicYear}</span>
                         {structure.term && <span>Term: {structure.term}</span>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <div className="text-xl font-bold text-gray-900 dark:text-gray-100">${structure.amount.toLocaleString()}</div>
+                        <div className="text-2xl font-bold text-gray-900">${structure.amount.toLocaleString()}</div>
                         {structure.dueDate && (
-                          <div className="text-xs text-gray-500">Due: {new Date(structure.dueDate).toLocaleDateString()}</div>
+                          <div className="text-xs text-gray-500 flex items-center gap-1 justify-end">
+                            <Clock className="w-3 h-3" />
+                            Due: {new Date(structure.dueDate).toLocaleDateString()}
+                          </div>
                         )}
                       </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEditStructure(structure)}>Edit</Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDeleteStructure(structure._id)} className="text-red-600">Delete</Button>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleEditStructure(structure)}
+                          className="p-2 rounded-lg hover:bg-blue-100 text-gray-400 hover:text-blue-600 transition-all"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleDeleteStructure(structure._id)}
+                          className="p-2 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </motion.button>
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )
         )}
-      </div>
+      </GlassCard>
 
       {/* Create Invoice Modal */}
-      {showInvoiceForm && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={() => setShowInvoiceForm(false)} />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 animate-zoom-in">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Create Invoice</h3>
-            <form onSubmit={handleInvoiceSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Class *</label>
-                  <select
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    value={invoiceForm.classId}
-                    onChange={(e) => {
-                      setInvoiceForm({ ...invoiceForm, classId: e.target.value, studentId: '', items: [] });
-                      loadStudentsForClass(e.target.value);
-                    }}
-                    required
-                  >
-                    <option value="">Select class</option>
-                    {classes.map((c) => (
-                      <option key={c._id} value={c._id}>{c.name} ({c.grade})</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Student *</label>
-                  <select
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    value={invoiceForm.studentId}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, studentId: e.target.value })}
-                    required
-                    disabled={!invoiceForm.classId}
-                  >
-                    <option value="">Select student</option>
-                    {students.map((s) => (
-                      <option key={s._id} value={s._id}>{s.firstName} {s.lastName} ({s.studentId})</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Academic Year</label>
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    value={invoiceForm.academicYear}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, academicYear: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Issue Date</label>
-                  <input
-                    type="date"
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    value={invoiceForm.issueDate}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, issueDate: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
-                  <input
-                    type="date"
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    value={invoiceForm.dueDate}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100">Fee Items</h4>
-                </div>
-
-                {invoiceForm.classId && (
-                  <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Available fee structures for this class:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {filteredStructures.map((s) => (
-                        <button
-                          key={s._id}
-                          type="button"
-                          onClick={() => addFeeItem(s)}
-                          disabled={invoiceForm.items.some(i => i.feeStructureId === s._id)}
-                          className={`px-3 py-1.5 rounded-lg text-sm ${
-                            invoiceForm.items.some(i => i.feeStructureId === s._id)
-                              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                              : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
-                          }`}
+      <AnimatePresence>
+        {showInvoiceForm && (
+          <Portal>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-start justify-center overflow-y-auto pt-10 pb-10"
+              onClick={() => setShowInvoiceForm(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 40 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 40 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                className="relative w-full max-w-3xl mx-4 overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Glass morphism container */}
+                <div className="relative rounded-3xl bg-white/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-white/20 overflow-hidden">
+                  {/* Gradient Header */}
+                  <div className="relative bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 px-6 py-5 overflow-hidden">
+                    {/* Animated background patterns */}
+                    <motion.div
+                      className="absolute inset-0 opacity-30"
+                      initial={{ backgroundPosition: '0% 0%' }}
+                      animate={{ backgroundPosition: '100% 100%' }}
+                      transition={{ duration: 20, repeat: Infinity, repeatType: 'reverse' }}
+                      style={{
+                        backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(255,255,255,0.2) 0%, transparent 50%)',
+                        backgroundSize: '100% 100%',
+                      }}
+                    />
+                    <div className="relative flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <motion.div
+                          initial={{ rotate: -10, scale: 0 }}
+                          animate={{ rotate: 0, scale: 1 }}
+                          transition={{ type: 'spring', stiffness: 300, delay: 0.1 }}
+                          className="relative"
                         >
-                          {s.name} (${s.amount})
-                        </button>
-                      ))}
-                      {filteredStructures.length === 0 && (
-                        <p className="text-sm text-gray-500">No fee structures for this class. Create one first.</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {invoiceForm.items.length > 0 && (
-                  <div className="space-y-2">
-                    {invoiceForm.items.map((item) => (
-                      <div key={item.feeStructureId} className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <div>
-                          <div className="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
-                          {item.description && <div className="text-xs text-gray-500">{item.description}</div>}
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="font-medium">${item.amount.toLocaleString()}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeFeeItem(item.feeStructureId)}
-                            className="text-red-500 hover:text-red-700"
+                          <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg border border-white/30 transform rotate-3">
+                            <Receipt className="w-7 h-7 text-white drop-shadow-md" />
+                          </div>
+                          <motion.div
+                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white/30 flex items-center justify-center"
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
                           >
-                            X
-                          </button>
+                            <Sparkles className="w-3 h-3 text-white" />
+                          </motion.div>
+                        </motion.div>
+                        <div>
+                          <motion.h3
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="text-xl font-bold text-white drop-shadow-sm"
+                          >
+                            Create Invoice
+                          </motion.h3>
+                          <motion.p
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="text-sm text-white/80"
+                          >
+                            Generate a new fee invoice for a student
+                          </motion.p>
                         </div>
                       </div>
-                    ))}
-                    <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-                      <span className="font-medium">Subtotal:</span>
-                      <span className="font-bold">${invoiceForm.items.reduce((sum, i) => sum + i.amount, 0).toLocaleString()}</span>
+                      <motion.button
+                        whileHover={{ scale: 1.1, rotate: 90 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setShowInvoiceForm(false)}
+                        className="p-2.5 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all border border-white/30"
+                      >
+                        <X className="w-5 h-5 text-white" />
+                      </motion.button>
                     </div>
                   </div>
-                )}
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Discount Amount</label>
-                  <input
-                    type="number"
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    value={invoiceForm.discountAmount}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, discountAmount: e.target.value })}
-                    min="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Discount Reason</label>
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    value={invoiceForm.discountReason}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, discountReason: e.target.value })}
-                    placeholder="Scholarship, sibling discount, etc."
-                  />
-                </div>
-              </div>
+                  {/* Form Content */}
+                  <form onSubmit={handleInvoiceSubmit} className="p-6 space-y-6">
+                    {/* Student Selection Section */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Icon3D gradient="from-blue-500 to-cyan-500" size="sm">
+                          <Users className="w-4 h-4" />
+                        </Icon3D>
+                        <h4 className="font-semibold text-gray-900">Student Selection</h4>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="relative group">
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Class *</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                              <GraduationCap className="w-4 h-4 text-gray-400 group-focus-within:text-amber-500 transition-colors" />
+                            </div>
+                            <select
+                              className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-300 transition-all hover:border-gray-300 appearance-none cursor-pointer"
+                              value={invoiceForm.classId}
+                              onChange={(e) => {
+                                setInvoiceForm({ ...invoiceForm, classId: e.target.value, studentId: '', items: [] });
+                                loadStudentsForClass(e.target.value);
+                              }}
+                              required
+                            >
+                              <option value="">Select class</option>
+                              {classes.map((c) => (
+                                <option key={c._id} value={c._id}>{c.name} ({c.grade})</option>
+                              ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                              <motion.div
+                                animate={{ rotate: invoiceForm.classId ? 180 : 0 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </motion.div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="relative group">
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Student *</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                              <Users className="w-4 h-4 text-gray-400 group-focus-within:text-amber-500 transition-colors" />
+                            </div>
+                            <select
+                              className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-300 transition-all hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed appearance-none cursor-pointer"
+                              value={invoiceForm.studentId}
+                              onChange={(e) => setInvoiceForm({ ...invoiceForm, studentId: e.target.value })}
+                              required
+                              disabled={!invoiceForm.classId}
+                            >
+                              <option value="">Select student</option>
+                              {students.map((s) => (
+                                <option key={s._id} value={s._id}>{s.firstName} {s.lastName} ({s.studentId})</option>
+                              ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
 
-              {invoiceForm.items.length > 0 && (
-                <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                  <div className="flex justify-between text-lg font-bold text-indigo-700 dark:text-indigo-300">
-                    <span>Total Amount:</span>
-                    <span>
-                      ${(invoiceForm.items.reduce((sum, i) => sum + i.amount, 0) - (parseFloat(invoiceForm.discountAmount) || 0)).toLocaleString()}
+                    {/* Date Information Section */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Icon3D gradient="from-purple-500 to-pink-500" size="sm">
+                          <Calendar className="w-4 h-4" />
+                        </Icon3D>
+                        <h4 className="font-semibold text-gray-900">Invoice Details</h4>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="relative group">
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Academic Year</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                              <BookOpen className="w-4 h-4 text-gray-400 group-focus-within:text-purple-500 transition-colors" />
+                            </div>
+                            <input
+                              type="text"
+                              className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-300 transition-all hover:border-gray-300"
+                              value={invoiceForm.academicYear}
+                              onChange={(e) => setInvoiceForm({ ...invoiceForm, academicYear: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div className="relative group">
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Issue Date</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                              <Calendar className="w-4 h-4 text-gray-400 group-focus-within:text-purple-500 transition-colors" />
+                            </div>
+                            <input
+                              type="date"
+                              className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-300 transition-all hover:border-gray-300"
+                              value={invoiceForm.issueDate}
+                              onChange={(e) => setInvoiceForm({ ...invoiceForm, issueDate: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div className="relative group">
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Due Date</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                              <Clock className="w-4 h-4 text-gray-400 group-focus-within:text-purple-500 transition-colors" />
+                            </div>
+                            <input
+                              type="date"
+                              className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-300 transition-all hover:border-gray-300"
+                              value={invoiceForm.dueDate}
+                              onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    {/* Fee Items Section */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="border-t border-gray-100 pt-6"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Icon3D gradient="from-amber-500 to-orange-500" size="sm">
+                          <Receipt className="w-4 h-4" />
+                        </Icon3D>
+                        <h4 className="font-semibold text-gray-900">Fee Items</h4>
+                      </div>
+
+                      {invoiceForm.classId && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="mb-4 p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl border border-gray-100"
+                        >
+                          <p className="text-sm text-gray-600 mb-3 flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-amber-500" />
+                            Available fee structures for this class:
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {filteredStructures.map((s, index) => (
+                              <motion.button
+                                key={s._id}
+                                type="button"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: index * 0.05 }}
+                                whileHover={{ scale: 1.05, y: -2 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => addFeeItem(s)}
+                                disabled={invoiceForm.items.some(i => i.feeStructureId === s._id)}
+                                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm ${
+                                  invoiceForm.items.some(i => i.feeStructureId === s._id)
+                                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed shadow-none'
+                                    : 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 hover:from-amber-200 hover:to-yellow-200 border border-amber-200/50'
+                                }`}
+                              >
+                                <Plus className="w-3.5 h-3.5 inline mr-1.5" />
+                                {s.name} (${s.amount})
+                              </motion.button>
+                            ))}
+                            {filteredStructures.length === 0 && (
+                              <p className="text-sm text-gray-500 italic">No fee structures for this class. Create one first.</p>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+
+                      <AnimatePresence mode="popLayout">
+                        {invoiceForm.items.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="space-y-2"
+                          >
+                            {invoiceForm.items.map((item, index) => (
+                              <motion.div
+                                key={item.feeStructureId}
+                                initial={{ opacity: 0, x: -20, height: 0 }}
+                                animate={{ opacity: 1, x: 0, height: 'auto' }}
+                                exit={{ opacity: 0, x: 20, height: 0 }}
+                                transition={{ delay: index * 0.05 }}
+                                className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl group hover:border-amber-300 hover:shadow-md transition-all"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-yellow-100 flex items-center justify-center">
+                                    <FileText className="w-5 h-5 text-amber-600" />
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-gray-900">{item.name}</div>
+                                    {item.description && <div className="text-xs text-gray-500">{item.description}</div>}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <span className="font-bold text-gray-900 text-lg">${item.amount.toLocaleString()}</span>
+                                  <motion.button
+                                    type="button"
+                                    whileHover={{ scale: 1.2, rotate: 90 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => removeFeeItem(item.feeStructureId)}
+                                    className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </motion.button>
+                                </div>
+                              </motion.div>
+                            ))}
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="flex justify-between pt-4 border-t border-gray-200"
+                            >
+                              <span className="font-medium text-gray-700">Subtotal:</span>
+                              <span className="font-bold text-gray-900 text-lg">${invoiceForm.items.reduce((sum, i) => sum + i.amount, 0).toLocaleString()}</span>
+                            </motion.div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+
+                    {/* Discount Section */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Icon3D gradient="from-green-500 to-emerald-500" size="sm">
+                          <Percent className="w-4 h-4" />
+                        </Icon3D>
+                        <h4 className="font-semibold text-gray-900">Discounts</h4>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="relative group">
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Discount Amount</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                              <DollarSign className="w-4 h-4 text-gray-400 group-focus-within:text-green-500 transition-colors" />
+                            </div>
+                            <input
+                              type="number"
+                              className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-green-500/50 focus:border-green-300 transition-all hover:border-gray-300"
+                              value={invoiceForm.discountAmount}
+                              onChange={(e) => setInvoiceForm({ ...invoiceForm, discountAmount: e.target.value })}
+                              min="0"
+                            />
+                          </div>
+                        </div>
+                        <div className="relative group">
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Discount Reason</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                              <Tag className="w-4 h-4 text-gray-400 group-focus-within:text-green-500 transition-colors" />
+                            </div>
+                            <input
+                              type="text"
+                              className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-green-500/50 focus:border-green-300 transition-all hover:border-gray-300"
+                              value={invoiceForm.discountReason}
+                              onChange={(e) => setInvoiceForm({ ...invoiceForm, discountReason: e.target.value })}
+                              placeholder="Scholarship, sibling discount, etc."
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    {/* Total Amount Display */}
+                    <AnimatePresence>
+                      {invoiceForm.items.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                          className="relative p-5 rounded-2xl overflow-hidden"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 opacity-10" />
+                          <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-yellow-50" />
+                          <motion.div
+                            className="absolute inset-0 opacity-50"
+                            animate={{
+                              background: [
+                                'radial-gradient(circle at 0% 0%, rgba(251,191,36,0.3) 0%, transparent 50%)',
+                                'radial-gradient(circle at 100% 100%, rgba(251,191,36,0.3) 0%, transparent 50%)',
+                                'radial-gradient(circle at 0% 0%, rgba(251,191,36,0.3) 0%, transparent 50%)',
+                              ],
+                            }}
+                            transition={{ duration: 4, repeat: Infinity }}
+                          />
+                          <div className="relative flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
+                                <DollarSign className="w-6 h-6 text-white" />
+                              </div>
+                              <span className="text-lg font-semibold text-amber-800">Total Amount</span>
+                            </div>
+                            <motion.span
+                              key={invoiceForm.items.reduce((sum, i) => sum + i.amount, 0) - (parseFloat(invoiceForm.discountAmount) || 0)}
+                              initial={{ scale: 1.2, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              className="text-2xl font-bold text-amber-700"
+                            >
+                              ${(invoiceForm.items.reduce((sum, i) => sum + i.amount, 0) - (parseFloat(invoiceForm.discountAmount) || 0)).toLocaleString()}
+                            </motion.span>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Remarks Section */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Icon3D gradient="from-gray-500 to-slate-500" size="sm">
+                          <MessageSquare className="w-4 h-4" />
+                        </Icon3D>
+                        <h4 className="font-semibold text-gray-900">Additional Notes</h4>
+                      </div>
+                      <div className="relative group">
+                        <div className="absolute top-3.5 left-3.5 pointer-events-none">
+                          <MessageSquare className="w-4 h-4 text-gray-400 group-focus-within:text-gray-500 transition-colors" />
+                        </div>
+                        <textarea
+                          className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-gray-500/50 focus:border-gray-300 transition-all hover:border-gray-300 resize-none"
+                          rows={3}
+                          value={invoiceForm.remarks}
+                          onChange={(e) => setInvoiceForm({ ...invoiceForm, remarks: e.target.value })}
+                          placeholder="Additional notes or remarks..."
+                        />
+                      </div>
+                    </motion.div>
+
+                    {/* Action Buttons */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7 }}
+                      className="flex justify-end gap-3 pt-6 border-t border-gray-100"
+                    >
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setShowInvoiceForm(false)}
+                        className="px-6 py-3 rounded-xl text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all"
+                      >
+                        Cancel
+                      </motion.button>
+                      <motion.button
+                        type="submit"
+                        disabled={submittingInvoice || invoiceForm.items.length === 0}
+                        whileHover={{ scale: 1.02, boxShadow: '0 10px 40px rgba(251, 191, 36, 0.3)' }}
+                        whileTap={{ scale: 0.98 }}
+                        className="relative px-8 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-500/25 overflow-hidden group"
+                      >
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0"
+                          initial={{ x: '-100%' }}
+                          whileHover={{ x: '100%' }}
+                          transition={{ duration: 0.5 }}
+                        />
+                        <span className="relative flex items-center gap-2">
+                          {submittingInvoice ? (
+                            <>
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                              </motion.div>
+                              Creating...
+                            </>
+                          ) : (
+                            <>
+                              <Receipt className="w-4 h-4" />
+                              Create Invoice
+                            </>
+                          )}
+                        </span>
+                      </motion.button>
+                    </motion.div>
+                  </form>
+                </div>
+              </motion.div>
+            </motion.div>
+          </Portal>
+        )}
+      </AnimatePresence>
+
+      {/* Fee Structure Form Modal */}
+      <AnimatePresence>
+        {showStructureForm && (
+          <Portal>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-start justify-center overflow-y-auto pt-20 pb-20"
+              onClick={() => setShowStructureForm(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 40 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 40 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                className="relative w-full max-w-xl mx-4 overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Glass morphism container */}
+                <div className="relative rounded-3xl bg-white/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-white/20 overflow-hidden">
+                  {/* Gradient Header */}
+                  <div className="relative bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 px-6 py-5 overflow-hidden">
+                    {/* Animated background patterns */}
+                    <motion.div
+                      className="absolute inset-0 opacity-30"
+                      animate={{
+                        backgroundPosition: ['0% 0%', '100% 100%'],
+                      }}
+                      transition={{ duration: 20, repeat: Infinity, repeatType: 'reverse' }}
+                      style={{
+                        backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 70% 50%, rgba(255,255,255,0.2) 0%, transparent 50%)',
+                        backgroundSize: '100% 100%',
+                      }}
+                    />
+                    <div className="relative flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <motion.div
+                          initial={{ rotate: -10, scale: 0 }}
+                          animate={{ rotate: 0, scale: 1 }}
+                          transition={{ type: 'spring', stiffness: 300, delay: 0.1 }}
+                          className="relative"
+                        >
+                          <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg border border-white/30 transform -rotate-3">
+                            <Wallet className="w-7 h-7 text-white drop-shadow-md" />
+                          </div>
+                          <motion.div
+                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white/30 flex items-center justify-center"
+                            animate={{ scale: [1, 1.2, 1], rotate: [0, 180, 360] }}
+                            transition={{ duration: 3, repeat: Infinity }}
+                          >
+                            <Sparkles className="w-3 h-3 text-white" />
+                          </motion.div>
+                        </motion.div>
+                        <div>
+                          <motion.h3
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="text-xl font-bold text-white drop-shadow-sm"
+                          >
+                            {editingStructure ? 'Edit Fee Structure' : 'Add Fee Structure'}
+                          </motion.h3>
+                          <motion.p
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="text-sm text-white/80"
+                          >
+                            {editingStructure ? 'Update fee structure details' : 'Define a new fee type for your school'}
+                          </motion.p>
+                        </div>
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.1, rotate: 90 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setShowStructureForm(false)}
+                        className="p-2.5 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all border border-white/30"
+                      >
+                        <X className="w-5 h-5 text-white" />
+                      </motion.button>
+                    </div>
+                  </div>
+
+                  {/* Form Content */}
+                  <form onSubmit={handleStructureSubmit} className="p-6 space-y-5">
+                    {/* Basic Info Section */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Icon3D gradient="from-violet-500 to-purple-500" size="sm">
+                          <FileText className="w-4 h-4" />
+                        </Icon3D>
+                        <h4 className="font-semibold text-gray-900">Basic Information</h4>
+                      </div>
+                      <div className="relative group">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Fee Name *</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                            <Tag className="w-4 h-4 text-gray-400 group-focus-within:text-violet-500 transition-colors" />
+                          </div>
+                          <input
+                            type="text"
+                            className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-violet-500/50 focus:border-violet-300 transition-all hover:border-gray-300"
+                            value={structureForm.name}
+                            onChange={(e) => setStructureForm({ ...structureForm, name: e.target.value })}
+                            placeholder="e.g., Tuition Fee, Lab Fee, etc."
+                            required
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    {/* Amount & Class Section */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Icon3D gradient="from-emerald-500 to-green-500" size="sm">
+                          <DollarSign className="w-4 h-4" />
+                        </Icon3D>
+                        <h4 className="font-semibold text-gray-900">Pricing & Assignment</h4>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="relative group">
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount *</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                              <Banknote className="w-4 h-4 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                            </div>
+                            <input
+                              type="number"
+                              className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-300 transition-all hover:border-gray-300"
+                              value={structureForm.amount}
+                              onChange={(e) => setStructureForm({ ...structureForm, amount: e.target.value })}
+                              placeholder="0.00"
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="relative group">
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Class *</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                              <GraduationCap className="w-4 h-4 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                            </div>
+                            <select
+                              className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-300 transition-all hover:border-gray-300 appearance-none cursor-pointer"
+                              value={structureForm.classId}
+                              onChange={(e) => setStructureForm({ ...structureForm, classId: e.target.value })}
+                              required
+                            >
+                              <option value="">Select class</option>
+                              {classes.map((c) => (
+                                <option key={c._id} value={c._id}>{c.name} ({c.grade})</option>
+                              ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    {/* Schedule Section */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Icon3D gradient="from-blue-500 to-cyan-500" size="sm">
+                          <Calendar className="w-4 h-4" />
+                        </Icon3D>
+                        <h4 className="font-semibold text-gray-900">Schedule</h4>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="relative group">
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Academic Year</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                              <BookOpen className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                            </div>
+                            <input
+                              type="text"
+                              className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-300 transition-all hover:border-gray-300"
+                              value={structureForm.academicYear}
+                              onChange={(e) => setStructureForm({ ...structureForm, academicYear: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div className="relative group">
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Due Date</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                              <Clock className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                            </div>
+                            <input
+                              type="date"
+                              className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-300 transition-all hover:border-gray-300"
+                              value={structureForm.dueDate}
+                              onChange={(e) => setStructureForm({ ...structureForm, dueDate: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    {/* Description Section */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Icon3D gradient="from-gray-500 to-slate-500" size="sm">
+                          <MessageSquare className="w-4 h-4" />
+                        </Icon3D>
+                        <h4 className="font-semibold text-gray-900">Description</h4>
+                      </div>
+                      <div className="relative group">
+                        <div className="absolute top-3.5 left-3.5 pointer-events-none">
+                          <MessageSquare className="w-4 h-4 text-gray-400 group-focus-within:text-gray-500 transition-colors" />
+                        </div>
+                        <textarea
+                          className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-gray-500/50 focus:border-gray-300 transition-all hover:border-gray-300 resize-none"
+                          rows={2}
+                          value={structureForm.description}
+                          onChange={(e) => setStructureForm({ ...structureForm, description: e.target.value })}
+                          placeholder="Fee description..."
+                        />
+                      </div>
+                    </motion.div>
+
+                    {/* Options Section */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                      className="p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl border border-gray-100"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Icon3D gradient="from-amber-500 to-orange-500" size="sm">
+                          <Sparkles className="w-4 h-4" />
+                        </Icon3D>
+                        <h4 className="font-semibold text-gray-900">Options</h4>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <motion.label
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white border border-gray-200 hover:border-green-300 transition-all"
+                        >
+                          <div className="relative">
+                            <input
+                              type="checkbox"
+                              checked={structureForm.isActive}
+                              onChange={(e) => setStructureForm({ ...structureForm, isActive: e.target.checked })}
+                              className="sr-only peer"
+                            />
+                            <div className="w-10 h-6 bg-gray-200 rounded-full peer peer-checked:bg-gradient-to-r peer-checked:from-green-400 peer-checked:to-emerald-500 transition-all" />
+                            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm peer-checked:translate-x-4 transition-transform" />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className={`w-4 h-4 ${structureForm.isActive ? 'text-green-500' : 'text-gray-400'}`} />
+                            <span className="text-sm font-medium text-gray-700">Active</span>
+                          </div>
+                        </motion.label>
+                        <motion.label
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white border border-gray-200 hover:border-blue-300 transition-all"
+                        >
+                          <div className="relative">
+                            <input
+                              type="checkbox"
+                              checked={structureForm.isRecurring}
+                              onChange={(e) => setStructureForm({ ...structureForm, isRecurring: e.target.checked })}
+                              className="sr-only peer"
+                            />
+                            <div className="w-10 h-6 bg-gray-200 rounded-full peer peer-checked:bg-gradient-to-r peer-checked:from-blue-400 peer-checked:to-cyan-500 transition-all" />
+                            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm peer-checked:translate-x-4 transition-transform" />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <RefreshCw className={`w-4 h-4 ${structureForm.isRecurring ? 'text-blue-500' : 'text-gray-400'}`} />
+                            <span className="text-sm font-medium text-gray-700">Recurring</span>
+                          </div>
+                        </motion.label>
+                      </div>
+                    </motion.div>
+
+                    <AnimatePresence>
+                      {structureForm.isRecurring && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="flex items-center gap-2 mb-4">
+                            <Icon3D gradient="from-cyan-500 to-blue-500" size="sm">
+                              <TrendingUp className="w-4 h-4" />
+                            </Icon3D>
+                            <h4 className="font-semibold text-gray-900">Frequency</h4>
+                          </div>
+                          <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                              <RefreshCw className="w-4 h-4 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                            </div>
+                            <select
+                              className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm bg-white/80 backdrop-blur-sm text-gray-900 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-300 transition-all hover:border-gray-300 appearance-none cursor-pointer"
+                              value={structureForm.frequency}
+                              onChange={(e) => setStructureForm({ ...structureForm, frequency: e.target.value })}
+                            >
+                              <option value="monthly">Monthly</option>
+                              <option value="quarterly">Quarterly</option>
+                              <option value="semi-annually">Semi-Annually</option>
+                              <option value="annually">Annually</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Action Buttons */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7 }}
+                      className="flex justify-end gap-3 pt-6 border-t border-gray-100"
+                    >
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setShowStructureForm(false)}
+                        className="px-6 py-3 rounded-xl text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all"
+                      >
+                        Cancel
+                      </motion.button>
+                      <motion.button
+                        type="submit"
+                        disabled={submittingStructure}
+                        whileHover={{ scale: 1.02, boxShadow: '0 10px 40px rgba(139, 92, 246, 0.3)' }}
+                        whileTap={{ scale: 0.98 }}
+                        className="relative px-8 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/25 overflow-hidden group"
+                      >
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0"
+                          initial={{ x: '-100%' }}
+                          whileHover={{ x: '100%' }}
+                          transition={{ duration: 0.5 }}
+                        />
+                        <span className="relative flex items-center gap-2">
+                          {submittingStructure ? (
+                            <>
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                              </motion.div>
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              {editingStructure ? <Edit className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                              {editingStructure ? 'Update' : 'Create'}
+                            </>
+                          )}
+                        </span>
+                      </motion.button>
+                    </motion.div>
+                  </form>
+                </div>
+              </motion.div>
+            </motion.div>
+          </Portal>
+        )}
+      </AnimatePresence>
+
+      {/* Record Payment Modal */}
+      <AnimatePresence>
+        {showPaymentForm && selectedInvoice && (
+          <Portal>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center"
+              onClick={() => setShowPaymentForm(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                className="relative glass-strong rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <Icon3D gradient="from-green-500 to-emerald-500" size="md">
+                      <CreditCard className="w-5 h-5" />
+                    </Icon3D>
+                    <h3 className="text-lg font-bold text-gray-900">Record Payment</h3>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setShowPaymentForm(false)}
+                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-500" />
+                  </motion.button>
+                </div>
+
+                <div className="mb-5 p-4 bg-gray-50 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Invoice:</span>
+                    <span className="font-mono font-medium">{selectedInvoice.invoiceNumber}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Total:</span>
+                    <span className="font-medium">${selectedInvoice.totalAmount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Already Paid:</span>
+                    <span className="font-medium text-green-600">${selectedInvoice.paidAmount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
+                    <span className="font-medium text-gray-700">Remaining:</span>
+                    <span className="font-bold text-amber-600">
+                      ${(selectedInvoice.totalAmount - selectedInvoice.paidAmount).toLocaleString()}
                     </span>
                   </div>
                 </div>
-              )}
 
-              <div>
-                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Remarks</label>
-                <textarea
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                  rows={2}
-                  value={invoiceForm.remarks}
-                  onChange={(e) => setInvoiceForm({ ...invoiceForm, remarks: e.target.value })}
-                  placeholder="Additional notes..."
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowInvoiceForm(false)}>Cancel</Button>
-                <Button type="submit" disabled={submittingInvoice || invoiceForm.items.length === 0}>
-                  {submittingInvoice ? 'Creating...' : 'Create Invoice'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Fee Structure Form Modal */}
-      {showStructureForm && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={() => setShowStructureForm(false)} />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 animate-zoom-in">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-              {editingStructure ? 'Edit Fee Structure' : 'Add Fee Structure'}
-            </h3>
-            <form onSubmit={handleStructureSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Name *</label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                  value={structureForm.name}
-                  onChange={(e) => setStructureForm({ ...structureForm, name: e.target.value })}
-                  placeholder="e.g., Tuition Fee, Lab Fee, etc."
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Amount *</label>
-                  <input
-                    type="number"
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    value={structureForm.amount}
-                    onChange={(e) => setStructureForm({ ...structureForm, amount: e.target.value })}
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Class *</label>
-                  <select
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    value={structureForm.classId}
-                    onChange={(e) => setStructureForm({ ...structureForm, classId: e.target.value })}
-                    required
-                  >
-                    <option value="">Select class</option>
-                    {classes.map((c) => (
-                      <option key={c._id} value={c._id}>{c.name} ({c.grade})</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Academic Year</label>
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    value={structureForm.academicYear}
-                    onChange={(e) => setStructureForm({ ...structureForm, academicYear: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
-                  <input
-                    type="date"
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    value={structureForm.dueDate}
-                    onChange={(e) => setStructureForm({ ...structureForm, dueDate: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                <textarea
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                  rows={2}
-                  value={structureForm.description}
-                  onChange={(e) => setStructureForm({ ...structureForm, description: e.target.value })}
-                  placeholder="Fee description..."
-                />
-              </div>
-
-              <div className="flex items-center gap-6">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={structureForm.isActive}
-                    onChange={(e) => setStructureForm({ ...structureForm, isActive: e.target.checked })}
-                    className="rounded border-gray-300"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Active</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={structureForm.isRecurring}
-                    onChange={(e) => setStructureForm({ ...structureForm, isRecurring: e.target.checked })}
-                    className="rounded border-gray-300"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Recurring</span>
-                </label>
-              </div>
-
-              {structureForm.isRecurring && (
-                <div>
-                  <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Frequency</label>
-                  <select
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    value={structureForm.frequency}
-                    onChange={(e) => setStructureForm({ ...structureForm, frequency: e.target.value })}
-                  >
-                    <option value="monthly">Monthly</option>
-                    <option value="quarterly">Quarterly</option>
-                    <option value="semi-annually">Semi-Annually</option>
-                    <option value="annually">Annually</option>
-                  </select>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowStructureForm(false)}>Cancel</Button>
-                <Button type="submit" disabled={submittingStructure}>
-                  {submittingStructure ? 'Saving...' : editingStructure ? 'Update' : 'Create'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Record Payment Modal */}
-      {showPaymentForm && selectedInvoice && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={() => setShowPaymentForm(false)} />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-md p-6 animate-zoom-in">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Record Payment</h3>
-            <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <div className="text-sm text-gray-600 dark:text-gray-400">Invoice: {selectedInvoice.invoiceNumber}</div>
-              <div className="text-sm">Total: ${selectedInvoice.totalAmount.toLocaleString()}</div>
-              <div className="text-sm text-green-600">Already Paid: ${selectedInvoice.paidAmount.toLocaleString()}</div>
-              <div className="text-sm font-medium text-indigo-600">
-                Remaining: ${(selectedInvoice.totalAmount - selectedInvoice.paidAmount).toLocaleString()}
-              </div>
-            </div>
-            <form onSubmit={handlePaymentSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Payment Amount *</label>
-                <input
-                  type="number"
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  max={selectedInvoice.totalAmount - selectedInvoice.paidAmount}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Payment Method</label>
-                <select
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                >
-                  <option value="cash">Cash</option>
-                  <option value="card">Card</option>
-                  <option value="bank_transfer">Bank Transfer</option>
-                  <option value="online">Online</option>
-                  <option value="cheque">Cheque</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Transaction ID (optional)</label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                  value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
-                  placeholder="Reference number..."
-                />
-              </div>
-              <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowPaymentForm(false)}>Cancel</Button>
-                <Button type="submit" disabled={processingPayment}>
-                  {processingPayment ? 'Processing...' : 'Record Payment'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </section>
+                <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Amount *</label>
+                    <input
+                      type="number"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white/80 text-gray-900 focus:ring-2 focus:ring-green-500/50 focus:border-green-300 transition-all"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      max={selectedInvoice.totalAmount - selectedInvoice.paidAmount}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Method</label>
+                    <select
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white/80 text-gray-900 focus:ring-2 focus:ring-green-500/50 focus:border-green-300 transition-all"
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="card">Card</option>
+                      <option value="bank_transfer">Bank Transfer</option>
+                      <option value="online">Online</option>
+                      <option value="cheque">Cheque</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Transaction ID (optional)</label>
+                    <input
+                      type="text"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white/80 text-gray-900 focus:ring-2 focus:ring-green-500/50 focus:border-green-300 transition-all"
+                      value={transactionId}
+                      onChange={(e) => setTransactionId(e.target.value)}
+                      placeholder="Reference number..."
+                    />
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                    <Button type="button" variant="outline" onClick={() => setShowPaymentForm(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={processingPayment}>
+                      {processingPayment ? 'Processing...' : 'Record Payment'}
+                    </Button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          </Portal>
+        )}
+      </AnimatePresence>
+    </motion.section>
   );
 }

@@ -60,7 +60,7 @@ export const MobileBottomNav = ({
   const displayActive = optimisticActive || activeItem;
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 z-50 safe-area-bottom">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-bottom">
       <div className="flex items-center justify-around h-16 px-2">
         {items.slice(0, 5).map((item) => (
           <button
@@ -69,8 +69,8 @@ export const MobileBottomNav = ({
             className={cn(
               "flex flex-col items-center justify-center flex-1 h-full py-1 px-1 rounded-lg transition-colors duration-100",
               displayActive === item.key
-                ? "text-indigo-600 dark:text-indigo-400"
-                : "text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
+                ? "text-indigo-600"
+                : "text-gray-500 active:bg-gray-100"
             )}
           >
             <span className={cn(
@@ -168,12 +168,12 @@ const MobileMenu = ({
       {/* Slide-out Panel */}
       <aside
         className={cn(
-          "md:hidden fixed top-0 left-0 bottom-0 w-[280px] bg-white dark:bg-gray-900 z-50 flex flex-col transition-transform duration-300 ease-out shadow-2xl",
+          "md:hidden fixed top-0 left-0 bottom-0 w-[280px] bg-white z-50 flex flex-col transition-transform duration-300 ease-out shadow-2xl",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
             {logo || (
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
@@ -181,15 +181,15 @@ const MobileMenu = ({
               </div>
             )}
             <div>
-              <h2 className="font-bold text-gray-900 dark:text-white">{title}</h2>
+              <h2 className="font-bold text-gray-900">{title}</h2>
               {subtitle && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
+                <p className="text-xs text-gray-500">{subtitle}</p>
               )}
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="p-2 rounded-lg hover:bg-gray-100"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 6L6 18M6 6l12 12" />
@@ -203,7 +203,7 @@ const MobileMenu = ({
             item.isSection ? (
               <div
                 key={item.key}
-                className="px-4 pt-4 pb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
+                className="px-4 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider"
               >
                 {item.label}
               </div>
@@ -214,8 +214,8 @@ const MobileMenu = ({
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-3 transition-colors duration-100",
                   displayActive === item.key
-                    ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-r-4 border-indigo-600"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    ? "bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600"
+                    : "text-gray-700 hover:bg-gray-50"
                 )}
               >
                 {item.icon}
@@ -232,9 +232,9 @@ const MobileMenu = ({
 
         {/* User Profile & Logout */}
         {user && (
-          <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+          <div className="p-4 border-t border-gray-200">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-gray-700 dark:text-gray-200 font-semibold">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-700 font-semibold">
                 {user.avatar ? (
                   <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
                 ) : (
@@ -242,8 +242,8 @@ const MobileMenu = ({
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 dark:text-white truncate">{user.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                <p className="font-medium text-gray-900 truncate">{user.name}</p>
+                <p className="text-xs text-gray-500 truncate">
                   {user.role || user.email}
                 </p>
               </div>
@@ -251,7 +251,7 @@ const MobileMenu = ({
             {onLogout && (
               <button
                 onClick={onLogout}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -316,7 +316,7 @@ export const Sidebar = ({
       {/* Mobile Menu Button - shown in header on mobile */}
       <button
         onClick={() => setIsMobileMenuOpen(true)}
-        className="md:hidden fixed top-3 left-3 z-30 p-2.5 rounded-xl bg-white dark:bg-gray-900 shadow-md border border-gray-200 dark:border-gray-700 active:scale-95 transition-transform"
+        className="md:hidden fixed top-3 left-3 z-30 p-2.5 rounded-xl bg-white shadow-md border border-gray-200 active:scale-95 transition-transform"
         aria-label="Open menu"
       >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -350,14 +350,14 @@ export const Sidebar = ({
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "hidden md:flex bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex-col fixed top-0 left-0 h-screen transition-all duration-300 ease-out z-40",
+          "hidden md:flex bg-white border-r border-gray-200 flex-col fixed top-0 left-0 h-screen transition-all duration-300 ease-out z-40",
           isCollapsed ? "w-[72px]" : "w-64",
           className
         )}
       >
         {/* Header */}
         <div className={cn(
-          "h-16 flex items-center border-b border-gray-200 dark:border-gray-800",
+          "h-16 flex items-center border-b border-gray-200",
           isCollapsed ? "justify-center px-2" : "justify-between px-4"
         )}>
           {!isCollapsed ? (
@@ -368,11 +368,11 @@ export const Sidebar = ({
                 </div>
               )}
               <div className="min-w-0">
-                <span className="text-sm font-bold text-gray-900 dark:text-white truncate block">
+                <span className="text-sm font-bold text-gray-900 truncate block">
                   {title}
                 </span>
                 {subtitle && (
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate block">
+                  <span className="text-[10px] text-gray-500 truncate block">
                     {subtitle}
                   </span>
                 )}
@@ -388,8 +388,8 @@ export const Sidebar = ({
           <button
             onClick={handleToggleCollapse}
             className={cn(
-              "p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
-              isCollapsed && "absolute -right-3 top-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm"
+              "p-1.5 rounded-lg hover:bg-gray-100 transition-colors",
+              isCollapsed && "absolute -right-3 top-5 bg-white border border-gray-200 shadow-sm"
             )}
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
@@ -403,7 +403,7 @@ export const Sidebar = ({
               strokeLinecap="round"
               strokeLinejoin="round"
               className={cn(
-                "text-gray-500 dark:text-gray-400 transition-transform duration-300",
+                "text-gray-500 transition-transform duration-300",
                 isCollapsed ? "rotate-180" : ""
               )}
             >
@@ -419,7 +419,7 @@ export const Sidebar = ({
               !isCollapsed && (
                 <div
                   key={item.key}
-                  className="px-4 pt-5 pb-2 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
+                  className="px-4 pt-5 pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider"
                 >
                   {item.label}
                 </div>
@@ -433,9 +433,9 @@ export const Sidebar = ({
                   isCollapsed ? "justify-center px-2 mx-2 rounded-lg" : "px-4",
                   displayActive === item.key
                     ? isCollapsed
-                      ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
-                      : "bg-gradient-to-r from-indigo-50 to-transparent dark:from-indigo-900/20 dark:to-transparent text-indigo-600 dark:text-indigo-400 border-r-[3px] border-indigo-600 dark:border-indigo-400"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-100"
+                      ? "bg-indigo-50 text-indigo-600"
+                      : "bg-gradient-to-r from-indigo-50 to-transparent text-indigo-600 border-r-[3px] border-indigo-600"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 )}
                 title={isCollapsed ? item.label : undefined}
               >
@@ -463,7 +463,7 @@ export const Sidebar = ({
 
                 {/* Tooltip for collapsed state */}
                 {isCollapsed && (
-                  <span className="absolute left-full ml-2 px-2 py-1 text-xs font-medium text-white bg-gray-900 dark:bg-gray-700 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">
+                  <span className="absolute left-full ml-2 px-2 py-1 text-xs font-medium text-white bg-gray-900 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">
                     {item.label}
                   </span>
                 )}
@@ -475,15 +475,15 @@ export const Sidebar = ({
         {/* User Profile Section */}
         {user && (
           <div className={cn(
-            "border-t border-gray-200 dark:border-gray-800",
+            "border-t border-gray-200",
             isCollapsed ? "p-2" : "p-3"
           )}>
             <div className={cn(
               "flex items-center rounded-lg transition-colors",
-              isCollapsed ? "justify-center p-2" : "gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+              isCollapsed ? "justify-center p-2" : "gap-3 p-2 hover:bg-gray-50"
             )}>
               <div className={cn(
-                "rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-gray-700 dark:text-gray-200 font-semibold flex-shrink-0",
+                "rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-700 font-semibold flex-shrink-0",
                 isCollapsed ? "w-9 h-9" : "w-9 h-9"
               )}>
                 {user.avatar ? (
@@ -494,10 +494,10 @@ export const Sidebar = ({
               </div>
               {!isCollapsed && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  <p className="text-sm font-medium text-gray-900 truncate">
                     {user.name}
                   </p>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                  <p className="text-[10px] text-gray-500 truncate">
                     {user.role || user.email}
                   </p>
                 </div>
@@ -509,7 +509,7 @@ export const Sidebar = ({
         {/* Footer / Logout */}
         {(footer || onLogout) && (
           <div className={cn(
-            "border-t border-gray-200 dark:border-gray-800",
+            "border-t border-gray-200",
             isCollapsed ? "p-2" : "p-3"
           )}>
             {footer || (
@@ -519,8 +519,8 @@ export const Sidebar = ({
                   className={cn(
                     "w-full flex items-center justify-center gap-2 rounded-lg font-medium transition-colors",
                     isCollapsed
-                      ? "p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                      : "px-3 py-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30"
+                      ? "p-2 text-gray-500 hover:text-red-600 hover:bg-red-50"
+                      : "px-3 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100"
                   )}
                   title={isCollapsed ? "Sign Out" : undefined}
                 >

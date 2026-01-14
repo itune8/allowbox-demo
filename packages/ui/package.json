@@ -8,7 +8,8 @@
     "./code": "./src/code.tsx",
     "./radio-group": "./src/radio-group.tsx",
     "./sidebar": "./src/sidebar.tsx",
-    "./utils": "./src/utils.ts"
+    "./utils": "./src/utils.ts",
+    "./icon-3d": "./src/icon-3d.tsx"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

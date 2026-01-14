@@ -6,7 +6,7 @@ class ApiClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL:  env.apiUrl || 'https://allowboxapiv2.hyperbrainlabs.com/api/v1',
+      baseURL:  env.apiUrl || 'http://localhost:5004/api/v1',
       withCredentials: true, // Important for cookies
       headers: {
         'Content-Type': 'application/json',

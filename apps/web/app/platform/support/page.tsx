@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
 import {
   supportTicketService,
@@ -13,6 +14,22 @@ import {
   AddCommentDto,
 } from '../../../lib/services/support-ticket.service';
 import { useAuth } from '../../../contexts/auth-context';
+import { GlassCard } from '@/components/ui/glass-card';
+import { AnimatedStatCard } from '@/components/ui/animated-stat-card';
+import { Icon3D } from '@/components/ui/icon-3d';
+import {
+  HeadphonesIcon,
+  MessageCircle,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Search,
+  X,
+  Send,
+  User,
+  FileText,
+  TrendingUp,
+} from 'lucide-react';
 
 export default function SupportPage() {
   const { user } = useAuth();
@@ -137,11 +154,11 @@ export default function SupportPage() {
 
   const getStatusBadge = (status: TicketStatus) => {
     const badges: Record<TicketStatus, { bg: string; text: string; label: string }> = {
-      [TicketStatus.OPEN]: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300', label: 'Open' },
-      [TicketStatus.IN_PROGRESS]: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-300', label: 'In Progress' },
-      [TicketStatus.WAITING_FOR_USER]: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300', label: 'Waiting' },
-      [TicketStatus.RESOLVED]: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300', label: 'Resolved' },
-      [TicketStatus.CLOSED]: { bg: 'bg-gray-100 dark:bg-gray-900/30', text: 'text-gray-700 dark:text-gray-300', label: 'Closed' },
+      [TicketStatus.OPEN]: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Open' },
+      [TicketStatus.IN_PROGRESS]: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'In Progress' },
+      [TicketStatus.WAITING_FOR_USER]: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Waiting' },
+      [TicketStatus.RESOLVED]: { bg: 'bg-green-100', text: 'text-green-700', label: 'Resolved' },
+      [TicketStatus.CLOSED]: { bg: 'bg-gray-100/30', text: 'text-gray-700', label: 'Closed' },
     };
     const badge = badges[status] || badges[TicketStatus.OPEN];
     return (
@@ -153,10 +170,10 @@ export default function SupportPage() {
 
   const getPriorityBadge = (priority: TicketPriority) => {
     const badges: Record<TicketPriority, { bg: string; text: string; label: string }> = {
-      [TicketPriority.LOW]: { bg: 'bg-gray-100 dark:bg-gray-900/30', text: 'text-gray-700 dark:text-gray-300', label: 'Low' },
-      [TicketPriority.MEDIUM]: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300', label: 'Medium' },
-      [TicketPriority.HIGH]: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-300', label: 'High' },
-      [TicketPriority.URGENT]: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300', label: 'Urgent' },
+      [TicketPriority.LOW]: { bg: 'bg-gray-100/30', text: 'text-gray-700', label: 'Low' },
+      [TicketPriority.MEDIUM]: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Medium' },
+      [TicketPriority.HIGH]: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'High' },
+      [TicketPriority.URGENT]: { bg: 'bg-red-100', text: 'text-red-700', label: 'Urgent' },
     };
     const badge = badges[priority] || badges[TicketPriority.MEDIUM];
     return (
@@ -189,83 +206,145 @@ export default function SupportPage() {
     });
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.08,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.4,
+        ease: [0.22, 1, 0.36, 1]
+      }
+    },
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-12 h-12 border-3 border-teal-500 border-t-transparent rounded-full"
+        />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          Support Tickets
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Manage and track support requests from all schools
-        </p>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-300">
-          {error}
-          <button onClick={() => setError(null)} className="ml-2 underline">Dismiss</button>
+      {/* Header with Icon3D */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center gap-4"
+      >
+        <Icon3D gradient="from-teal-500 to-cyan-500" size="lg">
+          <HeadphonesIcon className="w-6 h-6" />
+        </Icon3D>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Support Tickets</h2>
+          <p className="text-sm text-gray-600">Manage and track support requests from all schools</p>
         </div>
-      )}
+      </motion.div>
+
+      {/* Error Message */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700"
+          >
+            {error}
+            <button onClick={() => setError(null)} className="ml-2 underline font-medium">Dismiss</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Total Tickets</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{stats?.total || 0}</p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Open</p>
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{stats?.open || 0}</p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
-          <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{stats?.inProgress || 0}</p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Resolved</p>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{stats?.resolved || 0}</p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Avg. Resolution</p>
-          <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
-            {stats?.avgResolutionTimeHours ? `${Math.round(stats.avgResolutionTimeHours)}h` : '-'}
-          </p>
-        </div>
-      </div>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 md:grid-cols-5 gap-4"
+      >
+        <AnimatedStatCard
+          title="Total Tickets"
+          value={stats?.total || 0}
+          icon={<FileText className="w-5 h-5" />}
+          gradient="from-teal-500 to-cyan-500"
+          delay={0}
+        />
+        <AnimatedStatCard
+          title="Open"
+          value={stats?.open || 0}
+          icon={<AlertCircle className="w-5 h-5" />}
+          gradient="from-blue-500 to-indigo-500"
+          delay={1}
+        />
+        <AnimatedStatCard
+          title="In Progress"
+          value={stats?.inProgress || 0}
+          icon={<Clock className="w-5 h-5" />}
+          gradient="from-yellow-500 to-amber-500"
+          delay={2}
+        />
+        <AnimatedStatCard
+          title="Resolved"
+          value={stats?.resolved || 0}
+          icon={<CheckCircle className="w-5 h-5" />}
+          gradient="from-green-500 to-emerald-500"
+          delay={3}
+        />
+        <AnimatedStatCard
+          title="Avg. Resolution"
+          value={stats?.avgResolutionTimeHours ? `${Math.round(stats.avgResolutionTimeHours)}h` : '-'}
+          icon={<TrendingUp className="w-5 h-5" />}
+          gradient="from-purple-500 to-violet-500"
+          delay={4}
+        />
+      </motion.div>
 
       {/* Filters and Search */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
+      <GlassCard className="bg-white p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
               Search
             </label>
-            <input
-              id="search"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by ID, subject, or school..."
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                id="search"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by ID, subject, or school..."
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
           </div>
           <div>
-            <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-2">
               Status
             </label>
             <select
               id="statusFilter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               <option value="all">All Statuses</option>
               <option value={TicketStatus.OPEN}>Open</option>
@@ -276,14 +355,14 @@ export default function SupportPage() {
             </select>
           </div>
           <div>
-            <label htmlFor="priorityFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="priorityFilter" className="block text-sm font-medium text-gray-700 mb-2">
               Priority
             </label>
             <select
               id="priorityFilter"
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               <option value="all">All Priorities</option>
               <option value={TicketPriority.LOW}>Low</option>
@@ -293,61 +372,75 @@ export default function SupportPage() {
             </select>
           </div>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Tickets Table */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg">
+      <GlassCard className="bg-white overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
+            <thead className="bg-gray-50/80 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Ticket #
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Subject
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   School
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Category
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Priority
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Created
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+            <tbody className="divide-y divide-gray-200">
               {filteredTickets.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    <div className="text-4xl mb-3">🎫</div>
-                    No tickets found
+                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex flex-col items-center gap-2"
+                    >
+                      <HeadphonesIcon className="w-12 h-12 text-gray-300" />
+                      <p className="font-medium">No tickets found</p>
+                    </motion.div>
                   </td>
                 </tr>
               ) : (
-                filteredTickets.map((ticket) => (
-                  <tr key={ticket._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                filteredTickets.map((ticket, index) => (
+                  <motion.tr
+                    key={ticket._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.8)' }}
+                    className="transition-colors cursor-pointer"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {ticket.ticketNumber}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100 max-w-xs truncate">
+                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
                       {ticket.subject}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {ticket.tenantId?.schoolName || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {getCategoryLabel(ticket.category)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -356,18 +449,20 @@ export default function SupportPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {getStatusBadge(ticket.status)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {formatDate(ticket.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button
+                      <motion.button
                         onClick={() => handleViewTicket(ticket)}
-                        className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-medium"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="text-teal-600 hover:text-teal-700 font-medium"
                       >
                         View
-                      </button>
+                      </motion.button>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))
               )}
             </tbody>
@@ -375,221 +470,298 @@ export default function SupportPage() {
         </div>
 
         {filteredTickets.length > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50/50">
+            <p className="text-sm text-gray-500">
               Showing {filteredTickets.length} of {tickets.length} tickets
             </p>
           </div>
         )}
-      </div>
+      </GlassCard>
 
       {/* Ticket Detail Slide-in Panel */}
-      {showDetailModal && selectedTicket && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-black/40" onClick={() => { setShowDetailModal(false); setSelectedTicket(null); setNewComment(''); }} />
-          <div className="relative bg-white dark:bg-gray-900 w-full max-w-2xl h-full overflow-y-auto shadow-xl animate-slide-in-right border-l border-gray-200 dark:border-gray-800">
-            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Ticket {selectedTicket.ticketNumber}
-                </h3>
-                <p className="text-sm text-gray-500">{selectedTicket.tenantId?.schoolName}</p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowDetailModal(false);
-                  setSelectedTicket(null);
-                  setNewComment('');
-                }}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              {/* Header Info */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Status</p>
-                  <div className="mt-1">{getStatusBadge(selectedTicket.status)}</div>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Priority</p>
-                  <div className="mt-1">{getPriorityBadge(selectedTicket.priority)}</div>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Category</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">
-                    {getCategoryLabel(selectedTicket.category)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Assigned To</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">
-                    {selectedTicket.assignedTo
-                      ? `${selectedTicket.assignedTo.firstName} ${selectedTicket.assignedTo.lastName}`
-                      : 'Unassigned'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Subject & Description */}
-              <div className="border-t border-gray-200 dark:border-gray-800 pt-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Subject</p>
-                <p className="text-base font-medium text-gray-900 dark:text-gray-100 mt-1">
-                  {selectedTicket.subject}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Description</p>
-                <p className="text-sm text-gray-900 dark:text-gray-100 mt-1 whitespace-pre-wrap">
-                  {selectedTicket.description}
-                </p>
-              </div>
-
-              {/* Created By & Dates */}
-              <div className="border-t border-gray-200 dark:border-gray-800 pt-4 grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Created By</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {selectedTicket.createdBy.firstName} {selectedTicket.createdBy.lastName}
-                  </p>
-                  {selectedTicket.createdBy.email && (
-                    <p className="text-xs text-gray-500">{selectedTicket.createdBy.email}</p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Created</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {formatDate(selectedTicket.createdAt)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Comments */}
-              {selectedTicket.comments && selectedTicket.comments.length > 0 && (
-                <div className="border-t border-gray-200 dark:border-gray-800 pt-4">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
-                    Comments ({selectedTicket.comments.length})
-                  </p>
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
-                    {selectedTicket.comments.map((comment, idx) => (
-                      <div key={idx} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {comment.userId.firstName} {comment.userId.lastName}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {formatDate(comment.createdAt)}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-700 dark:text-gray-300">{comment.content}</p>
-                      </div>
-                    ))}
+      <AnimatePresence>
+        {showDetailModal && selectedTicket && (
+          <div className="fixed inset-0 z-50 flex justify-end">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40"
+              onClick={() => {
+                setShowDetailModal(false);
+                setSelectedTicket(null);
+                setNewComment('');
+              }}
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="relative bg-white w-full max-w-2xl h-full overflow-y-auto shadow-2xl border-l border-gray-200"
+            >
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+                <div className="flex items-center gap-3">
+                  <Icon3D gradient="from-teal-500 to-cyan-500" size="sm">
+                    <MessageCircle className="w-3.5 h-3.5" />
+                  </Icon3D>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Ticket {selectedTicket.ticketNumber}
+                    </h3>
+                    <p className="text-sm text-gray-500">{selectedTicket.tenantId?.schoolName}</p>
                   </div>
                 </div>
-              )}
-
-              {/* Add Comment */}
-              <div className="border-t border-gray-200 dark:border-gray-800 pt-4">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Add Comment</p>
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Write your response..."
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <div className="flex justify-end mt-2">
-                  <Button
-                    size="sm"
-                    onClick={handleAddComment}
-                    disabled={addingComment || !newComment.trim()}
-                  >
-                    {addingComment ? 'Sending...' : 'Send Reply'}
-                  </Button>
-                </div>
+                <motion.button
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setSelectedTicket(null);
+                    setNewComment('');
+                  }}
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </motion.button>
               </div>
-            </div>
 
-            {/* Actions Footer */}
-            <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-800/50 px-6 py-4 border-t border-gray-200 dark:border-gray-800 flex flex-wrap gap-3 justify-between">
-              <div className="flex gap-2">
-                {!selectedTicket.assignedTo && (
+              <div className="p-6 space-y-4">
+                {/* Header Info */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="grid grid-cols-2 md:grid-cols-4 gap-4"
+                >
+                  <div>
+                    <p className="text-sm text-gray-600">Status</p>
+                    <div className="mt-1">{getStatusBadge(selectedTicket.status)}</div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Priority</p>
+                    <div className="mt-1">{getPriorityBadge(selectedTicket.priority)}</div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Category</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1">
+                      {getCategoryLabel(selectedTicket.category)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Assigned To</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1">
+                      {selectedTicket.assignedTo
+                        ? `${selectedTicket.assignedTo.firstName} ${selectedTicket.assignedTo.lastName}`
+                        : 'Unassigned'}
+                    </p>
+                  </div>
+                </motion.div>
+
+                {/* Subject & Description */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="border-t border-gray-200 pt-4"
+                >
+                  <p className="text-sm text-gray-600">Subject</p>
+                  <p className="text-base font-medium text-gray-900 mt-1">
+                    {selectedTicket.subject}
+                  </p>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <p className="text-sm text-gray-600">Description</p>
+                  <p className="text-sm text-gray-900 mt-1 whitespace-pre-wrap">
+                    {selectedTicket.description}
+                  </p>
+                </motion.div>
+
+                {/* Created By & Dates */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="border-t border-gray-200 pt-4 grid grid-cols-2 gap-4"
+                >
+                  <div>
+                    <p className="text-sm text-gray-600">Created By</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedTicket.createdBy.firstName} {selectedTicket.createdBy.lastName}
+                    </p>
+                    {selectedTicket.createdBy.email && (
+                      <p className="text-xs text-gray-500">{selectedTicket.createdBy.email}</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Created</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {formatDate(selectedTicket.createdAt)}
+                    </p>
+                  </div>
+                </motion.div>
+
+                {/* Comments */}
+                {selectedTicket.comments && selectedTicket.comments.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="border-t border-gray-200 pt-4"
+                  >
+                    <p className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4" />
+                      Comments ({selectedTicket.comments.length})
+                    </p>
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
+                      {selectedTicket.comments.map((comment, idx) => (
+                        <motion.div
+                          key={idx}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.6 + idx * 0.1 }}
+                          className="bg-gray-50 rounded-lg p-3 border border-gray-100"
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                              <User className="w-3 h-3" />
+                              {comment.userId.firstName} {comment.userId.lastName}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {formatDate(comment.createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700">{comment.content}</p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Add Comment */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="border-t border-gray-200 pt-4"
+                >
+                  <p className="text-sm font-medium text-gray-900 mb-2">Add Comment</p>
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Write your response..."
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                  <div className="flex justify-end mt-2">
+                    <motion.button
+                      onClick={handleAddComment}
+                      disabled={addingComment || !newComment.trim()}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-teal-500/30"
+                    >
+                      <Send className="w-4 h-4" />
+                      {addingComment ? 'Sending...' : 'Send Reply'}
+                    </motion.button>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Actions Footer */}
+              <div className="sticky bottom-0 bg-gray-50/80 backdrop-blur-sm px-6 py-4 border-t border-gray-200 flex flex-wrap gap-3 justify-between">
+                <div className="flex gap-2 flex-wrap">
+                  {!selectedTicket.assignedTo && (
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleClaimTicket}
+                        disabled={updatingTicket}
+                      >
+                        Claim Ticket
+                      </Button>
+                    </motion.div>
+                  )}
+                  {selectedTicket.status === TicketStatus.OPEN && (
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        size="sm"
+                        onClick={() => handleUpdateStatus(TicketStatus.IN_PROGRESS)}
+                        disabled={updatingTicket}
+                      >
+                        Start Working
+                      </Button>
+                    </motion.div>
+                  )}
+                  {selectedTicket.status === TicketStatus.IN_PROGRESS && (
+                    <>
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUpdateStatus(TicketStatus.WAITING_FOR_USER)}
+                          disabled={updatingTicket}
+                        >
+                          Waiting for User
+                        </Button>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                          size="sm"
+                          onClick={() => handleUpdateStatus(TicketStatus.RESOLVED)}
+                          disabled={updatingTicket}
+                        >
+                          Mark Resolved
+                        </Button>
+                      </motion.div>
+                    </>
+                  )}
+                  {selectedTicket.status === TicketStatus.WAITING_FOR_USER && (
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        size="sm"
+                        onClick={() => handleUpdateStatus(TicketStatus.IN_PROGRESS)}
+                        disabled={updatingTicket}
+                      >
+                        Resume
+                      </Button>
+                    </motion.div>
+                  )}
+                  {selectedTicket.status === TicketStatus.RESOLVED && (
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        size="sm"
+                        onClick={() => handleUpdateStatus(TicketStatus.CLOSED)}
+                        disabled={updatingTicket}
+                      >
+                        Close Ticket
+                      </Button>
+                    </motion.div>
+                  )}
+                </div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     variant="outline"
-                    size="sm"
-                    onClick={handleClaimTicket}
-                    disabled={updatingTicket}
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      setSelectedTicket(null);
+                      setNewComment('');
+                    }}
                   >
-                    Claim Ticket
+                    Close
                   </Button>
-                )}
-                {selectedTicket.status === TicketStatus.OPEN && (
-                  <Button
-                    size="sm"
-                    onClick={() => handleUpdateStatus(TicketStatus.IN_PROGRESS)}
-                    disabled={updatingTicket}
-                  >
-                    Start Working
-                  </Button>
-                )}
-                {selectedTicket.status === TicketStatus.IN_PROGRESS && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleUpdateStatus(TicketStatus.WAITING_FOR_USER)}
-                      disabled={updatingTicket}
-                    >
-                      Waiting for User
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleUpdateStatus(TicketStatus.RESOLVED)}
-                      disabled={updatingTicket}
-                    >
-                      Mark Resolved
-                    </Button>
-                  </>
-                )}
-                {selectedTicket.status === TicketStatus.WAITING_FOR_USER && (
-                  <Button
-                    size="sm"
-                    onClick={() => handleUpdateStatus(TicketStatus.IN_PROGRESS)}
-                    disabled={updatingTicket}
-                  >
-                    Resume
-                  </Button>
-                )}
-                {selectedTicket.status === TicketStatus.RESOLVED && (
-                  <Button
-                    size="sm"
-                    onClick={() => handleUpdateStatus(TicketStatus.CLOSED)}
-                    disabled={updatingTicket}
-                  >
-                    Close Ticket
-                  </Button>
-                )}
+                </motion.div>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowDetailModal(false);
-                  setSelectedTicket(null);
-                  setNewComment('');
-                }}
-              >
-                Close
-              </Button>
-            </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

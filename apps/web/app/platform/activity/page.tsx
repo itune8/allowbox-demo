@@ -1,7 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { activityLogService, type ActivityLog } from '../../../lib/services/activity-log.service';
+import { GlassCard } from '@/components/ui/glass-card';
+import { AnimatedStatCard } from '@/components/ui/animated-stat-card';
+import { Icon3D } from '@/components/ui/icon-3d';
+import { Activity, Clock, User, Target, Calendar, Search } from 'lucide-react';
 
 export default function ActivityPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -10,6 +15,14 @@ export default function ActivityPage() {
   const [filter, setFilter] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  // Stats
+  const [stats, setStats] = useState({
+    totalActivities: 0,
+    todayActivities: 0,
+    activeUsers: 0,
+    criticalEvents: 0,
+  });
 
   useEffect(() => {
     fetchLogs();
@@ -26,6 +39,23 @@ export default function ActivityPage() {
       });
       setLogs(response.logs);
       setTotalPages(response.totalPages);
+
+      // Calculate stats
+      const today = new Date().toDateString();
+      const todayCount = response.logs.filter(
+        (log) => new Date(log.createdAt).toDateString() === today
+      ).length;
+      const uniqueUsers = new Set(response.logs.map((log) => log.userId)).size;
+      const criticalCount = response.logs.filter(
+        (log) => log.level === 'CRITICAL' || log.level === 'ERROR'
+      ).length;
+
+      setStats({
+        totalActivities: response.total || response.logs.length,
+        todayActivities: todayCount,
+        activeUsers: uniqueUsers,
+        criticalEvents: criticalCount,
+      });
     } catch (err: any) {
       console.error('Failed to fetch logs:', err);
       setError('Failed to load activity logs');
@@ -42,22 +72,22 @@ export default function ActivityPage() {
 
   const getActionColor = (action: string) => {
     if (action.includes('CREATED') || action.includes('LOGIN'))
-      return 'text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400';
+      return 'text-green-600 bg-green-50';
     if (action.includes('UPDATED') || action.includes('SENT'))
-      return 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400';
+      return 'text-blue-600 bg-blue-50';
     if (action.includes('SUSPENDED') || action.includes('DELETED') || action.includes('CANCELLED'))
-      return 'text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400';
+      return 'text-red-600 bg-red-50';
     if (action.includes('WARNING'))
-      return 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400';
-    return 'text-gray-600 bg-gray-50 dark:bg-gray-800 dark:text-gray-400';
+      return 'text-yellow-600 bg-yellow-50';
+    return 'text-gray-600 bg-gray-50';
   };
 
   const getLevelBadge = (level: string) => {
     const colors: Record<string, string> = {
-      INFO: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-      WARNING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
-      ERROR: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-      CRITICAL: 'bg-red-200 text-red-800 dark:bg-red-900/50 dark:text-red-200',
+      INFO: 'bg-blue-100 text-blue-700',
+      WARNING: 'bg-yellow-100 text-yellow-700',
+      ERROR: 'bg-red-100 text-red-700',
+      CRITICAL: 'bg-red-200 text-red-800',
     };
     return colors[level] || colors.INFO;
   };
@@ -66,113 +96,244 @@ export default function ActivityPage() {
     return new Date(dateString).toLocaleString();
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.4,
+        ease: "easeOut" as const
+      }
+    },
+  };
+
   return (
-    <section className="animate-slide-in-right">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Activity Logs</h2>
+    <section className="space-y-6">
+      {/* Header with Icon3D */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center gap-4"
+      >
+        <Icon3D gradient="from-sky-500 to-blue-500" size="lg">
+          <Activity className="w-6 h-6" />
+        </Icon3D>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Activity Logs</h2>
+          <p className="text-sm text-gray-600">Monitor all system activities and user actions</p>
+        </div>
+      </motion.div>
+
+      {/* Stats Cards */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        <AnimatedStatCard
+          title="Total Activities"
+          value={stats.totalActivities}
+          icon={<Activity className="w-5 h-5" />}
+          gradient="from-sky-500 to-blue-500"
+          delay={0}
+        />
+        <AnimatedStatCard
+          title="Today's Activities"
+          value={stats.todayActivities}
+          icon={<Clock className="w-5 h-5" />}
+          gradient="from-blue-500 to-indigo-500"
+          delay={1}
+        />
+        <AnimatedStatCard
+          title="Active Users"
+          value={stats.activeUsers}
+          icon={<User className="w-5 h-5" />}
+          gradient="from-indigo-500 to-purple-500"
+          delay={2}
+        />
+        <AnimatedStatCard
+          title="Critical Events"
+          value={stats.criticalEvents}
+          icon={<Target className="w-5 h-5" />}
+          gradient="from-purple-500 to-violet-500"
+          delay={3}
+        />
+      </motion.div>
+
+      {/* Search Bar */}
+      <GlassCard className="bg-white p-4">
         <form onSubmit={handleSearch} className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Search logs..."
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="h-10 w-64 border border-gray-200 dark:border-gray-700 rounded-lg px-4 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-          />
-          <button
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search logs by action, user, or description..."
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="h-10 w-full border border-gray-200 rounded-lg pl-10 pr-4 text-sm focus:ring-2 focus:ring-sky-400 focus:border-transparent focus:outline-none bg-white text-gray-900"
+            />
+          </div>
+          <motion.button
             type="submit"
-            className="px-4 h-10 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+            whileHover={{ scale: 1.02, y: -1 }}
+            whileTap={{ scale: 0.98 }}
+            className="px-6 h-10 bg-gradient-to-r from-sky-500 to-blue-500 text-white rounded-lg text-sm font-medium shadow-lg shadow-sky-500/30 hover:shadow-xl hover:shadow-sky-500/40 transition-all"
           >
             Search
-          </button>
+          </motion.button>
         </form>
-      </div>
+      </GlassCard>
 
-      {error && (
-        <div className="mb-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
+      {/* Error Message */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg"
+          >
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th className="px-4 py-3 text-left text-gray-700 dark:text-gray-200">Action</th>
-              <th className="px-4 py-3 text-left text-gray-700 dark:text-gray-200">Description</th>
-              <th className="px-4 py-3 text-left text-gray-700 dark:text-gray-200">User</th>
-              <th className="px-4 py-3 text-left text-gray-700 dark:text-gray-200">Target</th>
-              <th className="px-4 py-3 text-left text-gray-700 dark:text-gray-200">Time</th>
-              <th className="px-4 py-3 text-left text-gray-700 dark:text-gray-200">IP</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+      {/* Activity Logs Table */}
+      <GlassCard className="bg-white overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50/80 border-b border-gray-200">
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center">
-                  <div className="flex flex-col items-center justify-center space-y-3">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-                    <div className="text-gray-500">Loading logs...</div>
-                  </div>
-                </td>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Action</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Description</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">User</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Target</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Time</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">IP</th>
               </tr>
-            ) : logs.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-gray-500">
-                  No activity logs found
-                </td>
-              </tr>
-            ) : (
-              logs.map((log) => (
-                <tr key={log.id || log._id} className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getActionColor(log.action)}`}>
-                      {log.action.replace(/_/g, ' ')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300 max-w-xs truncate">
-                    {log.description}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="text-gray-900 dark:text-gray-100">{log.userName || 'System'}</div>
-                    <div className="text-gray-500 text-xs">{log.userEmail}</div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                    {log.targetName || log.targetType || '-'}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-500 text-xs">
-                    {formatDate(log.createdAt)}
-                  </td>
-                  <td className="px-4 py-3 text-gray-400 font-mono text-xs">
-                    {log.ipAddress || '-'}
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-10 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className="w-10 h-10 border-3 border-sky-500 border-t-transparent rounded-full"
+                      />
+                      <div className="text-gray-500 font-medium">Loading activity logs...</div>
+                    </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-10 text-center text-gray-500">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex flex-col items-center gap-2"
+                    >
+                      <Activity className="w-12 h-12 text-gray-300" />
+                      <p className="font-medium">No activity logs found</p>
+                    </motion.div>
+                  </td>
+                </tr>
+              ) : (
+                <motion.tbody
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="show"
+                >
+                  {logs.map((log, index) => (
+                    <motion.tr
+                      key={log.id || log._id}
+                      variants={itemVariants}
+                      whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.8)' }}
+                      className="border-t border-gray-100 cursor-pointer"
+                    >
+                      <td className="px-4 py-3">
+                        <motion.span
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: index * 0.05 }}
+                          className={`px-2 py-1 rounded text-xs font-medium ${getActionColor(log.action)}`}
+                        >
+                          {log.action.replace(/_/g, ' ')}
+                        </motion.span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 max-w-xs truncate">
+                        {log.description}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-gray-900 font-medium">{log.userName || 'System'}</div>
+                        <div className="text-gray-500 text-xs">{log.userEmail}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {log.targetName || log.targetType || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {formatDate(log.createdAt)}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 font-mono text-xs">
+                        {log.ipAddress || '-'}
+                      </td>
+                    </motion.tr>
+                  ))}
+                </motion.tbody>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </GlassCard>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-4">
-          <button
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="flex items-center justify-center gap-2"
+        >
+          <motion.button
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="px-3 py-1 rounded border border-gray-200 dark:border-gray-700 disabled:opacity-50 text-sm"
+            whileHover={{ scale: page === 1 ? 1 : 1.05 }}
+            whileTap={{ scale: page === 1 ? 1 : 0.95 }}
+            className="px-4 py-2 rounded-lg border border-gray-200 bg-white disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Previous
-          </button>
-          <span className="text-sm text-gray-600 dark:text-gray-400">
+          </motion.button>
+          <span className="px-4 py-2 text-sm text-gray-600 font-medium">
             Page {page} of {totalPages}
           </span>
-          <button
+          <motion.button
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
-            className="px-3 py-1 rounded border border-gray-200 dark:border-gray-700 disabled:opacity-50 text-sm"
+            whileHover={{ scale: page === totalPages ? 1 : 1.05 }}
+            whileTap={{ scale: page === totalPages ? 1 : 0.95 }}
+            className="px-4 py-2 rounded-lg border border-gray-200 bg-white disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Next
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       )}
     </section>
   );

@@ -41,30 +41,47 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
     setError(null);
 
     try {
-      const payload = {
-        schoolName: formData.schoolName,
-        tenantId: formData.tenantId,
-        domain: formData.domain,
-        adminEmail: formData.adminEmail,
-        adminName: formData.adminName,
-        adminPhone: formData.adminPhone,
-        contactEmail: formData.contactEmail,
-        contactPhone: formData.contactPhone,
-        address: formData.address,
-        subscriptionPlan: formData.subscriptionPlan as 'free' | 'basic' | 'premium' | 'enterprise',
-        subscriptionStatus: formData.subscriptionStatus as 'trial' | 'active' | 'suspended' | 'cancelled',
-        studentCount: parseInt(formData.studentCount) || 0,
-        teacherCount: parseInt(formData.teacherCount) || 0,
-      };
-
       if (editingSchool) {
-        await schoolService.updateSchool(editingSchool._id, payload);
+        // Update existing school - don't send admin fields
+        const updatePayload = {
+          schoolName: formData.schoolName,
+          domain: formData.domain,
+          contactEmail: formData.contactEmail || formData.adminEmail,
+          contactPhone: formData.contactPhone || formData.adminPhone,
+          address: formData.address,
+          subscriptionPlan: formData.subscriptionPlan as 'free' | 'basic' | 'premium' | 'enterprise',
+          subscriptionStatus: formData.subscriptionStatus as 'trial' | 'active' | 'suspended' | 'cancelled',
+        };
+        await schoolService.updateSchool(editingSchool._id, updatePayload);
+        onSuccess();
+        onClose();
       } else {
-        await schoolService.createSchool(payload);
-      }
+        // Create new school - include admin fields for automatic user creation
+        const createPayload = {
+          schoolName: formData.schoolName,
+          tenantId: formData.tenantId,
+          domain: formData.domain,
+          contactEmail: formData.contactEmail || formData.adminEmail,
+          contactPhone: formData.contactPhone || formData.adminPhone,
+          address: formData.address,
+          subscriptionPlan: formData.subscriptionPlan as 'free' | 'basic' | 'premium' | 'enterprise',
+          subscriptionStatus: formData.subscriptionStatus as 'trial' | 'active' | 'suspended' | 'cancelled',
+          // Admin fields for automatic user creation
+          adminEmail: formData.adminEmail,
+          adminName: formData.adminName,
+          adminPhone: formData.adminPhone,
+        };
+        const result = await schoolService.createSchool(createPayload);
 
-      onSuccess();
-      onClose();
+        // Show admin credentials if created
+        if ((result as any).adminCredentials) {
+          const creds = (result as any).adminCredentials;
+          alert(`School created successfully!\n\nAdmin Login Credentials:\nEmail: ${creds.email}\nPassword: ${creds.defaultPassword}\n\nNote: Password must be changed on first login.`);
+        }
+
+        onSuccess();
+        onClose();
+      }
     } catch (err: any) {
       console.error('Failed to save school:', err);
       setError(err.response?.data?.message || 'Failed to save school. Please try again.');
@@ -78,14 +95,14 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
   return (
     <Portal>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[9999] overflow-y-auto pt-20 pb-20" onClick={onClose}>
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-4xl w-full mx-4 animate-zoom-in" onClick={(e) => e.stopPropagation()}>
-          <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center z-10 rounded-t-lg">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 animate-zoom-in" onClick={(e) => e.stopPropagation()}>
+          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center z-10 rounded-t-lg">
+            <h2 className="text-xl font-bold text-gray-900">
               {editingSchool ? 'Edit School' : 'Add New School'}
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              className="text-gray-400 hover:text-gray-600"
               type="button"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,18 +113,18 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
 
           <form onSubmit={handleSubmit} className="p-6">
             {error && (
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">{error}</p>
               </div>
             )}
 
             <div className="space-y-6">
               {/* School Information */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">School Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">School Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="schoolName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="schoolName" className="block text-sm font-medium text-gray-700 mb-1">
                       School Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -117,12 +134,12 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
                       value={formData.schoolName}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="tenantId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="tenantId" className="block text-sm font-medium text-gray-700 mb-1">
                       Tenant ID <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -133,12 +150,12 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
                       onChange={handleChange}
                       required
                       disabled={!!editingSchool}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="domain" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="domain" className="block text-sm font-medium text-gray-700 mb-1">
                       Domain <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -149,12 +166,12 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
                       onChange={handleChange}
                       required
                       placeholder="school.allowbox.app"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
                       Address
                     </label>
                     <input
@@ -163,7 +180,7 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
                       name="address"
                       value={formData.address}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
                     />
                   </div>
                 </div>
@@ -171,10 +188,10 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
 
               {/* Admin Information */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Admin Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Admin Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="adminName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="adminName" className="block text-sm font-medium text-gray-700 mb-1">
                       Admin Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -184,12 +201,12 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
                       value={formData.adminName}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="adminEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="adminEmail" className="block text-sm font-medium text-gray-700 mb-1">
                       Admin Email <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -199,12 +216,12 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
                       value={formData.adminEmail}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="adminPhone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="adminPhone" className="block text-sm font-medium text-gray-700 mb-1">
                       Admin Phone
                     </label>
                     <input
@@ -213,12 +230,12 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
                       name="adminPhone"
                       value={formData.adminPhone}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700 mb-1">
                       Contact Email
                     </label>
                     <input
@@ -227,7 +244,7 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
                       name="contactEmail"
                       value={formData.contactEmail}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
                     />
                   </div>
                 </div>
@@ -235,10 +252,10 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
 
               {/* Subscription & Stats */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Subscription & Stats</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Subscription & Stats</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="subscriptionPlan" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="subscriptionPlan" className="block text-sm font-medium text-gray-700 mb-1">
                       Subscription Plan <span className="text-red-500">*</span>
                     </label>
                     <select
@@ -247,7 +264,7 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
                       value={formData.subscriptionPlan}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
                     >
                       <option value="free">Free</option>
                       <option value="basic">Basic</option>
@@ -257,7 +274,7 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
                   </div>
 
                   <div>
-                    <label htmlFor="subscriptionStatus" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="subscriptionStatus" className="block text-sm font-medium text-gray-700 mb-1">
                       Status <span className="text-red-500">*</span>
                     </label>
                     <select
@@ -266,7 +283,7 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
                       value={formData.subscriptionStatus}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
                     >
                       <option value="trial">Trial</option>
                       <option value="active">Active</option>
@@ -276,7 +293,7 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
                   </div>
 
                   <div>
-                    <label htmlFor="studentCount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="studentCount" className="block text-sm font-medium text-gray-700 mb-1">
                       Student Count
                     </label>
                     <input
@@ -286,12 +303,12 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
                       value={formData.studentCount}
                       onChange={handleChange}
                       min="0"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="teacherCount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="teacherCount" className="block text-sm font-medium text-gray-700 mb-1">
                       Teacher Count
                     </label>
                     <input
@@ -301,7 +318,7 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
                       value={formData.teacherCount}
                       onChange={handleChange}
                       min="0"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
                     />
                   </div>
                 </div>
@@ -309,11 +326,11 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                 disabled={loading}
               >
                 Cancel

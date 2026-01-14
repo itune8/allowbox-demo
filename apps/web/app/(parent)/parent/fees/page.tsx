@@ -1,10 +1,23 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../../contexts/auth-context';
 import { Button } from '@repo/ui/button';
 import { userService, type User } from '@/lib/services/user.service';
 import { feeService, type Invoice } from '@/lib/services/fee.service';
+import { GlassCard, AnimatedStatCard, Icon3D } from '../../../../components/ui';
+import {
+  DollarSign,
+  Receipt,
+  FileText,
+  Download,
+  TrendingUp,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  Wallet,
+} from 'lucide-react';
 
 export default function FeesPage() {
   const { user } = useAuth();
@@ -127,186 +140,253 @@ export default function FeesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center space-y-3">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
-          <div className="text-gray-500">Loading fees...</div>
-        </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-10 h-10 border-3 border-yellow-500 border-t-transparent rounded-full"
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="space-y-6"
+    >
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Fees</h1>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Track fee payments for your children
-          </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Icon3D gradient="from-yellow-500 to-amber-500" size="lg">
+            <Wallet className="w-6 h-6" />
+          </Icon3D>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Fees</h1>
+            <p className="text-sm text-gray-500">Track fee payments for your children</p>
+          </div>
         </div>
-        <Button onClick={downloadFeeStatement} variant="outline" className="text-xs sm:text-sm px-3 sm:px-4">
-          <span className="hidden sm:inline">Download </span>Statement
-        </Button>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button
+            onClick={downloadFeeStatement}
+            variant="outline"
+            className="shadow-lg shadow-yellow-500/25"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Download Statement
+          </Button>
+        </motion.div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-5">
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Total</div>
-          <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">
-            ${stats.total.toLocaleString()}
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-5">
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Paid</div>
-          <div className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400 truncate">
-            ${stats.paid.toLocaleString()}
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-5">
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Pending</div>
-          <div className="text-lg sm:text-2xl font-bold text-amber-600 dark:text-amber-400 truncate">
-            ${stats.pending.toLocaleString()}
-          </div>
-        </div>
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <AnimatedStatCard
+          title="Total"
+          value={`$${stats.total.toLocaleString()}`}
+          icon={<FileText className="w-5 h-5 text-gray-600" />}
+          iconBgColor="bg-gray-100"
+          delay={0}
+        />
+        <AnimatedStatCard
+          title="Paid"
+          value={`$${stats.paid.toLocaleString()}`}
+          icon={<CheckCircle className="w-5 h-5 text-green-600" />}
+          iconBgColor="bg-green-100"
+          delay={1}
+        />
+        <AnimatedStatCard
+          title="Pending"
+          value={`$${stats.pending.toLocaleString()}`}
+          icon={<Clock className="w-5 h-5 text-yellow-600" />}
+          iconBgColor="bg-yellow-100"
+          delay={2}
+        />
       </div>
 
       {/* Payment Trend Chart */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Payment Trend (Last 6 Months)
-        </h3>
+      <GlassCard>
+        <div className="flex items-center gap-3 mb-6">
+          <Icon3D gradient="from-yellow-500 to-amber-500" size="sm">
+            <TrendingUp className="w-4 h-4" />
+          </Icon3D>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Payment Trend (Last 6 Months)
+          </h3>
+        </div>
         <div className="h-40 flex items-end gap-3">
           {months.map((month, i) => (
-            <div key={month.value} className="flex-1 flex flex-col items-center">
-              <div
-                className="w-full bg-gradient-to-t from-indigo-500 to-indigo-400 rounded-t transition-all hover:from-indigo-600 hover:to-indigo-500"
-                style={{
+            <motion.div
+              key={month.value}
+              className="flex-1 flex flex-col items-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <motion.div
+                className="w-full bg-gradient-to-t from-yellow-500 to-amber-400 rounded-t transition-all hover:from-yellow-600 hover:to-amber-500"
+                initial={{ height: 0 }}
+                animate={{
                   height: `${monthlyValues[i] ? (monthlyValues[i]! / maxMonthly) * 100 : 0}%`,
+                }}
+                transition={{ delay: i * 0.1 + 0.2, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                style={{
                   minHeight: monthlyValues[i] && monthlyValues[i]! > 0 ? '10px' : '0px',
                 }}
                 title={`${month.label}: $${monthlyValues[i]?.toLocaleString() || 0}`}
+                whileHover={{ scale: 1.05 }}
               />
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">{month.label}</div>
-            </div>
+              <div className="text-xs text-gray-500 mt-2">{month.label}</div>
+            </motion.div>
           ))}
         </div>
-      </div>
+      </GlassCard>
 
       {/* Fee Invoices Table */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
-        <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2 flex-wrap">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">Fee Invoices</h3>
-          <div className="flex gap-1 sm:gap-2">
-            <button
+      <GlassCard>
+        <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
+          <div className="flex items-center gap-3">
+            <Icon3D gradient="from-yellow-500 to-amber-500" size="sm">
+              <Receipt className="w-4 h-4" />
+            </Icon3D>
+            <h3 className="text-lg font-semibold text-gray-900">Fee Invoices</h3>
+          </div>
+          <div className="flex gap-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setSelectedFilter('all')}
-              className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded touch-manipulation ${
+              className={`px-4 py-2 text-sm rounded-xl transition-all ${
                 selectedFilter === 'all'
-                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                  ? 'bg-yellow-100 text-yellow-700 font-medium'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               All
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setSelectedFilter('pending')}
-              className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded touch-manipulation ${
+              className={`px-4 py-2 text-sm rounded-xl transition-all ${
                 selectedFilter === 'pending'
-                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                  ? 'bg-amber-100 text-amber-700 font-medium'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               Pending
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setSelectedFilter('paid')}
-              className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded touch-manipulation ${
+              className={`px-4 py-2 text-sm rounded-xl transition-all ${
                 selectedFilter === 'paid'
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                  ? 'bg-green-100 text-green-700 font-medium'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               Paid
-            </button>
+            </motion.button>
           </div>
         </div>
 
         {children.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            <div className="text-4xl mb-3">📋</div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-12 text-gray-500"
+          >
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
+              <FileText className="w-8 h-8 text-gray-400" />
+            </div>
             <p>No children linked to your account yet.</p>
-          </div>
+          </motion.div>
         ) : filteredInvoices.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            <div className="text-4xl mb-3">💳</div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-12 text-gray-500"
+          >
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
+              <Receipt className="w-8 h-8 text-gray-400" />
+            </div>
             <p>No invoices found for the selected filter.</p>
-          </div>
+          </motion.div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-gray-500 border-b border-gray-200 dark:border-gray-800">
-                <tr>
-                  <th className="py-2">Invoice #</th>
-                  <th className="py-2">Child</th>
-                  <th className="py-2">Issue Date</th>
-                  <th className="py-2">Due Date</th>
-                  <th className="py-2">Amount</th>
-                  <th className="py-2">Paid</th>
-                  <th className="py-2">Balance</th>
-                  <th className="py-2">Status</th>
-                  <th className="py-2">Action</th>
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100/80">
+                <tr className="text-left">
+                  <th className="py-4 px-4 font-semibold text-gray-700">Invoice #</th>
+                  <th className="py-4 px-4 font-semibold text-gray-700">Child</th>
+                  <th className="py-4 px-4 font-semibold text-gray-700">Issue Date</th>
+                  <th className="py-4 px-4 font-semibold text-gray-700">Due Date</th>
+                  <th className="py-4 px-4 font-semibold text-gray-700">Amount</th>
+                  <th className="py-4 px-4 font-semibold text-gray-700">Paid</th>
+                  <th className="py-4 px-4 font-semibold text-gray-700">Balance</th>
+                  <th className="py-4 px-4 font-semibold text-gray-700">Status</th>
+                  <th className="py-4 px-4 font-semibold text-gray-700">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {filteredInvoices.map((inv) => {
+              <tbody className="divide-y divide-gray-100">
+                {filteredInvoices.map((inv, index) => {
                   const isOverdue = inv.status !== 'paid' && new Date(inv.dueDate) < new Date();
                   const balance = inv.totalAmount - inv.paidAmount;
 
                   return (
-                    <tr key={inv._id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
-                      <td className="py-3 font-mono text-xs">{inv.invoiceNumber}</td>
-                      <td className="py-3">{getChildName(inv.studentId)}</td>
-                      <td className="py-3">{new Date(inv.issueDate).toLocaleDateString()}</td>
-                      <td className="py-3">{new Date(inv.dueDate).toLocaleDateString()}</td>
-                      <td className="py-3 font-medium">${inv.totalAmount.toLocaleString()}</td>
-                      <td className="py-3 text-green-600 dark:text-green-400">${inv.paidAmount.toLocaleString()}</td>
-                      <td className="py-3 font-medium">${balance.toLocaleString()}</td>
-                      <td className="py-3">
+                    <motion.tr
+                      key={inv._id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.03 }}
+                      whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.8)' }}
+                      className="group transition-all"
+                    >
+                      <td className="py-4 px-4 font-mono text-xs font-medium text-gray-900">{inv.invoiceNumber}</td>
+                      <td className="py-4 px-4 text-gray-900">{getChildName(inv.studentId)}</td>
+                      <td className="py-4 px-4 text-gray-600">{new Date(inv.issueDate).toLocaleDateString()}</td>
+                      <td className="py-4 px-4 text-gray-600">{new Date(inv.dueDate).toLocaleDateString()}</td>
+                      <td className="py-4 px-4 font-semibold text-gray-900">${inv.totalAmount.toLocaleString()}</td>
+                      <td className="py-4 px-4 text-green-600 font-medium">${inv.paidAmount.toLocaleString()}</td>
+                      <td className="py-4 px-4 font-semibold text-gray-900">${balance.toLocaleString()}</td>
+                      <td className="py-4 px-4">
                         <span
-                          className={`text-xs px-2 py-0.5 rounded ${
+                          className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
                             inv.status === 'paid'
-                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                              ? 'bg-green-100 text-green-700'
                               : isOverdue
-                              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                              : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-yellow-100 text-yellow-700'
                           }`}
                         >
                           {inv.status === 'paid' ? 'Paid' : isOverdue ? 'Overdue' : inv.status}
                         </span>
                       </td>
-                      <td className="py-3">
+                      <td className="py-4 px-4">
                         {inv.status !== 'paid' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              alert(`Payment integration coming soon for invoice ${inv.invoiceNumber}`);
-                            }}
-                          >
-                            Pay Now
-                          </Button>
+                          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                alert(`Payment integration coming soon for invoice ${inv.invoiceNumber}`);
+                              }}
+                            >
+                              Pay Now
+                            </Button>
+                          </motion.div>
                         )}
                       </td>
-                    </tr>
+                    </motion.tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
         )}
-      </div>
-    </div>
+      </GlassCard>
+    </motion.section>
   );
 }

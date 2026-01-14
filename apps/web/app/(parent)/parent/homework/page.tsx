@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
 import { useAuth } from '../../../../contexts/auth-context';
 import {
@@ -11,6 +12,8 @@ import {
   SubmissionStatus,
 } from '../../../../lib/services/homework.service';
 import { userService, User } from '../../../../lib/services/user.service';
+import { GlassCard, AnimatedStatCard, Icon3D } from '../../../../components/ui';
+import { BookOpen, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 
 interface Child extends User {
   classId?: { _id: string; name: string; grade?: string };
@@ -115,7 +118,14 @@ export default function ParentHomeworkPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500 mx-auto mb-3" />
+          <p className="text-sm text-gray-500">Loading homework...</p>
+        </motion.div>
       </div>
     );
   }
@@ -123,35 +133,72 @@ export default function ParentHomeworkPage() {
   if (children.length === 0 && !loading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Homework</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            View and track your child's homework assignments
-          </p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3"
+        >
+          <Icon3D gradient="from-rose-500 to-pink-500">
+            <BookOpen className="w-5 h-5" />
+          </Icon3D>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Homework</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              View and track your child's homework assignments
+            </p>
+          </div>
+        </motion.div>
+        <GlassCard className="p-8 text-center">
           <div className="text-4xl mb-3">👨‍👩‍👧</div>
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">No Children Linked</h3>
+          <h3 className="font-semibold text-gray-900 mb-2">No Children Linked</h3>
           <p className="text-gray-500">
             No children are linked to your account. Please contact the school administrator.
           </p>
-        </div>
+        </GlassCard>
       </div>
     );
   }
 
+  // Calculate stats
+  const pendingHomework = homework.filter(hw => {
+    const submission = submissions.find(s => s.homeworkId._id === hw._id);
+    const isPastDue = new Date(hw.dueDate) < new Date();
+    return !submission || (submission.status === SubmissionStatus.PENDING && !isPastDue);
+  }).length;
+
+  const overdueHomework = homework.filter(hw => {
+    const submission = submissions.find(s => s.homeworkId._id === hw._id);
+    const isPastDue = new Date(hw.dueDate) < new Date();
+    return !submission && isPastDue;
+  }).length;
+
+  const completedHomework = submissions.filter(s =>
+    s.status === SubmissionStatus.SUBMITTED ||
+    s.status === SubmissionStatus.GRADED ||
+    s.status === SubmissionStatus.RETURNED
+  ).length;
+
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Homework</h1>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
-            View and track your child's homework
-          </p>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between gap-3"
+      >
+        <div className="min-w-0 flex items-center gap-3">
+          <Icon3D gradient="from-rose-500 to-pink-500">
+            <BookOpen className="w-5 h-5" />
+          </Icon3D>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Homework</h1>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
+              View and track your child's homework
+            </p>
+          </div>
         </div>
         {children.length > 1 && (
           <select
-            className="border border-gray-300 dark:border-gray-700 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-w-0 max-w-[120px] sm:max-w-none"
+            className="border border-gray-200 rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white text-gray-900 min-w-0 max-w-[120px] sm:max-w-none focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-400"
             value={selectedChild?._id || selectedChild?.id || ''}
             onChange={(e) => {
               const child = children.find((c) => (c._id || c.id) === e.target.value);
@@ -165,57 +212,105 @@ export default function ParentHomeworkPage() {
             ))}
           </select>
         )}
-      </div>
+      </motion.div>
 
       {selectedChild && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-4">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-base sm:text-lg flex-shrink-0">
-              {selectedChild.firstName?.[0]}
-            </div>
-            <div className="min-w-0">
-              <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">
-                {selectedChild.firstName} {selectedChild.lastName}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <GlassCard className="p-3 sm:p-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-white font-semibold text-base sm:text-lg flex-shrink-0">
+                {selectedChild.firstName?.[0]}
               </div>
-              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
-                {selectedChild.classId?.name || 'No class assigned'}
+              <div className="min-w-0">
+                <div className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                  {selectedChild.firstName} {selectedChild.lastName}
+                </div>
+                <div className="text-xs sm:text-sm text-gray-600 truncate">
+                  {selectedChild.classId?.name || 'No class assigned'}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </GlassCard>
+        </motion.div>
+      )}
+
+      {/* Stats Cards */}
+      {homework.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="grid grid-cols-3 gap-3 sm:gap-4"
+        >
+          <AnimatedStatCard
+            title="Pending"
+            value={pendingHomework}
+            icon={<Clock className="w-5 h-5 text-white" />}
+            gradient="from-blue-500 to-cyan-500"
+            delay={0}
+          />
+          <AnimatedStatCard
+            title="Overdue"
+            value={overdueHomework}
+            icon={<AlertCircle className="w-5 h-5 text-white" />}
+            gradient="from-red-500 to-orange-500"
+            delay={0.1}
+          />
+          <AnimatedStatCard
+            title="Completed"
+            value={completedHomework}
+            icon={<CheckCircle2 className="w-5 h-5 text-white" />}
+            gradient="from-green-500 to-emerald-500"
+            delay={0.2}
+          />
+        </motion.div>
       )}
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-300">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
           {error}
         </div>
       )}
 
       {homework.length === 0 ? (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 sm:p-8 text-center">
-          <div className="text-3xl sm:text-4xl mb-3">📝</div>
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2 text-sm sm:text-base">No Homework</h3>
-          <p className="text-gray-500 text-xs sm:text-sm">
-            Your child's homework assignments will appear here once assigned by teachers.
-          </p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <GlassCard className="p-6 sm:p-8 text-center">
+            <div className="text-3xl sm:text-4xl mb-3">📝</div>
+            <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">No Homework</h3>
+            <p className="text-gray-500 text-xs sm:text-sm">
+              Your child's homework assignments will appear here once assigned by teachers.
+            </p>
+          </GlassCard>
+        </motion.div>
       ) : (
         <div className="space-y-3 sm:space-y-4">
-          {homework.map((hw) => {
+          {homework.map((hw, idx) => {
             const submission = submissions.find(s => s.homeworkId._id === hw._id);
             const isPastDue = new Date(hw.dueDate) < new Date();
 
             return (
-              <div
+              <motion.div
                 key={hw._id}
-                className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-4 active:bg-gray-50 dark:active:bg-gray-800 transition-colors"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + (0.05 * idx) }}
+              >
+                <GlassCard className="p-3 sm:p-4 hover:shadow-md transition-shadow cursor-pointer"
               >
                 <div className="flex items-start gap-2 sm:gap-3">
                   <span className="text-xl sm:text-2xl flex-shrink-0">{typeIcons[hw.type]}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">{hw.title}</h3>
+                        <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{hw.title}</h3>
                         <div className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1 truncate">
                           {hw.subjectId?.name} • {hw.classId?.name}
                         </div>
@@ -226,7 +321,7 @@ export default function ParentHomeworkPage() {
                             {submission.status}
                           </span>
                         ) : (
-                          <span className={`px-2 py-0.5 sm:py-1 rounded text-xs ${isPastDue ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'}`}>
+                          <span className={`px-2 py-0.5 sm:py-1 rounded text-xs ${isPastDue ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
                             {isPastDue ? 'Overdue' : 'Pending'}
                           </span>
                         )}
@@ -234,10 +329,10 @@ export default function ParentHomeworkPage() {
                     </div>
 
                     {hw.description && (
-                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">{hw.description}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-2 line-clamp-2">{hw.description}</p>
                     )}
 
-                    <div className="flex items-center justify-between mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-100 dark:border-gray-800 gap-2">
+                    <div className="flex items-center justify-between mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-100 gap-2">
                       <div className="text-xs sm:text-sm text-gray-500 truncate">
                         Due: {new Date(hw.dueDate).toLocaleDateString()}<span className="hidden sm:inline"> at{' '}
                         {new Date(hw.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -247,10 +342,11 @@ export default function ParentHomeworkPage() {
                           Score: {submission.score}/{submission.maxScore}
                         </div>
                       )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                </GlassCard>
+              </motion.div>
             );
           })}
         </div>

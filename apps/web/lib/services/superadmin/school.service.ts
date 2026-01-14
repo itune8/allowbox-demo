@@ -66,6 +66,10 @@ export interface CreateSchoolDto {
   pricePerStudent?: number;
   adminId?: string;
   notes?: string;
+  // Admin fields for automatic user creation
+  adminEmail?: string;
+  adminName?: string;
+  adminPhone?: string;
 }
 
 export interface UpdateSchoolDto {

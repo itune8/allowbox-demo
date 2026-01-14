@@ -1,7 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
+import {
+  BookMarked,
+  Plus,
+  X,
+  Users,
+  Calendar,
+  Edit,
+  Trash2,
+  Megaphone,
+  FileText,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Filter,
+  ChevronRight,
+} from 'lucide-react';
+import { GlassCard, AnimatedStatCard, Icon3D } from '../../../../components/ui';
 import {
   dailyDiaryService,
   DailyDiary,
@@ -35,6 +53,55 @@ const initialFormData: FormData = {
   title: '',
   content: '',
   date: new Date().toISOString().split('T')[0] ?? '',
+};
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+    },
+  },
+};
+
+const modalVariants = {
+  hidden: { opacity: 0, scale: 0.95, y: 20 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      duration: 0.3,
+      ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.95,
+    y: 20,
+    transition: {
+      duration: 0.2,
+    },
+  },
+};
+
+const backdropVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
+  exit: { opacity: 0 },
 };
 
 export default function SchoolDiaryPage() {
@@ -285,141 +352,197 @@ export default function SchoolDiaryPage() {
   if (loading && classes.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="rounded-full h-8 w-8 border-b-2 border-sky-600"
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Daily Diary</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Send daily updates and communications to parents
-          </p>
+    <motion.section
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="space-y-6"
+    >
+      {/* Header */}
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Icon3D gradient="from-sky-500 to-blue-500" size="lg">
+            <BookMarked className="w-6 h-6" />
+          </Icon3D>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Daily Diary</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Send daily updates and communications to parents
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           {activeTab === 'student' && selectedClassId && (
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  resetForm();
+                  setFormData(prev => ({ ...prev, classId: selectedClassId }));
+                  setShowBulkForm(true);
+                }}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Bulk Entry
+              </Button>
+            </motion.div>
+          )}
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Button
-              variant="outline"
               onClick={() => {
                 resetForm();
                 setFormData(prev => ({ ...prev, classId: selectedClassId }));
-                setShowBulkForm(true);
+                setShowForm(true);
               }}
+              disabled={!selectedClassId}
             >
-              Bulk Entry
+              <Plus className="w-4 h-4 mr-2" />
+              {activeTab === 'class' ? 'Class Announcement' : 'Student Entry'}
             </Button>
-          )}
-          <Button
-            onClick={() => {
-              resetForm();
-              setFormData(prev => ({ ...prev, classId: selectedClassId }));
-              setShowForm(true);
-            }}
-            disabled={!selectedClassId}
-          >
-            {activeTab === 'class' ? '+ Class Announcement' : '+ Student Entry'}
-          </Button>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-300">
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 flex items-center gap-2"
+        >
+          <AlertCircle className="w-5 h-5" />
           {error}
-        </div>
+        </motion.div>
       )}
 
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
+      {/* Tabs */}
+      <motion.div variants={itemVariants} className="flex gap-2 border-b border-gray-200">
         <button
           onClick={() => setActiveTab('class')}
-          className={`px-4 py-2 font-medium transition border-b-2 -mb-px ${
+          className={`px-4 py-2 font-medium transition border-b-2 -mb-px flex items-center gap-2 ${
             activeTab === 'class'
-              ? 'border-indigo-600 text-indigo-600'
+              ? 'border-sky-600 text-sky-600'
               : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
+          <Megaphone className="w-4 h-4" />
           Class Announcements
         </button>
         <button
           onClick={() => setActiveTab('student')}
-          className={`px-4 py-2 font-medium transition border-b-2 -mb-px ${
+          className={`px-4 py-2 font-medium transition border-b-2 -mb-px flex items-center gap-2 ${
             activeTab === 'student'
-              ? 'border-indigo-600 text-indigo-600'
+              ? 'border-sky-600 text-sky-600'
               : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
+          <FileText className="w-4 h-4" />
           Student Entries
         </button>
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Select Class</h3>
+      {/* Main Content Grid */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Sidebar */}
+        <GlassCard className="p-4" hover={false}>
+          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-sky-600" />
+            Select Class
+          </h3>
           <div className="space-y-2">
             {classes.length === 0 ? (
               <p className="text-sm text-gray-500">No classes available</p>
             ) : (
-              classes.map((cls) => (
-                <button
+              classes.map((cls, index) => (
+                <motion.button
                   key={cls._id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ x: 4 }}
                   onClick={() => setSelectedClassId(cls._id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors ${
                     selectedClassId === cls._id
-                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                      ? 'bg-sky-100 text-sky-700 border border-sky-200'
+                      : 'hover:bg-gray-100'
                   }`}
                 >
                   <span>📚</span>
-                  <span>{cls.name} ({cls.grade})</span>
-                </button>
+                  <span className="flex-1">{cls.name} ({cls.grade})</span>
+                  {selectedClassId === cls._id && (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                </motion.button>
               ))
             )}
           </div>
 
           {activeTab === 'student' && (
             <>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 mt-6">Filter by Type</h3>
+              <h3 className="font-semibold text-gray-900 mb-3 mt-6 flex items-center gap-2">
+                <Filter className="w-4 h-4 text-sky-600" />
+                Filter by Type
+              </h3>
               <div className="space-y-2">
-                <button
+                <motion.button
+                  whileHover={{ x: 4 }}
                   onClick={() => setSelectedTypeFilter('')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                     selectedTypeFilter === ''
-                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                      ? 'bg-sky-100 text-sky-700 border border-sky-200'
+                      : 'hover:bg-gray-100'
                   }`}
                 >
                   All Types
-                </button>
+                </motion.button>
                 {Object.entries(typeIcons).map(([type, icon]) => (
-                  <button
+                  <motion.button
                     key={type}
+                    whileHover={{ x: 4 }}
                     onClick={() => setSelectedTypeFilter(type as DiaryEntryType)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors ${
                       selectedTypeFilter === type
-                        ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                        ? 'bg-sky-100 text-sky-700 border border-sky-200'
+                        : 'hover:bg-gray-100'
                     }`}
                   >
                     <span>{icon}</span>
                     <span>{type.replace('_', ' ')}</span>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </>
           )}
-        </div>
+        </GlassCard>
 
-        <div className="md:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+        {/* Main Content Area */}
+        <GlassCard className="md:col-span-2 p-4" hover={false}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+              {activeTab === 'class' ? (
+                <Megaphone className="w-4 h-4 text-sky-600" />
+              ) : (
+                <FileText className="w-4 h-4 text-sky-600" />
+              )}
               {activeTab === 'class' ? 'Class Announcements' : 'Student Diary Entries'}
             </h3>
           </div>
 
           {!selectedClassId ? (
-            <div className="text-center py-8 text-gray-500">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-8 text-gray-500"
+            >
               <div className="text-4xl mb-3">📓</div>
               <p>Select a class to view diary entries.</p>
               <p className="text-sm mt-2">
@@ -427,43 +550,62 @@ export default function SchoolDiaryPage() {
                   ? 'Class announcements are sent to all parents in a class.'
                   : 'Student entries are individual communications with parents.'}
               </p>
-            </div>
+            </motion.div>
           ) : loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                className="rounded-full h-8 w-8 border-b-2 border-sky-600"
+              />
             </div>
           ) : activeTab === 'class' ? (
             classDiaries.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-8 text-gray-500"
+              >
                 <div className="text-4xl mb-3">📢</div>
                 <p>No class announcements yet.</p>
-                <Button
-                  className="mt-4"
-                  onClick={() => {
-                    resetForm();
-                    setFormData(prev => ({ ...prev, classId: selectedClassId }));
-                    setShowForm(true);
-                  }}
-                >
-                  + Create Announcement
-                </Button>
-              </div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    className="mt-4"
+                    onClick={() => {
+                      resetForm();
+                      setFormData(prev => ({ ...prev, classId: selectedClassId }));
+                      setShowForm(true);
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Announcement
+                  </Button>
+                </motion.div>
+              </motion.div>
             ) : (
-              <div className="space-y-3">
-                {classDiaries.map((diary) => (
-                  <div
+              <motion.div variants={containerVariants} className="space-y-3">
+                {classDiaries.map((diary, index) => (
+                  <motion.div
                     key={diary._id}
-                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{
+                      scale: 1.01,
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+                    }}
+                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50/50 cursor-pointer transition-colors"
                     onClick={() => setSelectedDiary(diary)}
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <h4 className="font-medium text-gray-900 dark:text-gray-100">{diary.title}</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                        <h4 className="font-medium text-gray-900">{diary.title}</h4>
+                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                           {diary.content}
                         </p>
                       </div>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
                         {new Date(diary.date).toLocaleDateString()}
                       </span>
                     </div>
@@ -472,47 +614,67 @@ export default function SchoolDiaryPage() {
                         By {diary.createdBy.firstName} {diary.createdBy.lastName}
                       </span>
                       <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(diary)}>
-                          Edit
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDelete(diary)}>
-                          Delete
-                        </Button>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button variant="outline" size="sm" onClick={() => handleEdit(diary)}>
+                            <Edit className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
+                        </motion.div>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button variant="outline" size="sm" onClick={() => handleDelete(diary)}>
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Delete
+                          </Button>
+                        </motion.div>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             )
           ) : (
             studentDiaries.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-8 text-gray-500"
+              >
                 <div className="text-4xl mb-3">📝</div>
                 <p>No student diary entries yet.</p>
-                <Button
-                  className="mt-4"
-                  onClick={() => {
-                    resetForm();
-                    setFormData(prev => ({ ...prev, classId: selectedClassId }));
-                    setShowForm(true);
-                  }}
-                >
-                  + Create Entry
-                </Button>
-              </div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    className="mt-4"
+                    onClick={() => {
+                      resetForm();
+                      setFormData(prev => ({ ...prev, classId: selectedClassId }));
+                      setShowForm(true);
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Entry
+                  </Button>
+                </motion.div>
+              </motion.div>
             ) : (
-              <div className="space-y-3">
-                {studentDiaries.map((diary) => (
-                  <div
+              <motion.div variants={containerVariants} className="space-y-3">
+                {studentDiaries.map((diary, index) => (
+                  <motion.div
                     key={diary._id}
-                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{
+                      scale: 1.01,
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+                    }}
+                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50/50 cursor-pointer transition-colors"
                     onClick={() => setSelectedDiary(diary)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
                         <span>{typeIcons[diary.type]}</span>
                         <div>
-                          <h4 className="font-medium text-gray-900 dark:text-gray-100">{diary.title}</h4>
+                          <h4 className="font-medium text-gray-900">{diary.title}</h4>
                           <p className="text-xs text-gray-500">
                             {diary.studentId.firstName} {diary.studentId.lastName}
                           </p>
@@ -522,192 +684,107 @@ export default function SchoolDiaryPage() {
                         <span className={`px-2 py-0.5 rounded text-xs ${typeColors[diary.type]}`}>
                           {diary.type.replace('_', ' ')}
                         </span>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1 justify-end">
+                          <Clock className="w-3 h-3" />
                           {new Date(diary.date).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">
+                    <p className="text-sm text-gray-600 mt-2 line-clamp-2">
                       {diary.content}
                     </p>
                     <div className="flex items-center justify-between mt-3">
-                      <span className={`text-xs px-2 py-0.5 rounded ${
+                      <span className={`text-xs px-2 py-0.5 rounded flex items-center gap-1 ${
                         diary.acknowledgementStatus === AcknowledgementStatus.ACKNOWLEDGED
                           ? 'bg-green-100 text-green-700'
                           : 'bg-yellow-100 text-yellow-700'
                       }`}>
+                        {diary.acknowledgementStatus === AcknowledgementStatus.ACKNOWLEDGED ? (
+                          <CheckCircle className="w-3 h-3" />
+                        ) : (
+                          <Clock className="w-3 h-3" />
+                        )}
                         {diary.acknowledgementStatus}
                       </span>
                       <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(diary)}>
-                          Edit
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDelete(diary)}>
-                          Delete
-                        </Button>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button variant="outline" size="sm" onClick={() => handleEdit(diary)}>
+                            <Edit className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
+                        </motion.div>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button variant="outline" size="sm" onClick={() => handleDelete(diary)}>
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Delete
+                          </Button>
+                        </motion.div>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             )
           )}
-        </div>
-      </div>
+        </GlassCard>
+      </motion.div>
 
       {/* Create/Edit Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {editingDiary ? 'Edit Entry' : activeTab === 'class' ? 'New Class Announcement' : 'New Student Entry'}
-              </h2>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Class *
-                </label>
-                <select
-                  value={formData.classId}
-                  onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800"
-                  required
-                >
-                  <option value="">Select Class</option>
-                  {classes.map((cls) => (
-                    <option key={cls._id} value={cls._id}>
-                      {cls.name} ({cls.grade})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {activeTab === 'student' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Student *
-                    </label>
-                    <select
-                      value={formData.studentId}
-                      onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-                      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800"
-                      required
-                    >
-                      <option value="">Select Student</option>
-                      {students.map((student) => (
-                        <option key={student._id} value={student._id}>
-                          {student.firstName} {student.lastName}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Entry Type *
-                    </label>
-                    <select
-                      value={formData.type}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value as DiaryEntryType })}
-                      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800"
-                      required
-                    >
-                      <option value="">Select Type</option>
-                      {Object.values(DiaryEntryType).map((type) => (
-                        <option key={type} value={type}>
-                          {typeIcons[type]} {type.replace('_', ' ')}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Title *
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Content *
-                </label>
-                <textarea
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800"
-                  rows={4}
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            variants={backdropVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => {
+              setShowForm(false);
+              resetForm();
+            }}
+          >
+            <motion.div
+              variants={modalVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Icon3D gradient="from-sky-500 to-blue-500" size="md">
+                    {activeTab === 'class' ? (
+                      <Megaphone className="w-4 h-4" />
+                    ) : (
+                      <FileText className="w-4 h-4" />
+                    )}
+                  </Icon3D>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {editingDiary ? 'Edit Entry' : activeTab === 'class' ? 'New Class Announcement' : 'New Student Entry'}
+                  </h2>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => {
                     setShowForm(false);
                     resetForm();
                   }}
+                  className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
                 >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? 'Saving...' : editingDiary ? 'Update' : 'Send to Parents'}
-                </Button>
+                  <X className="w-5 h-5" />
+                </motion.button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Entry Modal */}
-      {showBulkForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                Bulk Student Entry
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Send the same diary entry to multiple students
-              </p>
-            </div>
-            <form onSubmit={handleBulkSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Class *
                   </label>
                   <select
                     value={formData.classId}
-                    onChange={(e) => {
-                      setFormData({ ...formData, classId: e.target.value });
-                      setSelectedStudents([]);
-                    }}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800"
+                    onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow"
                     required
                   >
                     <option value="">Select Class</option>
@@ -718,207 +795,429 @@ export default function SchoolDiaryPage() {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Entry Type *
-                  </label>
-                  <select
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as DiaryEntryType })}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800"
-                    required
-                  >
-                    <option value="">Select Type</option>
-                    {Object.values(DiaryEntryType).map((type) => (
-                      <option key={type} value={type}>
-                        {typeIcons[type]} {type.replace('_', ' ')}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Select Students * ({selectedStudents.length} selected)
+                {activeTab === 'student' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Student *
+                      </label>
+                      <select
+                        value={formData.studentId}
+                        onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow"
+                        required
+                      >
+                        <option value="">Select Student</option>
+                        {students.map((student) => (
+                          <option key={student._id} value={student._id}>
+                            {student.firstName} {student.lastName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Entry Type *
+                      </label>
+                      <select
+                        value={formData.type}
+                        onChange={(e) => setFormData({ ...formData, type: e.target.value as DiaryEntryType })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow"
+                        required
+                      >
+                        <option value="">Select Type</option>
+                        {Object.values(DiaryEntryType).map((type) => (
+                          <option key={type} value={type}>
+                            {typeIcons[type]} {type.replace('_', ' ')}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date
                   </label>
-                  <div className="flex gap-2">
-                    <button
+                  <input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Content *
+                  </label>
+                  <textarea
+                    value={formData.content}
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow"
+                    rows={4}
+                    required
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
                       type="button"
-                      onClick={selectAllStudents}
-                      className="text-xs text-indigo-600 hover:underline"
+                      variant="outline"
+                      onClick={() => {
+                        setShowForm(false);
+                        resetForm();
+                      }}
                     >
-                      Select All
-                    </button>
-                    <button
-                      type="button"
-                      onClick={deselectAllStudents}
-                      className="text-xs text-gray-500 hover:underline"
-                    >
-                      Clear
-                    </button>
+                      Cancel
+                    </Button>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button type="submit" disabled={submitting}>
+                      {submitting ? 'Saving...' : editingDiary ? 'Update' : 'Send to Parents'}
+                    </Button>
+                  </motion.div>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Entry Modal */}
+      <AnimatePresence>
+        {showBulkForm && (
+          <motion.div
+            variants={backdropVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => {
+              setShowBulkForm(false);
+              resetForm();
+            }}
+          >
+            <motion.div
+              variants={modalVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Icon3D gradient="from-sky-500 to-blue-500" size="md">
+                    <Users className="w-4 h-4" />
+                  </Icon3D>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      Bulk Student Entry
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Send the same diary entry to multiple students
+                    </p>
                   </div>
                 </div>
-                <div className="border border-gray-300 dark:border-gray-700 rounded-lg max-h-40 overflow-y-auto">
-                  {students.length === 0 ? (
-                    <p className="p-3 text-sm text-gray-500">No students in selected class</p>
-                  ) : (
-                    students.map((student) => (
-                      <label
-                        key={student._id}
-                        className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedStudents.includes(student._id)}
-                          onChange={() => toggleStudentSelection(student._id)}
-                          className="rounded"
-                        />
-                        <span className="text-sm">
-                          {student.firstName} {student.lastName}
-                        </span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Title *
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Content *
-                </label>
-                <textarea
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800"
-                  rows={4}
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => {
                     setShowBulkForm(false);
                     resetForm();
                   }}
+                  className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
                 >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? 'Sending...' : `Send to ${selectedStudents.length} Students`}
-                </Button>
+                  <X className="w-5 h-5" />
+                </motion.button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <form onSubmit={handleBulkSubmit} className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Class *
+                    </label>
+                    <select
+                      value={formData.classId}
+                      onChange={(e) => {
+                        setFormData({ ...formData, classId: e.target.value });
+                        setSelectedStudents([]);
+                      }}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow"
+                      required
+                    >
+                      <option value="">Select Class</option>
+                      {classes.map((cls) => (
+                        <option key={cls._id} value={cls._id}>
+                          {cls.name} ({cls.grade})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Entry Type *
+                    </label>
+                    <select
+                      value={formData.type}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value as DiaryEntryType })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow"
+                      required
+                    >
+                      <option value="">Select Type</option>
+                      {Object.values(DiaryEntryType).map((type) => (
+                        <option key={type} value={type}>
+                          {typeIcons[type]} {type.replace('_', ' ')}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <Users className="w-4 h-4 text-sky-600" />
+                      Select Students * ({selectedStudents.length} selected)
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={selectAllStudents}
+                        className="text-xs text-sky-600 hover:underline"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={deselectAllStudents}
+                        className="text-xs text-gray-500 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                  <div className="border border-gray-300 rounded-lg max-h-40 overflow-y-auto">
+                    {students.length === 0 ? (
+                      <p className="p-3 text-sm text-gray-500">No students in selected class</p>
+                    ) : (
+                      students.map((student, index) => (
+                        <motion.label
+                          key={student._id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: index * 0.02 }}
+                          whileHover={{ backgroundColor: 'rgba(14, 165, 233, 0.05)' }}
+                          className="flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedStudents.includes(student._id)}
+                            onChange={() => toggleStudentSelection(student._id)}
+                            className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                          />
+                          <span className="text-sm">
+                            {student.firstName} {student.lastName}
+                          </span>
+                        </motion.label>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Content *
+                  </label>
+                  <textarea
+                    value={formData.content}
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow"
+                    rows={4}
+                    required
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowBulkForm(false);
+                        resetForm();
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button type="submit" disabled={submitting}>
+                      {submitting ? 'Sending...' : `Send to ${selectedStudents.length} Students`}
+                    </Button>
+                  </motion.div>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Detail Modal */}
-      {selectedDiary && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl max-w-lg w-full">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Diary Entry</h2>
-              <button
-                onClick={() => setSelectedDiary(null)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              {'type' in selectedDiary && (
-                <div className="flex items-center gap-2">
-                  <span>{typeIcons[selectedDiary.type]}</span>
-                  <span className={`px-2 py-0.5 rounded text-xs ${typeColors[selectedDiary.type]}`}>
-                    {selectedDiary.type.replace('_', ' ')}
-                  </span>
+      <AnimatePresence>
+        {selectedDiary && (
+          <motion.div
+            variants={backdropVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setSelectedDiary(null)}
+          >
+            <motion.div
+              variants={modalVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="bg-white rounded-xl max-w-lg w-full shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Icon3D gradient="from-sky-500 to-blue-500" size="md">
+                    <BookMarked className="w-4 h-4" />
+                  </Icon3D>
+                  <h2 className="text-xl font-bold text-gray-900">Diary Entry</h2>
                 </div>
-              )}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {selectedDiary.title}
-                </h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  {new Date(selectedDiary.date).toLocaleDateString()}
-                </p>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setSelectedDiary(null)}
+                  className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5" />
+                </motion.button>
               </div>
-              {'studentId' in selectedDiary && (
-                <div className="text-sm">
-                  <span className="text-gray-500">Student:</span>
-                  <span className="ml-2 text-gray-900 dark:text-gray-100">
-                    {selectedDiary.studentId.firstName} {selectedDiary.studentId.lastName}
-                  </span>
-                </div>
-              )}
-              <div className="text-sm">
-                <span className="text-gray-500">Class:</span>
-                <span className="ml-2 text-gray-900 dark:text-gray-100">
-                  {selectedDiary.classId.name}
-                </span>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                  {selectedDiary.content}
-                </p>
-              </div>
-              {'acknowledgementStatus' in selectedDiary && (
-                <div className="text-sm">
-                  <span className="text-gray-500">Status:</span>
-                  <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
-                    selectedDiary.acknowledgementStatus === AcknowledgementStatus.ACKNOWLEDGED
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {selectedDiary.acknowledgementStatus}
-                  </span>
-                  {selectedDiary.acknowledgedAt && (
-                    <span className="ml-2 text-gray-500">
-                      on {new Date(selectedDiary.acknowledgedAt).toLocaleDateString()}
+              <div className="p-6 space-y-4">
+                {'type' in selectedDiary && (
+                  <div className="flex items-center gap-2">
+                    <span>{typeIcons[selectedDiary.type]}</span>
+                    <span className={`px-2 py-0.5 rounded text-xs ${typeColors[selectedDiary.type]}`}>
+                      {selectedDiary.type.replace('_', ' ')}
                     </span>
-                  )}
-                </div>
-              )}
-              {'parentComment' in selectedDiary && selectedDiary.parentComment && (
+                  </div>
+                )}
                 <div>
-                  <span className="text-sm text-gray-500">Parent Comment:</span>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                    {selectedDiary.parentComment}
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {selectedDiary.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
+                    {new Date(selectedDiary.date).toLocaleDateString()}
                   </p>
                 </div>
-              )}
-              <div className="text-xs text-gray-500">
-                Created by {selectedDiary.createdBy.firstName} {selectedDiary.createdBy.lastName}
+                {'studentId' in selectedDiary && (
+                  <div className="text-sm flex items-center gap-2">
+                    <Users className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-500">Student:</span>
+                    <span className="text-gray-900">
+                      {selectedDiary.studentId.firstName} {selectedDiary.studentId.lastName}
+                    </span>
+                  </div>
+                )}
+                <div className="text-sm flex items-center gap-2">
+                  <BookMarked className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-500">Class:</span>
+                  <span className="text-gray-900">
+                    {selectedDiary.classId.name}
+                  </span>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-700 whitespace-pre-wrap">
+                    {selectedDiary.content}
+                  </p>
+                </div>
+                {'acknowledgementStatus' in selectedDiary && (
+                  <div className="text-sm flex items-center gap-2">
+                    <span className="text-gray-500">Status:</span>
+                    <span className={`px-2 py-0.5 rounded text-xs flex items-center gap-1 ${
+                      selectedDiary.acknowledgementStatus === AcknowledgementStatus.ACKNOWLEDGED
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {selectedDiary.acknowledgementStatus === AcknowledgementStatus.ACKNOWLEDGED ? (
+                        <CheckCircle className="w-3 h-3" />
+                      ) : (
+                        <Clock className="w-3 h-3" />
+                      )}
+                      {selectedDiary.acknowledgementStatus}
+                    </span>
+                    {selectedDiary.acknowledgedAt && (
+                      <span className="text-gray-500">
+                        on {new Date(selectedDiary.acknowledgedAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {'parentComment' in selectedDiary && selectedDiary.parentComment && (
+                  <div>
+                    <span className="text-sm text-gray-500">Parent Comment:</span>
+                    <p className="text-sm text-gray-700 mt-1 bg-blue-50 p-3 rounded-lg">
+                      {selectedDiary.parentComment}
+                    </p>
+                  </div>
+                )}
+                <div className="text-xs text-gray-500">
+                  Created by {selectedDiary.createdBy.firstName} {selectedDiary.createdBy.lastName}
+                </div>
+                <div className="flex justify-end gap-3 pt-4">
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button variant="outline" onClick={() => setSelectedDiary(null)}>
+                      Close
+                    </Button>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button onClick={() => { handleEdit(selectedDiary); setSelectedDiary(null); }}>
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
+                  </motion.div>
+                </div>
               </div>
-              <div className="flex justify-end gap-3 pt-4">
-                <Button variant="outline" onClick={() => setSelectedDiary(null)}>
-                  Close
-                </Button>
-                <Button onClick={() => { handleEdit(selectedDiary); setSelectedDiary(null); }}>
-                  Edit
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.section>
   );
 }

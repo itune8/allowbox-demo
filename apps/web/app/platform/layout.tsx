@@ -3,9 +3,22 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar, type SidebarMenuItem } from '@repo/ui/sidebar';
 import { Button } from '@repo/ui/button';
+import { Icon3D } from '@repo/ui/icon-3d';
 import { useAuth } from '../../contexts/auth-context';
 import { ProtectedRoute } from '../../components/protected-route';
 import { useMemo, useRef, useState, useEffect } from 'react';
+import {
+  LayoutDashboard,
+  School,
+  Users,
+  DollarSign,
+  FileText,
+  BarChart3,
+  Bell,
+  Activity,
+  HelpCircle,
+  Settings,
+} from 'lucide-react';
 
 const sidebarMenu: SidebarMenuItem[] = [
   // Overview
@@ -13,12 +26,9 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'dashboard',
     label: 'Dashboard',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="3" width="7" height="7" />
-        <rect x="14" y="3" width="7" height="7" />
-        <rect x="14" y="14" width="7" height="7" />
-        <rect x="3" y="14" width="7" height="7" />
-      </svg>
+      <Icon3D gradient="from-indigo-500 to-purple-600">
+        <LayoutDashboard size={20} />
+      </Icon3D>
     ),
   },
 
@@ -28,22 +38,18 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'schools',
     label: 'Schools',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-        <polyline points="9 22 9 12 15 12 15 22" />
-      </svg>
+      <Icon3D gradient="from-blue-500 to-cyan-500">
+        <School size={20} />
+      </Icon3D>
     ),
   },
   {
     key: 'users',
     label: 'Users & Roles',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
+      <Icon3D gradient="from-violet-500 to-purple-500">
+        <Users size={20} />
+      </Icon3D>
     ),
   },
 
@@ -53,10 +59,18 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'finance',
     label: 'Finance & Billing',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <line x1="12" y1="1" x2="12" y2="23" />
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-      </svg>
+      <Icon3D gradient="from-green-500 to-emerald-500">
+        <DollarSign size={20} />
+      </Icon3D>
+    ),
+  },
+  {
+    key: 'invoices',
+    label: 'Invoices',
+    icon: (
+      <Icon3D gradient="from-amber-500 to-orange-500">
+        <FileText size={20} />
+      </Icon3D>
     ),
   },
 
@@ -66,21 +80,18 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'announcements',
     label: 'Announcements',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z" />
-        <path d="M9 17v1a3 3 0 0 0 6 0v-1" />
-      </svg>
+      <Icon3D gradient="from-rose-500 to-pink-500">
+        <Bell size={20} />
+      </Icon3D>
     ),
   },
   {
     key: 'support',
     label: 'Support Tickets',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-        <line x1="12" y1="17" x2="12.01" y2="17" />
-      </svg>
+      <Icon3D gradient="from-teal-500 to-cyan-500">
+        <HelpCircle size={20} />
+      </Icon3D>
     ),
   },
 
@@ -90,21 +101,18 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'reports',
     label: 'Reports',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M3 3v18h18" />
-        <path d="M18 17V9" />
-        <path d="M13 17V5" />
-        <path d="M8 17v-3" />
-      </svg>
+      <Icon3D gradient="from-purple-500 to-pink-500">
+        <BarChart3 size={20} />
+      </Icon3D>
     ),
   },
   {
     key: 'activity',
     label: 'Activity Logs',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-      </svg>
+      <Icon3D gradient="from-sky-500 to-blue-500">
+        <Activity size={20} />
+      </Icon3D>
     ),
   },
 
@@ -114,10 +122,9 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'settings',
     label: 'Settings',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-      </svg>
+      <Icon3D gradient="from-gray-500 to-slate-600">
+        <Settings size={20} />
+      </Icon3D>
     ),
   },
 ];
@@ -175,7 +182,7 @@ export default function PlatformLayout({
 
   return (
     <ProtectedRoute>
-      <div className="relative flex transition-opacity duration-300 ease-in-out text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-950">
+      <div className="relative flex transition-opacity duration-300 ease-in-out text-gray-900 bg-white">
         {/* Sidebar */}
         <Sidebar
           title="SuperAdmin Portal"
@@ -192,27 +199,27 @@ export default function PlatformLayout({
         {/* Main content - add left margin to account for fixed sidebar */}
         <div className="flex-1 flex flex-col ml-64">
           {/* Topbar */}
-          <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-10 border-b border-gray-200 dark:border-gray-800 animate-slide-in-top">
+          <header className="bg-white shadow-sm sticky top-0 z-10 border-b border-gray-200 animate-slide-in-top">
             <div className="mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+              <h1 className="text-xl font-bold text-gray-900 tracking-tight">
                 Platform Management
               </h1>
               <div className="flex items-center gap-3 relative" ref={profileRef}>
                 <button
-                  className="flex items-center gap-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ease-smooth px-2 py-1"
+                  className="flex items-center gap-2 rounded-full hover:bg-gray-100 transition-colors ease-smooth px-2 py-1"
                   onClick={() => setShowProfileMenu((s) => !s)}
                 >
-                  <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold">
+                  <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold">
                     {user?.firstName?.[0] ?? 'S'}{user?.lastName?.[0] ?? 'A'}
                   </div>
-                  <span className="text-sm text-gray-900 dark:text-gray-100 hidden sm:block">
+                  <span className="text-sm text-gray-900 hidden sm:block">
                     {user?.firstName} {user?.lastName}
                   </span>
                 </button>
                 {showProfileMenu && (
-                  <div className="absolute right-0 top-12 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg animate-zoom-in">
+                  <div className="absolute right-0 top-12 w-48 bg-white border border-gray-200 rounded-md shadow-lg animate-zoom-in">
                     <button
-                      className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 transition-colors"
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm text-gray-900 transition-colors"
                       onClick={() => {
                         setShowProfileMenu(false);
                         router.push('/auth/forgot_password');
@@ -220,9 +227,9 @@ export default function PlatformLayout({
                     >
                       Reset Password
                     </button>
-                    <div className="h-px bg-gray-200 dark:bg-gray-700" />
+                    <div className="h-px bg-gray-200" />
                     <button
-                      className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 text-sm text-red-600 transition-colors"
+                      className="w-full text-left px-3 py-2 hover:bg-red-50 text-sm text-red-600 transition-colors"
                       onClick={logout}
                     >
                       Logout

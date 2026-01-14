@@ -131,9 +131,9 @@ export function CreateSubjectModal({ isOpen, onClose, onSubmit, initialData }: C
   return (
     <Portal>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[9999] overflow-y-auto pt-20 pb-20" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-900">
             {initialData ? 'Edit Subject' : 'Add New Subject'}
           </h2>
           <button
@@ -149,15 +149,15 @@ export function CreateSubjectModal({ isOpen, onClose, onSubmit, initialData }: C
 
         <form onSubmit={handleSubmit} className="p-6">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800">{error}</p>
             </div>
           )}
 
           <div className="space-y-4">
             {/* Subject Name */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                 Subject Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -168,13 +168,13 @@ export function CreateSubjectModal({ isOpen, onClose, onSubmit, initialData }: C
                 onChange={handleChange}
                 required
                 placeholder="e.g., Mathematics, Physics, English"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
             {/* Subject Code */}
             <div>
-              <label htmlFor="code" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-1">
                 Subject Code <span className="text-red-500">*</span>
               </label>
               <input
@@ -185,13 +185,13 @@ export function CreateSubjectModal({ isOpen, onClose, onSubmit, initialData }: C
                 onChange={handleChange}
                 required
                 placeholder="e.g., MATH101, PHY201, ENG301"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
             {/* Max Marks */}
             <div>
-              <label htmlFor="maxMarks" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="maxMarks" className="block text-sm font-medium text-gray-700 mb-1">
                 Maximum Marks
               </label>
               <input
@@ -202,13 +202,13 @@ export function CreateSubjectModal({ isOpen, onClose, onSubmit, initialData }: C
                 onChange={handleChange}
                 min="1"
                 placeholder="100"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
             {/* Passing Marks */}
             <div>
-              <label htmlFor="passingMarks" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="passingMarks" className="block text-sm font-medium text-gray-700 mb-1">
                 Passing Marks
               </label>
               <input
@@ -220,13 +220,13 @@ export function CreateSubjectModal({ isOpen, onClose, onSubmit, initialData }: C
                 min="1"
                 max={formData.maxMarks}
                 placeholder="40"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
                 Description (Optional)
               </label>
               <textarea
@@ -236,23 +236,23 @@ export function CreateSubjectModal({ isOpen, onClose, onSubmit, initialData }: C
                 onChange={handleChange}
                 rows={3}
                 placeholder="Additional information about this subject"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white text-gray-900"
               />
             </div>
 
             {/* Assign to Classes */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Assign to Classes (Optional)
               </label>
               {classes.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">No classes available. Create classes first.</p>
+                <p className="text-sm text-gray-500">No classes available. Create classes first.</p>
               ) : (
-                <div className="max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-700 rounded-md p-3 space-y-2">
+                <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3 space-y-2">
                   {classes.map((cls) => (
                     <label
                       key={cls._id}
-                      className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded"
+                      className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
                     >
                       <input
                         type="checkbox"
@@ -260,7 +260,7 @@ export function CreateSubjectModal({ isOpen, onClose, onSubmit, initialData }: C
                         onChange={() => handleClassToggle(cls._id)}
                         className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                       />
-                      <span className="text-sm text-gray-900 dark:text-gray-100">
+                      <span className="text-sm text-gray-900">
                         {cls.name} (Grade {cls.grade})
                       </span>
                     </label>
@@ -268,7 +268,7 @@ export function CreateSubjectModal({ isOpen, onClose, onSubmit, initialData }: C
                 </div>
               )}
               {formData.classes && formData.classes.length > 0 && (
-                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-2 text-xs text-gray-500">
                   Selected {formData.classes.length} class{formData.classes.length > 1 ? 'es' : ''}
                 </p>
               )}

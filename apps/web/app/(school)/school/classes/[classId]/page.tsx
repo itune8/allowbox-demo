@@ -106,7 +106,7 @@ export default function ClassDetailPage() {
   if (error || !classData) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800 px-4 py-3 rounded-lg">
+        <div className="bg-red-50 text-red-800 border border-red-200 px-4 py-3 rounded-lg">
           {error || 'Class not found'}
         </div>
         <Button className="mt-4" onClick={() => router.back()}>Go Back</Button>
@@ -119,7 +119,7 @@ export default function ClassDetailPage() {
       {/* Banner */}
       {banner && (
         <div className="animate-fade-in">
-          <div className="bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
+          <div className="bg-green-50 text-green-800 border border-green-200 px-4 py-3 rounded-lg flex items-center gap-2">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
@@ -137,18 +137,18 @@ export default function ClassDetailPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="text-2xl font-bold text-gray-900">
               {classData.name} - Grade {classData.grade}
             </h1>
             {classData.description && (
-              <p className="text-sm text-gray-600 dark:text-gray-400">{classData.description}</p>
+              <p className="text-sm text-gray-600">{classData.description}</p>
             )}
           </div>
         </div>
@@ -165,35 +165,35 @@ export default function ClassDetailPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Students</div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalStudents}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="text-sm text-gray-600 mb-1">Total Students</div>
+          <div className="text-2xl font-bold text-gray-900">{stats.totalStudents}</div>
+          <div className="text-xs text-gray-500 mt-1">
             {stats.activeStudents} active
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Sections</div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.sections}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="text-sm text-gray-600 mb-1">Sections</div>
+          <div className="text-2xl font-bold text-gray-900">{stats.sections}</div>
+          <div className="text-xs text-gray-500 mt-1">
             {classData.sections?.join(', ')}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Subjects Available</div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.subjects}</div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="text-sm text-gray-600 mb-1">Subjects Available</div>
+          <div className="text-2xl font-bold text-gray-900">{stats.subjects}</div>
         </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Capacity</div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{classData.capacity || 'N/A'}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="text-sm text-gray-600 mb-1">Capacity</div>
+          <div className="text-2xl font-bold text-gray-900">{classData.capacity || 'N/A'}</div>
+          <div className="text-xs text-gray-500 mt-1">
             {classData.capacity ? `${Math.round((stats.totalStudents / classData.capacity) * 100)}% filled` : ''}
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-800">
+      <div className="border-b border-gray-200">
         <nav className="flex gap-8">
           {[
             { key: 'overview', label: 'Overview' },
@@ -206,8 +206,8 @@ export default function ClassDetailPage() {
               onClick={() => setActiveTab(tab.key as any)}
               className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === tab.key
-                  ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               {tab.label}
@@ -217,35 +217,35 @@ export default function ClassDetailPage() {
       </div>
 
       {/* Content */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
         {activeTab === 'overview' && (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Class Overview</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Class Overview</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Class Information</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Class Information</h4>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Grade</span>
-                      <span className="font-semibold text-gray-900 dark:text-gray-100">{classData.grade}</span>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm text-gray-700">Grade</span>
+                      <span className="font-semibold text-gray-900">{classData.grade}</span>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Total Sections</span>
-                      <span className="font-semibold text-gray-900 dark:text-gray-100">{stats.sections}</span>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm text-gray-700">Total Sections</span>
+                      <span className="font-semibold text-gray-900">{stats.sections}</span>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Enrollment</span>
-                      <span className="font-semibold text-gray-900 dark:text-gray-100">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm text-gray-700">Enrollment</span>
+                      <span className="font-semibold text-gray-900">
                         {stats.totalStudents}/{classData.capacity || 'Unlimited'}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Status</span>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm text-gray-700">Status</span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         classData.isActive
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800/30'
                       }`}>
                         {classData.isActive ? 'Active' : 'Inactive'}
                       </span>
@@ -253,28 +253,28 @@ export default function ClassDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Actions</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Quick Actions</h4>
                   <div className="space-y-2">
                     <button
                       onClick={() => router.push(`/school/students?classId=${classId}`)}
-                      className="w-full p-3 text-left bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      className="w-full p-3 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                     >
-                      <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">View All Students</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Browse {stats.totalStudents} students</div>
+                      <div className="font-medium text-gray-900 text-sm">View All Students</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Browse {stats.totalStudents} students</div>
                     </button>
                     <button
                       onClick={() => router.push(`/school/classes/${classId}/timetable`)}
-                      className="w-full p-3 text-left bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      className="w-full p-3 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                     >
-                      <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">Class Timetable</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">View and manage schedule</div>
+                      <div className="font-medium text-gray-900 text-sm">Class Timetable</div>
+                      <div className="text-xs text-gray-500 mt-0.5">View and manage schedule</div>
                     </button>
                     <button
                       onClick={() => router.push(`/school/reports?classId=${classId}`)}
-                      className="w-full p-3 text-left bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      className="w-full p-3 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                     >
-                      <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">Class Reports</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Performance analytics</div>
+                      <div className="font-medium text-gray-900 text-sm">Class Reports</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Performance analytics</div>
                     </button>
                   </div>
                 </div>
@@ -286,7 +286,7 @@ export default function ClassDetailPage() {
         {activeTab === 'sections' && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Sections</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Sections</h3>
             </div>
             {classData.sections && classData.sections.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -295,24 +295,24 @@ export default function ClassDetailPage() {
                   return (
                     <div
                       key={section}
-                      className="p-5 border border-gray-200 dark:border-gray-800 rounded-lg hover:shadow-md transition-all hover:border-indigo-300 dark:hover:border-indigo-700"
+                      className="p-5 border border-gray-200 rounded-lg hover:shadow-md transition-all hover:border-indigo-300"
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-lg">
+                        <h4 className="font-semibold text-gray-900 text-lg">
                           Section {section}
                         </h4>
-                        <span className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 grid place-items-center font-semibold">
+                        <span className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 grid place-items-center font-semibold">
                           {section}
                         </span>
                       </div>
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600 dark:text-gray-400">Students</span>
-                          <span className="font-medium text-gray-900 dark:text-gray-100">{sectionStudents.length}</span>
+                          <span className="text-gray-600">Students</span>
+                          <span className="font-medium text-gray-900">{sectionStudents.length}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600 dark:text-gray-400">Active</span>
-                          <span className="font-medium text-green-600 dark:text-green-400">
+                          <span className="text-gray-600">Active</span>
+                          <span className="font-medium text-green-600">
                             {sectionStudents.filter(s => s.isActive).length}
                           </span>
                         </div>
@@ -322,7 +322,7 @@ export default function ClassDetailPage() {
                           setSelectedSection(section);
                           setActiveTab('students');
                         }}
-                        className="mt-4 w-full text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-medium text-center py-2 border border-indigo-200 dark:border-indigo-800 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                        className="mt-4 w-full text-sm text-indigo-600 hover:text-indigo-700 font-medium text-center py-2 border border-indigo-200 rounded-md hover:bg-indigo-50 transition-colors"
                       >
                         View Students →
                       </button>
@@ -341,7 +341,7 @@ export default function ClassDetailPage() {
         {activeTab === 'subjects' && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Subjects ({subjects.length})</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Subjects ({subjects.length})</h3>
               <Button size="sm" onClick={() => router.push('/school/settings')}>
                 Manage Subjects
               </Button>
@@ -359,27 +359,27 @@ export default function ClassDetailPage() {
                 {subjects.map((subject) => (
                   <div
                     key={subject._id}
-                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-indigo-500 dark:hover:border-indigo-500 hover:shadow-md transition-all"
+                    className="p-4 border border-gray-200 rounded-lg hover:border-indigo-500 hover:shadow-md transition-all"
                   >
-                    <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-lg mb-1">
+                    <h4 className="font-semibold text-gray-900 text-lg mb-1">
                       {subject.name}
                     </h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-mono mb-3">
+                    <p className="text-sm text-gray-500 font-mono mb-3">
                       {subject.code}
                     </p>
                     {subject.description && (
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">
                         {subject.description}
                       </p>
                     )}
                     <div className="flex gap-2 text-xs">
                       {subject.maxMarks && (
-                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
+                        <span className="px-2 py-1 bg-gray-100 rounded">
                           Max: {subject.maxMarks}
                         </span>
                       )}
                       {subject.passingMarks && (
-                        <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
+                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded">
                           Pass: {subject.passingMarks}
                         </span>
                       )}
@@ -394,14 +394,14 @@ export default function ClassDetailPage() {
         {activeTab === 'students' && (
           <div>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">
                 Students ({filteredStudents.length})
               </h3>
               <div className="flex gap-2">
                 <select
                   value={selectedSection}
                   onChange={(e) => setSelectedSection(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="all">All Sections</option>
                   {classData.sections?.map((section) => (
@@ -413,7 +413,7 @@ export default function ClassDetailPage() {
                   placeholder="Search students..."
                   value={studentSearch}
                   onChange={(e) => setStudentSearch(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
             </div>
@@ -433,35 +433,35 @@ export default function ClassDetailPage() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-800">
+                  <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Student ID</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Name</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Section</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Email</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Student ID</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Name</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Section</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Email</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                  <tbody className="divide-y divide-gray-200">
                     {filteredStudents.map((student) => (
-                      <tr key={student.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-mono">
+                      <tr key={student.id} className="hover:bg-gray-50/50">
+                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">
                           {student.studentId || 'N/A'}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                        <td className="px-4 py-3 text-sm text-gray-900">
                           {student.firstName} {student.lastName}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                        <td className="px-4 py-3 text-sm text-gray-600">
                           {student.section || 'N/A'}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                        <td className="px-4 py-3 text-sm text-gray-600">
                           {student.email}
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                             student.isActive
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800/30'
                           }`}>
                             {student.isActive ? 'Active' : 'Inactive'}
                           </span>

@@ -1,12 +1,21 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../../contexts/auth-context';
 import { getCurrentSchoolId, getEntities } from '../../../../lib/data-store';
 import { Button } from '@repo/ui/button';
+import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import {
+  BarChart3,
+  TrendingUp,
+  Users,
+  PieChart,
+} from 'lucide-react';
 
 export default function ReportsPage() {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
   const schoolId = useMemo(() => getCurrentSchoolId(), []);
   const entities = useMemo(() => getEntities(schoolId), [schoolId]);
 
@@ -115,31 +124,66 @@ export default function ReportsPage() {
     [homeworkRate, attendancePct]
   );
 
-  const SectionCard = ({ title, data }: { title: string; data: number[] }) => {
+  const SectionCard = ({ title, data, gradient }: { title: string; data: number[]; gradient: string }) => {
     const max = Math.max(1, ...data);
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
-        <div className="font-semibold mb-4 text-gray-900 dark:text-gray-100">{title}</div>
-        <div className="h-40 flex items-end gap-2">
-          {data.map((v, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400">{v}%</div>
-              <div
-                className="w-full bg-gradient-to-t from-indigo-500 to-indigo-400 rounded-t hover:from-indigo-600 hover:to-indigo-500 transition-all"
-                style={{ height: `${Math.round((v / max) * 100)}%` }}
-                title={`${labels[i]}: ${v}%`}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 grid grid-cols-5 text-[10px] text-gray-500 dark:text-gray-400">
-          {labels.map((l, i) => (
-            <div key={i} className="text-center">
-              {l}
-            </div>
-          ))}
-        </div>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <GlassCard className="p-6 bg-white/90" hover={false}>
+          <h3 className="font-semibold mb-4 text-gray-900 flex items-center gap-2">
+            {title}
+            <Icon3D gradient={gradient} size="sm">
+              <BarChart3 className="w-3.5 h-3.5" />
+            </Icon3D>
+          </h3>
+          <div className="h-40 flex items-end gap-2">
+            <AnimatePresence>
+              {data.map((v, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ delay: i * 0.1, duration: 0.5 }}
+                  className="flex-1 flex flex-col items-center gap-1"
+                >
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: i * 0.1 + 0.3 }}
+                    className="text-xs font-medium text-gray-600"
+                  >
+                    {v}%
+                  </motion.div>
+                  <motion.div
+                    initial={{ height: 0 }}
+                    animate={{ height: `${Math.round((v / max) * 100)}%` }}
+                    transition={{ delay: i * 0.1, duration: 0.6, ease: 'easeOut' }}
+                    whileHover={{ scale: 1.05, originY: 'bottom' }}
+                    className={`w-full bg-gradient-to-t ${gradient} rounded-t transition-all`}
+                    title={`${labels[i]}: ${v}%`}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="mt-3 grid grid-cols-5 text-[10px] text-gray-500"
+          >
+            {labels.map((l, i) => (
+              <div key={i} className="text-center">
+                {l}
+              </div>
+            ))}
+          </motion.div>
+        </GlassCard>
+      </motion.div>
     );
   };
 
@@ -198,60 +242,89 @@ export default function ReportsPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center justify-between gap-3 flex-wrap"
+      >
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Reports</h1>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            Reports
+            <Icon3D gradient={gradients.purple} size="sm">
+              <PieChart className="w-3.5 h-3.5" />
+            </Icon3D>
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">
             View performance analytics
           </p>
         </div>
-        <div className="flex gap-2 sm:gap-3">
-          <Button variant="outline" onClick={printPDF} className="text-xs sm:text-sm">
-            <span className="hidden sm:inline">Export </span>PDF
-          </Button>
-          <Button variant="outline" onClick={downloadCSV} className="text-xs sm:text-sm">
-            <span className="hidden sm:inline">Download </span>CSV
-          </Button>
-        </div>
-      </div>
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="flex gap-2 sm:gap-3"
+        >
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Button variant="outline" onClick={printPDF} className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">Export </span>PDF
+            </Button>
+          </motion.div>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Button variant="outline" onClick={downloadCSV} className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">Download </span>CSV
+            </Button>
+          </motion.div>
+        </motion.div>
+      </motion.div>
+
+      {/* Stats Cards */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4"
+      >
+        <AnimatedStatCard
+          title="Avg Attendance"
+          value={attendancePct.length > 0 ? Math.round(attendancePct.reduce((a, b) => a + b, 0) / attendancePct.length) : 0}
+          icon={<Users className="w-5 h-5 text-purple-600" />}
+          iconBgColor="bg-purple-50"
+          delay={0}
+        />
+        <AnimatedStatCard
+          title="Avg Homework Rate"
+          value={homeworkRate.length > 0 ? Math.round(homeworkRate.reduce((a, b) => a + b, 0) / homeworkRate.length) : 0}
+          icon={<BarChart3 className="w-5 h-5 text-violet-600" />}
+          iconBgColor="bg-violet-50"
+          delay={1}
+        />
+        <AnimatedStatCard
+          title="Performance"
+          value={perfTrend.length > 0 ? Math.round(perfTrend.reduce((a, b) => a + b, 0) / perfTrend.length) : 0}
+          icon={<TrendingUp className="w-5 h-5 text-indigo-600" />}
+          iconBgColor="bg-indigo-50"
+          delay={2}
+        />
+      </motion.div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-        <SectionCard title="Attendance %" data={attendancePct} />
-        <SectionCard title="Homework Rate" data={homeworkRate} />
-        <SectionCard title="Performance Trend" data={perfTrend} />
-      </div>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 sm:p-6">
-          <div className="text-xs sm:text-sm font-medium text-blue-800 dark:text-blue-300">Attendance</div>
-          <div className="text-xl sm:text-3xl font-bold text-blue-900 dark:text-blue-200 mt-1 sm:mt-2">
-            {attendancePct.length > 0
-              ? Math.round(attendancePct.reduce((a, b) => a + b, 0) / attendancePct.length)
-              : 0}
-            %
-          </div>
-          <div className="text-xs text-blue-700 dark:text-blue-400 mt-1 hidden sm:block">Last 5 weeks</div>
-        </div>
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 rounded-xl p-3 sm:p-6">
-          <div className="text-xs sm:text-sm font-medium text-green-800 dark:text-green-300">Homework</div>
-          <div className="text-xl sm:text-3xl font-bold text-green-900 dark:text-green-200 mt-1 sm:mt-2">
-            {homeworkRate.length > 0
-              ? Math.round(homeworkRate.reduce((a, b) => a + b, 0) / homeworkRate.length)
-              : 0}
-            %
-          </div>
-          <div className="text-xs text-green-700 dark:text-green-400 mt-1 hidden sm:block">Last 5 weeks</div>
-        </div>
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-800 rounded-xl p-3 sm:p-6">
-          <div className="text-xs sm:text-sm font-medium text-purple-800 dark:text-purple-300">Performance</div>
-          <div className="text-xl sm:text-3xl font-bold text-purple-900 dark:text-purple-200 mt-1 sm:mt-2">
-            {perfTrend.length > 0 ? Math.round(perfTrend.reduce((a, b) => a + b, 0) / perfTrend.length) : 0}%
-          </div>
-          <div className="text-xs text-purple-700 dark:text-purple-400 mt-1 hidden sm:block">Last 5 weeks</div>
-        </div>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6"
+      >
+        <SectionCard title="Attendance %" data={attendancePct} gradient={gradients.purple} />
+        <SectionCard title="Homework Rate" data={homeworkRate} gradient={gradients.violet} />
+        <SectionCard title="Performance Trend" data={perfTrend} gradient={gradients.indigo} />
+      </motion.div>
     </div>
   );
 }

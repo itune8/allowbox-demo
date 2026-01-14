@@ -105,7 +105,7 @@ export default function ClassTimetablePage() {
   if (error || !classData) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800 px-4 py-3 rounded-lg">
+        <div className="bg-red-50 text-red-800 border border-red-200 px-4 py-3 rounded-lg">
           {error || 'Class not found'}
         </div>
         <Button className="mt-4" onClick={() => router.back()}>Go Back</Button>
@@ -118,7 +118,7 @@ export default function ClassTimetablePage() {
       {/* Banner */}
       {banner && (
         <div className="animate-fade-in">
-          <div className="bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
+          <div className="bg-green-50 text-green-800 border border-green-200 px-4 py-3 rounded-lg flex items-center gap-2">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
@@ -136,24 +136,24 @@ export default function ClassTimetablePage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="text-2xl font-bold text-gray-900">
               {classData.name} - Timetable
             </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Grade {classData.grade}</p>
+            <p className="text-sm text-gray-600">Grade {classData.grade}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <select
             value={selectedSection}
             onChange={(e) => setSelectedSection(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-4 py-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             {classData.sections?.map((section) => (
               <option key={section} value={section}>Section {section}</option>
@@ -163,28 +163,28 @@ export default function ClassTimetablePage() {
       </div>
 
       {/* Timetable Grid */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full border-collapse">
-            <thead className="bg-gray-50 dark:bg-gray-800">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 w-32">
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200 w-32">
                   Time
                 </th>
                 {DAYS.map((day) => (
                   <th
                     key={day}
-                    className="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 last:border-r-0"
+                    className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-r border-gray-200 last:border-r-0"
                   >
                     {day}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-gray-200">
               {PERIODS.map((periodLabel, periodIndex) => (
-                <tr key={periodLabel} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                  <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                <tr key={periodLabel} className="hover:bg-gray-50/50">
+                  <td className="px-4 py-4 text-sm font-medium text-gray-900 border-r border-gray-200 bg-gray-50">
                     {periodLabel}
                   </td>
                   {DAYS.map((day) => {
@@ -192,25 +192,25 @@ export default function ClassTimetablePage() {
                     return (
                       <td
                         key={`${day}-${periodIndex}`}
-                        className="px-3 py-4 text-sm border-r border-gray-200 dark:border-gray-700 last:border-r-0 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                        className="px-3 py-4 text-sm border-r border-gray-200 last:border-r-0 cursor-pointer hover:bg-indigo-50 transition-colors"
                         onClick={() => setEditingSlot({ day, period: periodIndex + 1 })}
                       >
                         {slot ? (
                           <div className="space-y-1">
-                            <div className="font-semibold text-gray-900 dark:text-gray-100">
+                            <div className="font-semibold text-gray-900">
                               {getSubjectName(slot.subjectId)}
                             </div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                            <div className="text-xs text-gray-600">
                               {getTeacherName(slot.teacherId)}
                             </div>
                             {slot.roomNumber && (
-                              <div className="text-xs text-gray-500 dark:text-gray-500">
+                              <div className="text-xs text-gray-500">
                                 Room: {slot.roomNumber}
                               </div>
                             )}
                           </div>
                         ) : (
-                          <div className="text-center text-gray-400 dark:text-gray-600 text-xs">
+                          <div className="text-center text-gray-400 text-xs">
                             Click to add
                           </div>
                         )}
@@ -226,21 +226,21 @@ export default function ClassTimetablePage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Slots</div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="text-sm text-gray-600 mb-1">Total Slots</div>
+          <div className="text-2xl font-bold text-gray-900">
             {timetableSlots.filter(s => s.isActive).length}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Subjects</div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="text-sm text-gray-600 mb-1">Subjects</div>
+          <div className="text-2xl font-bold text-gray-900">
             {new Set(timetableSlots.filter(s => s.isActive).map(s => s.subjectId)).size}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Teachers</div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="text-sm text-gray-600 mb-1">Teachers</div>
+          <div className="text-2xl font-bold text-gray-900">
             {new Set(timetableSlots.filter(s => s.isActive).map(s => s.teacherId)).size}
           </div>
         </div>
@@ -248,28 +248,28 @@ export default function ClassTimetablePage() {
 
       {/* Info Box */}
       {timetableSlots.length === 0 && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
           <div className="text-5xl mb-3">📅</div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
             No Timetable Created Yet
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <p className="text-sm text-gray-600 mb-4">
             Start building your timetable by clicking on any time slot above.
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-500">
+          <p className="text-xs text-gray-500">
             Tip: Assign subjects and teachers to each period for section {selectedSection}
           </p>
         </div>
       )}
 
       {/* Note about timetable management */}
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-sm text-gray-600 dark:text-gray-400">
+      <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
         <div className="flex items-start gap-2">
           <svg className="w-5 h-5 mt-0.5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
           </svg>
           <div>
-            <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">Coming Soon: Full Timetable Management</p>
+            <p className="font-medium text-gray-900 mb-1">Coming Soon: Full Timetable Management</p>
             <p>The ability to add, edit, and delete timetable slots with teacher conflict detection will be available soon. For now, you can view the current timetable structure.</p>
           </div>
         </div>

@@ -1,8 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Receipt, FileText, DollarSign, Clock, CheckCircle, XCircle, Download } from 'lucide-react';
 import { Button } from '@repo/ui/button';
 import { schoolService, type School } from '../../../lib/services/superadmin/school.service';
+import { GlassCard } from '../../../components/ui/glass-card';
+import { AnimatedStatCard } from '../../../components/ui/animated-stat-card';
+import { Icon3D } from '../../../components/ui/icon-3d';
 
 interface PlatformInvoice {
   id: string;
@@ -17,6 +22,21 @@ interface PlatformInvoice {
   plan: string;
   studentCount: number;
 }
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 },
+};
 
 export default function PlatformInvoicesPage() {
   const [invoices, setInvoices] = useState<PlatformInvoice[]>([]);
@@ -118,12 +138,12 @@ export default function PlatformInvoicesPage() {
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { bg: string; text: string; label: string }> = {
-      paid: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300', label: 'Paid' },
-      pending: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-300', label: 'Pending' },
-      overdue: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300', label: 'Overdue' },
-      cancelled: { bg: 'bg-gray-100 dark:bg-gray-900/30', text: 'text-gray-700 dark:text-gray-300', label: 'Cancelled' },
+      paid: { bg: 'bg-green-100', text: 'text-green-700', label: 'Paid' },
+      pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Pending' },
+      overdue: { bg: 'bg-red-100', text: 'text-red-700', label: 'Overdue' },
+      cancelled: { bg: 'bg-gray-100/30', text: 'text-gray-700', label: 'Cancelled' },
     };
-    const badge = badges[status] ?? { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-300', label: 'Pending' };
+    const badge = badges[status] ?? { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Pending' };
     return (
       <span className={`text-xs px-2 py-1 rounded font-medium ${badge.bg} ${badge.text}`}>
         {badge.label}
@@ -154,264 +174,376 @@ export default function PlatformInvoicesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-12 h-12 border-4 border-amber-200 border-t-amber-500 rounded-full"
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Platform Invoices
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            View and manage invoices across all schools
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-white via-white to-gray-50 space-y-6">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center justify-between"
+      >
+        <div className="flex items-start gap-4">
+          <Icon3D gradient="from-amber-500 to-orange-500" size="lg">
+            <Receipt className="w-6 h-6" />
+          </Icon3D>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Platform Invoices
+            </h2>
+            <p className="text-gray-600 mt-1">
+              View and manage invoices across all schools
+            </p>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-300">
-          {error}
-          <button onClick={() => setError(null)} className="ml-2 underline">Dismiss</button>
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 flex items-center justify-between"
+          >
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="ml-2 underline">Dismiss</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Total Invoices</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{stats.total}</p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Collected</p>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{formatCurrency(stats.collectedAmount)}</p>
-          <p className="text-xs text-gray-500 mt-1">{stats.paid} invoices</p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
-          <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{stats.pending}</p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Overdue</p>
-          <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{stats.overdue}</p>
-        </div>
-      </div>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        <AnimatedStatCard
+          title="Total Invoices"
+          value={stats.total}
+          icon={<FileText className="w-6 h-6" />}
+          gradient="from-amber-500 to-orange-500"
+          delay={0}
+        />
+
+        <AnimatedStatCard
+          title="Collected"
+          value={formatCurrency(stats.collectedAmount)}
+          icon={<CheckCircle className="w-6 h-6" />}
+          gradient="from-orange-500 to-red-500"
+          trend={{ value: `${stats.paid} invoices`, isPositive: true }}
+          delay={1}
+        />
+
+        <AnimatedStatCard
+          title="Pending"
+          value={stats.pending}
+          icon={<Clock className="w-6 h-6" />}
+          gradient="from-yellow-500 to-amber-500"
+          delay={2}
+        />
+
+        <AnimatedStatCard
+          title="Overdue"
+          value={stats.overdue}
+          icon={<XCircle className="w-6 h-6" />}
+          gradient="from-red-500 to-rose-500"
+          delay={3}
+        />
+      </motion.div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <GlassCard className="bg-white p-4">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
               Search
             </label>
-            <input
+            <motion.input
+              whileFocus={{ scale: 1.01 }}
               id="search"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by school name or invoice number..."
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
           <div>
-            <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-2">
               Status
             </label>
-            <select
+            <motion.select
+              whileTap={{ scale: 0.98 }}
               id="statusFilter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
               <option value="all">All Statuses</option>
               <option value="paid">Paid</option>
               <option value="pending">Pending</option>
               <option value="overdue">Overdue</option>
-            </select>
+            </motion.select>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </GlassCard>
 
       {/* Invoices Table */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg">
+      <GlassCard className="bg-white">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
+            <thead className="bg-gradient-to-r from-amber-50/50 to-orange-50/50 border-b border-gray-100">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Invoice #
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   School
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Plan
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Amount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Issue Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Due Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-              {filteredInvoices.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    <div className="text-4xl mb-3">📄</div>
-                    No invoices found
-                  </td>
-                </tr>
-              ) : (
-                filteredInvoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {invoice.invoiceNumber}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                      {invoice.schoolName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 capitalize">
-                      {invoice.plan}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {formatCurrency(invoice.amount)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                      {formatDate(invoice.issueDate)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                      {formatDate(invoice.dueDate)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {getStatusBadge(invoice.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button
-                        onClick={() => handleViewInvoice(invoice)}
-                        className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-medium"
+            <tbody className="divide-y divide-gray-100">
+              <AnimatePresence mode="popLayout">
+                {filteredInvoices.length === 0 ? (
+                  <motion.tr
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: 'spring', stiffness: 200 }}
                       >
-                        View
-                      </button>
+                        <FileText className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                        No invoices found
+                      </motion.div>
                     </td>
-                  </tr>
-                ))
-              )}
+                  </motion.tr>
+                ) : (
+                  filteredInvoices.map((invoice, idx) => (
+                    <motion.tr
+                      key={invoice.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ delay: idx * 0.05 }}
+                      whileHover={{ backgroundColor: 'rgba(251, 191, 36, 0.05)' }}
+                      className="transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {invoice.invoiceNumber}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {invoice.schoolName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">
+                        {invoice.plan}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        {formatCurrency(invoice.amount)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {formatDate(invoice.issueDate)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {formatDate(invoice.dueDate)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {getStatusBadge(invoice.status)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleViewInvoice(invoice)}
+                          className="text-amber-600 hover:text-amber-900 font-medium"
+                        >
+                          View
+                        </motion.button>
+                      </td>
+                    </motion.tr>
+                  ))
+                )}
+              </AnimatePresence>
             </tbody>
           </table>
         </div>
 
         {filteredInvoices.length > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="px-6 py-4 border-t border-gray-100"
+          >
+            <p className="text-sm text-gray-500">
               Showing {filteredInvoices.length} of {invoices.length} invoices
             </p>
-          </div>
+          </motion.div>
         )}
-      </div>
+      </GlassCard>
 
       {/* Invoice Detail Slide-in Panel */}
-      {showDetailPanel && selectedInvoice && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-black/40" onClick={() => { setShowDetailPanel(false); setSelectedInvoice(null); }} />
-          <div className="relative bg-white dark:bg-gray-900 w-full max-w-lg h-full overflow-y-auto shadow-xl animate-slide-in-right border-l border-gray-200 dark:border-gray-800">
-            <div className="sticky top-0 bg-white dark:bg-gray-900 px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Invoice {selectedInvoice.invoiceNumber}
-                </h3>
-                <p className="text-sm text-gray-500">{selectedInvoice.schoolName}</p>
-              </div>
-              <button
-                onClick={() => { setShowDetailPanel(false); setSelectedInvoice(null); }}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Status</span>
-                {getStatusBadge(selectedInvoice.status)}
-              </div>
-
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                <p className="text-sm text-gray-500 mb-1">Amount Due</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                  {formatCurrency(selectedInvoice.amount)}
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Invoice Number</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{selectedInvoice.invoiceNumber}</span>
+      <AnimatePresence>
+        {showDetailPanel && selectedInvoice && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex justify-end"
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40"
+              onClick={() => { setShowDetailPanel(false); setSelectedInvoice(null); }}
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative bg-white w-full max-w-lg h-full overflow-y-auto shadow-xl border-l border-gray-200"
+            >
+              <div className="sticky top-0 bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Icon3D gradient="from-amber-500 to-orange-500" size="sm">
+                      <Receipt className="w-3.5 h-3.5" />
+                    </Icon3D>
+                    Invoice {selectedInvoice.invoiceNumber}
+                  </h3>
+                  <p className="text-sm text-gray-500">{selectedInvoice.schoolName}</p>
                 </div>
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">School</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{selectedInvoice.schoolName}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Plan</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">{selectedInvoice.plan}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Students</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{selectedInvoice.studentCount}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Issue Date</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatDate(selectedInvoice.issueDate)}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Due Date</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatDate(selectedInvoice.dueDate)}</span>
-                </div>
-                {selectedInvoice.paidDate && (
-                  <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Paid Date</span>
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">{formatDate(selectedInvoice.paidDate)}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-4 space-y-3">
-                {selectedInvoice.status !== 'paid' && (
-                  <Button className="w-full">
-                    Record Payment
-                  </Button>
-                )}
-                <Button variant="outline" className="w-full">
-                  Download PDF
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full"
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => { setShowDetailPanel(false); setSelectedInvoice(null); }}
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  Close
-                </Button>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </motion.button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="p-6 space-y-6"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Status</span>
+                  {getStatusBadge(selectedInvoice.status)}
+                </div>
+
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-100"
+                >
+                  <p className="text-sm text-gray-500 mb-1">Amount Due</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {formatCurrency(selectedInvoice.amount)}
+                  </p>
+                </motion.div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-sm text-gray-600">Invoice Number</span>
+                    <span className="text-sm font-medium text-gray-900">{selectedInvoice.invoiceNumber}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-sm text-gray-600">School</span>
+                    <span className="text-sm font-medium text-gray-900">{selectedInvoice.schoolName}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-sm text-gray-600">Plan</span>
+                    <span className="text-sm font-medium text-gray-900 capitalize">{selectedInvoice.plan}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-sm text-gray-600">Students</span>
+                    <span className="text-sm font-medium text-gray-900">{selectedInvoice.studentCount}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-sm text-gray-600">Issue Date</span>
+                    <span className="text-sm font-medium text-gray-900">{formatDate(selectedInvoice.issueDate)}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-sm text-gray-600">Due Date</span>
+                    <span className="text-sm font-medium text-gray-900">{formatDate(selectedInvoice.dueDate)}</span>
+                  </div>
+                  {selectedInvoice.paidDate && (
+                    <div className="flex justify-between py-2 border-b border-gray-200">
+                      <span className="text-sm text-gray-600">Paid Date</span>
+                      <span className="text-sm font-medium text-green-600">{formatDate(selectedInvoice.paidDate)}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-4 space-y-3">
+                  {selectedInvoice.status !== 'paid' && (
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600">
+                        Record Payment
+                      </Button>
+                    </motion.div>
+                  )}
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                      <Download className="w-4 h-4" />
+                      Download PDF
+                    </Button>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => { setShowDetailPanel(false); setSelectedInvoice(null); }}
+                    >
+                      Close
+                    </Button>
+                  </motion.div>
+                </div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

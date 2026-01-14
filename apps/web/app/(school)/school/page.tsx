@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../../contexts/auth-context';
 import { useRouter } from 'next/navigation';
-import { Button } from '@repo/ui/button';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ROLES } from '@repo/config';
 import { tenantService, type TenantData } from '../../../lib/services/tenant.service';
 import { CreateStudentModal, type StudentFormData } from '../../../components/modals/create-student-modal';
@@ -11,7 +11,219 @@ import { CreateUserModal, type UserFormData } from '../../../components/modals/c
 import { studentService } from '../../../lib/services/student.service';
 import { userService, type User } from '../../../lib/services/user.service';
 import { classService, type Class } from '../../../lib/services/class.service';
-import { StatCard } from '@/components/dashboard/stat-card';
+import { Portal } from '../../../components/portal';
+import {
+  AnimatedStatCard,
+  ActionCard,
+  EventCard,
+  ActivityItem,
+  Marquee,
+  MarqueeItem,
+  Carousel,
+  GlassCard,
+} from '@/components/ui';
+import {
+  Users,
+  UserPlus,
+  GraduationCap,
+  DollarSign,
+  Calendar,
+  BookOpen,
+  FileText,
+  HelpCircle,
+  Bell,
+  TrendingUp,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Mail,
+  Phone,
+  MapPin,
+  Plus,
+  ArrowRight,
+  Sparkles,
+  BarChart3,
+  Settings,
+  X,
+  Megaphone,
+  Type,
+  AlignLeft,
+  Send,
+  Loader2,
+  Tag,
+  Zap,
+} from 'lucide-react';
+
+// 3D Icon wrapper component for modal sections
+const Icon3D = ({ children, gradient, size = 'md' }: { children: React.ReactNode; gradient: string; size?: 'sm' | 'md' | 'lg' }) => {
+  const sizeClasses = {
+    sm: 'w-8 h-8',
+    md: 'w-10 h-10',
+    lg: 'w-12 h-12',
+  };
+  return (
+    <motion.div
+      whileHover={{ scale: 1.05, rotate: 5 }}
+      className={`relative ${sizeClasses[size]} rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}
+      style={{ boxShadow: `0 8px 24px -4px rgba(99, 102, 241, 0.3)` }}
+    >
+      <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/25 to-transparent" />
+      <div className="relative text-white">{children}</div>
+    </motion.div>
+  );
+};
+
+// Enhanced Form Input with icon support
+const FormInput = ({
+  icon: IconComponent,
+  label,
+  required,
+  delay = 0,
+  ...props
+}: {
+  icon?: any;
+  label: string;
+  required?: boolean;
+  delay?: number;
+} & React.InputHTMLAttributes<HTMLInputElement>) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.3 }}
+  >
+    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+      {label} {required && <span className="text-rose-500">*</span>}
+    </label>
+    <div className="relative group">
+      {IconComponent && (
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors">
+          <IconComponent className="w-4 h-4" />
+        </div>
+      )}
+      <input
+        {...props}
+        className={`w-full ${IconComponent ? 'pl-10' : 'pl-4'} pr-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white/80 backdrop-blur-sm
+          focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+          hover:border-gray-300 transition-all duration-200
+          placeholder:text-gray-400`}
+      />
+    </div>
+  </motion.div>
+);
+
+// Enhanced Form Select with icon support
+const FormSelect = ({
+  icon: IconComponent,
+  label,
+  required,
+  children,
+  delay = 0,
+  ...props
+}: {
+  icon?: any;
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+  delay?: number;
+} & React.SelectHTMLAttributes<HTMLSelectElement>) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.3 }}
+  >
+    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+      {label} {required && <span className="text-rose-500">*</span>}
+    </label>
+    <div className="relative group">
+      {IconComponent && (
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors z-10">
+          <IconComponent className="w-4 h-4" />
+        </div>
+      )}
+      <select
+        {...props}
+        className={`w-full ${IconComponent ? 'pl-10' : 'pl-4'} pr-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white/80 backdrop-blur-sm
+          focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+          hover:border-gray-300 transition-all duration-200 appearance-none cursor-pointer`}
+      >
+        {children}
+      </select>
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </div>
+  </motion.div>
+);
+
+// Enhanced Form Textarea with icon support
+const FormTextarea = ({
+  icon: IconComponent,
+  label,
+  required,
+  delay = 0,
+  ...props
+}: {
+  icon?: any;
+  label: string;
+  required?: boolean;
+  delay?: number;
+} & React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.3 }}
+  >
+    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+      {label} {required && <span className="text-rose-500">*</span>}
+    </label>
+    <div className="relative group">
+      {IconComponent && (
+        <div className="absolute left-3 top-3 text-gray-400 group-focus-within:text-indigo-500 transition-colors">
+          <IconComponent className="w-4 h-4" />
+        </div>
+      )}
+      <textarea
+        {...props}
+        className={`w-full ${IconComponent ? 'pl-10' : 'pl-4'} pr-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white/80 backdrop-blur-sm
+          focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+          hover:border-gray-300 transition-all duration-200 resize-none
+          placeholder:text-gray-400`}
+      />
+    </div>
+  </motion.div>
+);
+
+// Announcement form data interface
+interface AnnouncementFormData {
+  title: string;
+  content: string;
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  icon: string;
+}
+
+// Priority badge component
+const PriorityBadge = ({ priority }: { priority: string }) => {
+  const config: Record<string, { gradient: string; label: string }> = {
+    low: { gradient: 'from-gray-400 to-gray-500', label: 'Low' },
+    normal: { gradient: 'from-blue-400 to-blue-500', label: 'Normal' },
+    high: { gradient: 'from-orange-400 to-orange-500', label: 'High' },
+    urgent: { gradient: 'from-red-400 to-red-500', label: 'Urgent' },
+  };
+  const { gradient, label } = (config[priority] || config.normal)!;
+
+  return (
+    <motion.span
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r ${gradient} text-white text-xs font-medium shadow-lg`}
+    >
+      <Zap className="w-3 h-3" />
+      {label}
+    </motion.span>
+  );
+};
 
 export default function SchoolDashboardPage() {
   const { user } = useAuth();
@@ -21,6 +233,15 @@ export default function SchoolDashboardPage() {
   const [loadingTenant, setLoadingTenant] = useState(true);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
+  const [announcementSubmitting, setAnnouncementSubmitting] = useState(false);
+  const [announcementError, setAnnouncementError] = useState('');
+  const [announcementFormData, setAnnouncementFormData] = useState<AnnouncementFormData>({
+    title: '',
+    content: '',
+    priority: 'normal',
+    icon: '📢',
+  });
 
   // Real data states
   const [students, setStudents] = useState<User[]>([]);
@@ -37,66 +258,73 @@ export default function SchoolDashboardPage() {
     const admins = staff.filter(s => s.role === 'tenant_admin').length;
     const totalClasses = classes.length;
     const activeClasses = classes.filter(c => c.isActive).length;
-
-    // Calculate average class size
     const totalCapacity = classes.reduce((sum, c) => sum + (c.capacity || 0), 0);
     const avgSize = totalClasses > 0 ? Math.round(totalCapacity / totalClasses) : 0;
 
     return {
-      students: {
-        total: totalStudents,
-        active: activeStudents,
-        trend: { value: `${activeStudents} active`, isPositive: true },
-      },
-      staff: {
-        total: totalStaff,
-        teachers,
-        admin: admins,
-        trend: { value: `${teachers} teachers`, isPositive: true },
-      },
-      classes: {
-        total: totalClasses,
-        active: activeClasses,
-        avgSize,
-      },
-      fees: {
-        pending: 0,
-        collected: 0,
-        total: 0,
-        trend: { value: 'N/A', isPositive: true },
-      },
-      attendance: {
-        today: 0,
-        thisWeek: 0,
-        thisMonth: 0,
-      },
+      students: { total: totalStudents, active: activeStudents, trend: { value: `${activeStudents} active`, isPositive: true } },
+      staff: { total: totalStaff, teachers, admin: admins, trend: { value: `${teachers} teachers`, isPositive: true } },
+      classes: { total: totalClasses, active: activeClasses, avgSize },
+      fees: { pending: 0, collected: 0, total: 0, trend: { value: 'N/A', isPositive: true } },
+      attendance: { today: 0, thisWeek: 0, thisMonth: 0 },
     };
   }, [students, staff, classes]);
 
+  // Announcements for marquee (now as state to allow adding)
+  const [announcements, setAnnouncements] = useState<Array<{ id: number; icon: string; text: string; priority: 'low' | 'normal' | 'high' | 'urgent' }>>([
+    { id: 1, icon: '📢', text: 'Parent-Teacher Meeting scheduled for tomorrow at 10:00 AM', priority: 'normal' },
+    { id: 2, icon: '🎉', text: 'Congratulations to Grade 10 students for outstanding exam results!', priority: 'normal' },
+    { id: 3, icon: '📚', text: 'Library will be closed this Saturday for maintenance', priority: 'low' },
+    { id: 4, icon: '🏆', text: 'Sports Day registrations are now open - Sign up before Dec 15!', priority: 'high' },
+    { id: 5, icon: '💡', text: 'New science lab equipment has arrived - Classes start next week', priority: 'normal' },
+  ]);
+
   // Recent activities
   const recentActivities = [
-    { id: 1, type: 'student', message: 'New student enrolled: Sarah Johnson', time: '2 hours ago', icon: '👤' },
-    { id: 2, type: 'fee', message: 'Payment received: $1,500 from Grade 10A', time: '4 hours ago', icon: '💰' },
-    { id: 3, type: 'staff', message: 'New teacher onboarded: Mr. David Lee', time: '1 day ago', icon: '👨‍🏫' },
-    { id: 4, type: 'alert', message: 'Low attendance alert for Grade 7B', time: '1 day ago', icon: '⚠️' },
+    { id: 1, type: 'success' as const, icon: '👤', message: 'New student enrolled: Sarah Johnson', time: '2 hours ago' },
+    { id: 2, type: 'success' as const, icon: '💰', message: 'Payment received: $1,500 from Grade 10A', time: '4 hours ago' },
+    { id: 3, type: 'default' as const, icon: '👨‍🏫', message: 'New teacher onboarded: Mr. David Lee', time: '1 day ago' },
+    { id: 4, type: 'warning' as const, icon: '⚠️', message: 'Low attendance alert for Grade 7B', time: '1 day ago' },
+    { id: 5, type: 'default' as const, icon: '📝', message: 'Homework submitted by 45 students', time: '2 days ago' },
   ];
 
   // Upcoming events
   const upcomingEvents = [
-    { id: 1, title: 'Parent-Teacher Meeting', date: 'Tomorrow, 10:00 AM', color: 'bg-blue-500' },
+    { id: 1, title: 'Parent-Teacher Meeting', date: 'Tomorrow', time: '10:00 AM', color: 'bg-blue-500' },
     { id: 2, title: 'Mid-term Examinations Begin', date: 'Dec 15, 2024', color: 'bg-purple-500' },
-    { id: 3, title: 'Sports Day', date: 'Dec 20, 2024', color: 'bg-green-500' },
+    { id: 3, title: 'Sports Day', date: 'Dec 20, 2024', color: 'bg-emerald-500' },
     { id: 4, title: 'Winter Break Starts', date: 'Dec 23, 2024', color: 'bg-orange-500' },
   ];
 
-  // Use real user role from authentication
+  // Quick stats for carousel
+  const quickStats = [
+    {
+      title: 'Attendance Today',
+      value: '92%',
+      icon: <CheckCircle2 className="w-8 h-8 text-emerald-500" />,
+      change: '+3% from yesterday',
+      bg: 'from-emerald-50 to-teal-50',
+    },
+    {
+      title: 'Pending Assignments',
+      value: '24',
+      icon: <BookOpen className="w-8 h-8 text-amber-500" />,
+      change: '8 due this week',
+      bg: 'from-amber-50 to-orange-50',
+    },
+    {
+      title: 'Fee Collection',
+      value: '78%',
+      icon: <DollarSign className="w-8 h-8 text-blue-500" />,
+      change: '$12,400 this month',
+      bg: 'from-blue-50 to-indigo-50',
+    },
+  ];
+
   const isSchoolAdmin = useMemo(() => {
-    const hasRole =
-      (user?.roles || []).includes(ROLES.SCHOOL_ADMIN) || (user?.roles || []).includes(ROLES.TENANT_ADMIN);
-    return hasRole;
+    return (user?.roles || []).includes(ROLES.SCHOOL_ADMIN) || (user?.roles || []).includes(ROLES.TENANT_ADMIN);
   }, [user?.roles]);
 
-  // Fetch all data from backend
   useEffect(() => {
     const fetchAllData = async () => {
       setLoadingData(true);
@@ -108,15 +336,8 @@ export default function SchoolDashboardPage() {
         ]);
 
         setTenantData(tenantData);
-
-        // Filter students and staff
-        const studentsList = usersData.filter(u => u.role === 'student');
-        const staffList = usersData.filter(u =>
-          u.role === 'teacher' || u.role === 'tenant_admin' || u.role === 'accountant'
-        );
-
-        setStudents(studentsList);
-        setStaff(staffList);
+        setStudents(usersData.filter(u => u.role === 'student'));
+        setStaff(usersData.filter(u => ['teacher', 'tenant_admin', 'accountant'].includes(u.role)));
         setClasses(classesData);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
@@ -134,18 +355,14 @@ export default function SchoolDashboardPage() {
     }
   }, [user]);
 
-  // Backend handlers for creating students and staff
   const handleCreateStudent = async (studentData: StudentFormData) => {
     try {
       await studentService.createStudent(studentData);
       setBanner('Student created successfully!');
       setTimeout(() => setBanner(null), 3000);
       setIsStudentModalOpen(false);
-
-      // Refresh data
       const usersData = await userService.getUsers();
-      const studentsList = usersData.filter(u => u.role === 'student');
-      setStudents(studentsList);
+      setStudents(usersData.filter(u => u.role === 'student'));
     } catch (error) {
       console.error('Failed to create student:', error);
       throw error;
@@ -158,353 +375,515 @@ export default function SchoolDashboardPage() {
       setBanner('Staff member created successfully!');
       setTimeout(() => setBanner(null), 3000);
       setIsStaffModalOpen(false);
-
-      // Refresh data
       const usersData = await userService.getUsers();
-      const staffList = usersData.filter(u =>
-        u.role === 'teacher' || u.role === 'tenant_admin' || u.role === 'accountant'
-      );
-      setStaff(staffList);
+      setStaff(usersData.filter(u => ['teacher', 'tenant_admin', 'accountant'].includes(u.role)));
     } catch (error) {
       console.error('Failed to create staff:', error);
       throw error;
     }
   };
 
+  const handleCreateAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!announcementFormData.title.trim() || !announcementFormData.content.trim()) {
+      setAnnouncementError('Please fill in all required fields');
+      return;
+    }
+
+    setAnnouncementSubmitting(true);
+    setAnnouncementError('');
+
+    try {
+      // Simulate API call (replace with actual service call when available)
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      const newAnnouncement = {
+        id: Date.now(),
+        icon: announcementFormData.icon,
+        text: `${announcementFormData.title}: ${announcementFormData.content}`,
+        priority: announcementFormData.priority,
+      };
+
+      setAnnouncements(prev => [newAnnouncement, ...prev]);
+      setBanner('Announcement created successfully!');
+      setTimeout(() => setBanner(null), 3000);
+      setIsAnnouncementModalOpen(false);
+
+      // Reset form
+      setAnnouncementFormData({
+        title: '',
+        content: '',
+        priority: 'normal',
+        icon: '📢',
+      });
+    } catch (error) {
+      console.error('Failed to create announcement:', error);
+      setAnnouncementError('Failed to create announcement. Please try again.');
+    } finally {
+      setAnnouncementSubmitting(false);
+    }
+  };
+
+  const resetAnnouncementForm = () => {
+    setAnnouncementFormData({
+      title: '',
+      content: '',
+      priority: 'normal',
+      icon: '📢',
+    });
+    setAnnouncementError('');
+  };
+
   if (!isSchoolAdmin) {
     return (
       <div className="p-6">
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md p-4">
-          You do not have permission to view this page.
-        </div>
+        <GlassCard className="p-6 bg-amber-50/50">
+          <div className="flex items-center gap-3 text-amber-800">
+            <AlertCircle className="w-5 h-5" />
+            <p>You do not have permission to view this page.</p>
+          </div>
+        </GlassCard>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Banner */}
-      {banner && (
-        <div className="animate-fade-in">
-          <div className="bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                clipRule="evenodd"
-              />
-            </svg>
-            {banner}
+    <div className="space-y-6 pb-8">
+      {/* Success Banner */}
+      <AnimatePresence>
+        {banner && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="glass-strong rounded-xl p-4 border border-emerald-200 bg-emerald-50/80"
+          >
+            <div className="flex items-center gap-3 text-emerald-700">
+              <CheckCircle2 className="w-5 h-5" />
+              <span className="font-medium">{banner}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Announcement Marquee with Create Button */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px]"
+      >
+        <div className="bg-white rounded-xl py-3 flex items-center">
+          <div className="flex-1 overflow-hidden">
+            <Marquee speed="normal" pauseOnHover>
+              {announcements.map((item) => (
+                <MarqueeItem key={item.id} className="bg-gray-50 border border-gray-100">
+                  <span className="text-lg">{item.icon}</span>
+                  <span className="text-sm text-gray-700">{item.text}</span>
+                </MarqueeItem>
+              ))}
+            </Marquee>
+          </div>
+          <div className="px-4 border-l border-gray-200">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsAnnouncementModalOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg text-sm font-medium shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-shadow"
+            >
+              <Megaphone className="w-4 h-4" />
+              <span className="hidden sm:inline">New</span>
+            </motion.button>
           </div>
         </div>
-      )}
+      </motion.div>
 
       {/* Header Section */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Overview</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Welcome back, {user?.firstName}! Here's what's happening today.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" onClick={() => setIsStudentModalOpen(true)}>
-              + Add Student
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setIsStaffModalOpen(true)}>
-              + Add Staff
-            </Button>
-          </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+      >
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+            Dashboard Overview
+            <motion.span
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+            >
+              <Sparkles className="w-6 h-6 text-amber-500" />
+            </motion.span>
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Welcome back, <span className="font-medium text-gray-700">{user?.firstName}</span>! Here's what's happening today.
+          </p>
         </div>
-      </div>
+        <div className="flex gap-3">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setIsStudentModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl font-medium shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-shadow"
+          >
+            <UserPlus className="w-4 h-4" />
+            Add Student
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setIsStaffModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Staff
+          </motion.button>
+        </div>
+      </motion.div>
 
-      {/* School Information Card */}
+      {/* School Info Card with Glassmorphism */}
       {tenantData && (
-        <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-start justify-between">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-6 text-white shadow-2xl"
+        >
+          {/* Animated background elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 50, repeat: Infinity, ease: 'linear' }}
+              className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-white/10 to-transparent rounded-full"
+            />
+            <motion.div
+              animate={{ rotate: -360 }}
+              transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
+              className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-white/5 to-transparent rounded-full"
+            />
+          </div>
+
+          <div className="relative z-10 flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div>
-              <h2 className="text-2xl font-bold mb-2">{tenantData.schoolName}</h2>
-              <div className="space-y-1 text-indigo-100">
-                <p className="flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                  </svg>
-                  {tenantData.contactEmail || 'N/A'}
-                </p>
+              <motion.h2
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-2xl sm:text-3xl font-bold mb-3"
+              >
+                {tenantData.schoolName}
+              </motion.h2>
+              <div className="space-y-2 text-indigo-100">
+                {tenantData.contactEmail && (
+                  <motion.p
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <Mail className="w-4 h-4" />
+                    {tenantData.contactEmail}
+                  </motion.p>
+                )}
                 {tenantData.contactPhone && (
-                  <p className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                    </svg>
+                  <motion.p
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <Phone className="w-4 h-4" />
                     {tenantData.contactPhone}
-                  </p>
+                  </motion.p>
                 )}
                 {tenantData.address && (
-                  <p className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                  <motion.p
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.6 }}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <MapPin className="w-4 h-4" />
                     {tenantData.address}
-                  </p>
+                  </motion.p>
                 )}
               </div>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
-              <div className="text-3xl font-bold">{stats.students.total}</div>
-              <div className="text-sm text-indigo-100">Total Students</div>
-            </div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4, type: 'spring' }}
+              className="glass-dark rounded-2xl p-5 min-w-[140px] text-center"
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.6, type: 'spring', stiffness: 200 }}
+                className="text-4xl font-bold"
+              >
+                {stats.students.total}
+              </motion.div>
+              <div className="text-sm text-indigo-200 mt-1">Total Students</div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       )}
+
+      {/* Quick Stats Carousel */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <Carousel autoplay autoplayDelay={5000} showArrows showDots>
+          {quickStats.map((stat, index) => (
+            <div
+              key={index}
+              className={`bg-gradient-to-br ${stat.bg} rounded-2xl p-6 border border-gray-100`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">{stat.title}</p>
+                  <p className="text-4xl font-bold text-gray-900 mt-2">{stat.value}</p>
+                  <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
+                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                    {stat.change}
+                  </p>
+                </div>
+                <motion.div
+                  animate={{ y: [0, -5, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  {stat.icon}
+                </motion.div>
+              </div>
+            </div>
+          ))}
+        </Carousel>
+      </motion.div>
 
       {/* Key Stats Grid */}
       {loadingData ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 animate-pulse"
-            >
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-3"></div>
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2"></div>
-              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+            <div key={i} className="bg-white rounded-2xl border border-gray-100 p-6">
+              <div className="animate-shimmer h-4 rounded w-1/2 mb-3" />
+              <div className="animate-shimmer h-8 rounded w-1/3 mb-2" />
+              <div className="animate-shimmer h-3 rounded w-1/4" />
             </div>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <AnimatedStatCard
             title="Total Students"
             value={stats.students.total}
-            icon={
-              <svg className="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-              </svg>
-            }
+            icon={<Users className="w-6 h-6 text-indigo-600" />}
             trend={stats.students.trend}
-            iconBgColor="bg-indigo-50 dark:bg-indigo-900/20"
+            iconBgColor="bg-indigo-100"
+            delay={1}
+            onClick={() => router.push('/school/students')}
           />
-        <StatCard
-          title="Active Staff"
-          value={stats.staff.total}
-          icon={
-            <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
-            </svg>
-          }
-          trend={stats.staff.trend}
-          iconBgColor="bg-green-50 dark:bg-green-900/20"
-        />
-        <StatCard
-          title="Total Classes"
-          value={stats.classes.total}
-          icon={
-            <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
-            </svg>
-          }
-          iconBgColor="bg-blue-50 dark:bg-blue-900/20"
-        />
-          <StatCard
+          <AnimatedStatCard
+            title="Active Staff"
+            value={stats.staff.total}
+            icon={<GraduationCap className="w-6 h-6 text-emerald-600" />}
+            trend={stats.staff.trend}
+            iconBgColor="bg-emerald-100"
+            delay={2}
+            onClick={() => router.push('/school/staff')}
+          />
+          <AnimatedStatCard
+            title="Total Classes"
+            value={stats.classes.total}
+            icon={<BookOpen className="w-6 h-6 text-blue-600" />}
+            iconBgColor="bg-blue-100"
+            delay={3}
+            onClick={() => router.push('/school/classes')}
+          />
+          <AnimatedStatCard
             title="Fee Collection"
             value={stats.fees.total > 0 ? `${Math.round((stats.fees.collected / stats.fees.total) * 100)}%` : 'N/A'}
-            icon={
-              <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            }
+            icon={<DollarSign className="w-6 h-6 text-amber-600" />}
             trend={stats.fees.trend}
-            iconBgColor="bg-amber-50 dark:bg-amber-900/20"
+            iconBgColor="bg-amber-100"
+            delay={4}
+            onClick={() => router.push('/school/fees')}
           />
         </div>
       )}
 
       {/* Secondary Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+        <GlassCard className="p-5 bg-white/80" hover>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Today's Attendance</h3>
-            <span className="text-2xl">📊</span>
+            <h3 className="text-sm font-medium text-gray-600">Today's Attendance</h3>
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <BarChart3 className="w-5 h-5 text-indigo-500" />
+            </motion.div>
           </div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.attendance.today}%</div>
-          <div className="mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-            <span>Week: {stats.attendance.thisWeek}%</span>
-            <span>Month: {stats.attendance.thisMonth}%</span>
+          <div className="text-3xl font-bold text-gray-900">{stats.attendance.today}%</div>
+          <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" /> Week: {stats.attendance.thisWeek}%
+            </span>
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" /> Month: {stats.attendance.thisMonth}%
+            </span>
           </div>
-        </div>
+        </GlassCard>
 
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+        <GlassCard className="p-5 bg-white/80" hover>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Fees</h3>
-            <span className="text-2xl">💳</span>
+            <h3 className="text-sm font-medium text-gray-600">Pending Fees</h3>
+            <DollarSign className="w-5 h-5 text-amber-500" />
           </div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+          <div className="text-3xl font-bold text-gray-900">
             ${(stats.fees.pending / 1000).toFixed(0)}K
           </div>
-          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <div className="mt-3 text-xs text-gray-500">
             ${(stats.fees.collected / 1000).toFixed(0)}K collected this month
           </div>
-        </div>
+        </GlassCard>
 
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+        <GlassCard className="p-5 bg-white/80" hover>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Class Size</h3>
-            <span className="text-2xl">👥</span>
+            <h3 className="text-sm font-medium text-gray-600">Avg Class Size</h3>
+            <Users className="w-5 h-5 text-blue-500" />
           </div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.classes.avgSize}</div>
-          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <div className="text-3xl font-bold text-gray-900">{stats.classes.avgSize}</div>
+          <div className="mt-3 text-xs text-gray-500">
             {stats.classes.total} active classes
           </div>
-        </div>
+        </GlassCard>
       </div>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <button
-              onClick={() => setIsStudentModalOpen(true)}
-              className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group"
-            >
-              <svg
-                className="w-8 h-8 text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 mb-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Add Student</span>
-            </button>
-
-            <button
-              onClick={() => setIsStaffModalOpen(true)}
-              className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-green-500 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all group"
-            >
-              <svg
-                className="w-8 h-8 text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400 mb-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Add Staff</span>
-            </button>
-
-            <button
-              onClick={() => router.push('/school/classes')}
-              className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group"
-            >
-              <svg
-                className="w-8 h-8 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-2"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z" />
-              </svg>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Manage Classes</span>
-            </button>
-
-            <button
-              onClick={() => router.push('/school/fees')}
-              className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-300 dark:border-gray-700 hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all group"
-            >
-              <svg
-                className="w-8 h-8 text-gray-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 mb-2"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582z" />
-              </svg>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Fee Management</span>
-            </button>
-
-            <button
-              onClick={() => router.push('/school/reports')}
-              className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-300 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all group"
-            >
-              <svg
-                className="w-8 h-8 text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 mb-2"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-              </svg>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">View Reports</span>
-            </button>
-
-            <button
-              onClick={() => router.push('/school/support')}
-              className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-300 dark:border-gray-700 hover:border-red-500 dark:hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all group"
-            >
-              <svg
-                className="w-8 h-8 text-gray-400 group-hover:text-red-600 dark:group-hover:text-red-400 mb-2"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Get Support</span>
-            </button>
-          </div>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="lg:col-span-2"
+        >
+          <GlassCard className="p-6 bg-white/90" hover={false}>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-500" />
+              Quick Actions
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <ActionCard
+                icon={<UserPlus className="w-7 h-7" />}
+                title="Add Student"
+                onClick={() => setIsStudentModalOpen(true)}
+                color="indigo"
+                variant="outline"
+                delay={1}
+              />
+              <ActionCard
+                icon={<Plus className="w-7 h-7" />}
+                title="Add Staff"
+                onClick={() => setIsStaffModalOpen(true)}
+                color="green"
+                variant="outline"
+                delay={2}
+              />
+              <ActionCard
+                icon={<BookOpen className="w-7 h-7" />}
+                title="Manage Classes"
+                onClick={() => router.push('/school/classes')}
+                color="blue"
+                delay={3}
+              />
+              <ActionCard
+                icon={<DollarSign className="w-7 h-7" />}
+                title="Fee Management"
+                onClick={() => router.push('/school/fees')}
+                color="amber"
+                delay={4}
+              />
+              <ActionCard
+                icon={<FileText className="w-7 h-7" />}
+                title="View Reports"
+                onClick={() => router.push('/school/reports')}
+                color="purple"
+                delay={5}
+              />
+              <ActionCard
+                icon={<HelpCircle className="w-7 h-7" />}
+                title="Get Support"
+                onClick={() => router.push('/school/support')}
+                color="red"
+                delay={6}
+              />
+            </div>
+          </GlassCard>
+        </motion.div>
 
         {/* Upcoming Events */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Upcoming Events</h3>
-          <div className="space-y-3">
-            {upcomingEvents.map((event) => (
-              <div key={event.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors">
-                <div className={`w-2 h-2 rounded-full ${event.color} mt-2`}></div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{event.title}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{event.date}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <button className="w-full mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium">
-            View All Events →
-          </button>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+        >
+          <GlassCard className="p-6 bg-white/90" hover={false}>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-indigo-500" />
+              Upcoming Events
+            </h3>
+            <div className="space-y-1">
+              {upcomingEvents.map((event, index) => (
+                <EventCard
+                  key={event.id}
+                  title={event.title}
+                  date={event.date}
+                  time={event.time}
+                  color={event.color}
+                  delay={index + 1}
+                />
+              ))}
+            </div>
+            <motion.button
+              whileHover={{ x: 4 }}
+              onClick={() => router.push('/school/events')}
+              className="w-full mt-4 text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center justify-center gap-1"
+            >
+              View All Events <ArrowRight className="w-4 h-4" />
+            </motion.button>
+          </GlassCard>
+        </motion.div>
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Activity</h3>
-        <div className="space-y-4">
-          {recentActivities.map((activity) => (
-            <div
-              key={activity.id}
-              className="flex items-start gap-4 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
-            >
-              <div className="text-2xl">{activity.icon}</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-900 dark:text-gray-100">{activity.message}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{activity.time}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.6 }}
+      >
+        <GlassCard className="p-6 bg-white/90" hover={false}>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Bell className="w-5 h-5 text-indigo-500" />
+            Recent Activity
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {recentActivities.map((activity, index) => (
+              <ActivityItem
+                key={activity.id}
+                icon={activity.icon}
+                message={activity.message}
+                time={activity.time}
+                type={activity.type}
+                delay={index + 1}
+              />
+            ))}
+          </div>
+        </GlassCard>
+      </motion.div>
 
       {/* Modals */}
       <CreateStudentModal

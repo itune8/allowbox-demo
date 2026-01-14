@@ -1,6 +1,6 @@
 // Environment Configuration
 export const env = {
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://allowboxapiv2.hyperbrainlabs.com',
+  apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5004/api/v1',
   appUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   useApiMocks: process.env.NEXT_PUBLIC_USE_API_MOCKS === 'true',
   wsUrl: process.env.NEXT_PUBLIC_WS_URL || '',

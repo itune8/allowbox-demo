@@ -69,38 +69,38 @@ export function FirstLoginResetPasswordModal({
   return (
     <Portal>
       <div className="fixed inset-0 z-[9999] flex items-start justify-center bg-black/60 overflow-y-auto pt-20 pb-20" onClick={onCancel}>
-      <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-8 animate-zoom-in" onClick={(e) => e.stopPropagation()}>
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-8 animate-zoom-in" onClick={(e) => e.stopPropagation()}>
         <div className="text-center mb-6">
           <div className="text-5xl mb-3">🔐</div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
             Reset Your Password
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-600">
             This is your first login. Please set a new password to continue.
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800 rounded-lg text-sm">
+          <div className="mb-4 p-3 bg-red-50 text-red-800 border border-red-200 rounded-lg text-sm">
             {error}
           </div>
         )}
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Email
             </label>
             <input
               type="email"
               value={email}
               disabled
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               New Password *
             </label>
             <input
@@ -108,13 +108,13 @@ export function FirstLoginResetPasswordModal({
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Enter new password (min. 8 characters)"
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
               autoFocus
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Confirm New Password *
             </label>
             <input
@@ -122,7 +122,7 @@ export function FirstLoginResetPasswordModal({
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Re-enter new password"
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !loading) {
                   handleResetPassword();
@@ -131,8 +131,8 @@ export function FirstLoginResetPasswordModal({
             />
           </div>
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-            <p className="text-xs text-blue-700 dark:text-blue-300">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-xs text-blue-700">
               <strong>Password Requirements:</strong>
               <br />• At least 8 characters long
               <br />• Must be different from your current password
@@ -160,7 +160,7 @@ export function FirstLoginResetPasswordModal({
           </Button>
         </div>
 
-        <p className="mt-4 text-xs text-center text-gray-500 dark:text-gray-400">
+        <p className="mt-4 text-xs text-center text-gray-500">
           For security reasons, you must change your password on first login
         </p>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../../contexts/auth-context';
 import {
   getCurrentSchoolId,
@@ -9,6 +10,8 @@ import {
   type Homework as HomeworkType,
 } from '../../../../lib/data-store';
 import { Button } from '@repo/ui/button';
+import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import { BookOpen, CheckCircle2, Clock, Trash2 } from 'lucide-react';
 
 export default function HomeworkPage() {
   const { user } = useAuth();
@@ -39,11 +42,17 @@ export default function HomeworkPage() {
 
   if (allowedClasses.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-        <p className="text-sm text-gray-600 dark:text-gray-300">
-          No classes found. Classes are managed by the School Admin.
-        </p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+      >
+        <GlassCard className="p-6 bg-white text-center">
+          <div className="text-4xl mb-3">📚</div>
+          <p className="text-sm text-gray-600">
+            No classes found. Classes are managed by the School Admin.
+          </p>
+        </GlassCard>
+      </motion.div>
     );
   }
 
@@ -87,168 +96,276 @@ export default function HomeworkPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Homework</h1>
-        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">Create and manage homework assignments</p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+          Homework Management
+          <Icon3D gradient={gradients.rose} size="sm">
+            <BookOpen className="w-3.5 h-3.5" />
+          </Icon3D>
+        </h1>
+        <p className="text-xs sm:text-sm text-gray-600 mt-1">Create and manage homework assignments for your classes</p>
+      </motion.div>
+
+      {/* Stats Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="grid grid-cols-3 gap-2 sm:gap-4"
+      >
+        <AnimatedStatCard
+          title="Total"
+          value={total}
+          icon={<BookOpen className="w-5 h-5 text-rose-600" />}
+          iconBgColor="bg-rose-50"
+          delay={0}
+        />
+        <AnimatedStatCard
+          title="Pending"
+          value={pending}
+          icon={<Clock className="w-5 h-5 text-amber-600" />}
+          iconBgColor="bg-amber-50"
+          delay={1}
+        />
+        <AnimatedStatCard
+          title="Completed"
+          value={completed}
+          icon={<CheckCircle2 className="w-5 h-5 text-green-600" />}
+          iconBgColor="bg-green-50"
+          delay={2}
+        />
+      </motion.div>
 
       {/* Add Homework Form */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
-        <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">Add New Homework</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-3 sm:mb-4">
-          <div>
-            <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Class</label>
-            <select
-              className="border border-gray-300 bg-white text-gray-900 dark:border-gray-700 rounded-lg px-3 py-2 text-sm w-full dark:bg-gray-900 dark:text-gray-100"
-              value={classId}
-              onChange={(e) => setClassId(e.target.value)}
-            >
-              {allowedClasses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <GlassCard className="p-4 sm:p-6 bg-white">
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
+            Create New Assignment
+            <Icon3D gradient={gradients.rose} size="sm">
+              <BookOpen className="w-3 h-3" />
+            </Icon3D>
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-3 sm:mb-4">
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Class</label>
+              <select
+                className="border border-gray-300 bg-white text-gray-900 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-rose-400 focus:outline-none"
+                value={classId}
+                onChange={(e) => setClassId(e.target.value)}
+              >
+                {allowedClasses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="relative">
+              <input
+                className="peer border border-gray-300 bg-white text-gray-900 rounded-lg px-3 pt-5 pb-2 text-sm w-full placeholder-transparent focus:ring-2 focus:ring-rose-400 focus:outline-none"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Title"
+              />
+              <label className="absolute left-3 top-2 text-xs text-gray-400 transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-2.5 peer-focus:top-2 peer-focus:text-xs">
+                Title
+              </label>
+            </div>
+            <div className="relative">
+              <input
+                type="date"
+                className="peer border border-gray-300 bg-white text-gray-900 rounded-lg px-3 pt-5 pb-2 text-sm w-full placeholder-transparent focus:ring-2 focus:ring-rose-400 focus:outline-none"
+                value={due}
+                onChange={(e) => setDue(e.target.value)}
+                placeholder="Due"
+              />
+              <label className="absolute left-3 top-2 text-xs text-gray-400">Due Date</label>
+            </div>
+            <div className="sm:col-span-3">
+              <textarea
+                className="border border-gray-300 bg-white text-gray-900 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-rose-400 focus:outline-none"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Instructions or additional details…"
+              />
+            </div>
           </div>
-          <div className="relative">
-            <input
-              className="peer border border-gray-300 bg-white text-gray-900 rounded-lg px-3 pt-5 pb-2 text-sm w-full placeholder-transparent focus:ring-2 focus:ring-indigo-400 focus:outline-none dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Title"
-            />
-            <label className="absolute left-3 top-2 text-xs text-gray-400 transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-2.5 peer-focus:top-2 peer-focus:text-xs">
-              Title
-            </label>
+          <div className="flex justify-end">
+            <Button onClick={addHomework} disabled={!title.trim()}>
+              Add Homework
+            </Button>
           </div>
-          <div className="relative">
-            <input
-              type="date"
-              className="peer border border-gray-300 bg-white text-gray-900 rounded-lg px-3 pt-5 pb-2 text-sm w-full placeholder-transparent focus:ring-2 focus:ring-indigo-400 focus:outline-none dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
-              value={due}
-              onChange={(e) => setDue(e.target.value)}
-              placeholder="Due"
-            />
-            <label className="absolute left-3 top-2 text-xs text-gray-400">Due Date</label>
-          </div>
-          <div className="sm:col-span-3">
-            <textarea
-              className="border border-gray-300 bg-white text-gray-900 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-indigo-400 focus:outline-none dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Instructions or additional details…"
-            />
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <Button onClick={addHomework} disabled={!title.trim()}>
-            Add Homework
-          </Button>
-        </div>
-
-        {/* Stats bar */}
-        <div className="mt-6 flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-300">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-gray-400" /> Total: {total}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-500" /> Pending: {pending}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500" /> Completed: {completed}
-          </div>
-        </div>
-      </div>
+        </GlassCard>
+      </motion.div>
 
       {/* Homework List */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        {list.length === 0 && (
-          <div className="col-span-full py-12 sm:py-16 text-center text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
-            <div className="text-3xl sm:text-4xl mb-3">📚</div>
-            <p className="text-sm sm:text-base">No homework assignments yet for this class.</p>
-          </div>
-        )}
-        {list.map((h) => (
-          <div
-            key={h.id}
-            className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-4 sm:p-5 hover:shadow-md transition-all cursor-pointer active:bg-gray-50 dark:active:bg-gray-800 touch-manipulation"
-            onClick={() => setView(h)}
-          >
-            <div className="flex items-start justify-between mb-2">
-              <div className="font-medium text-gray-900 dark:text-gray-100 flex-1 pr-2">{h.title}</div>
-              <span
-                className={`text-xs px-2 py-0.5 rounded whitespace-nowrap ${
-                  h.status === 'Completed'
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
-                }`}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {list.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="col-span-full"
+            >
+              <GlassCard className="py-12 sm:py-16 text-center bg-white">
+                <div className="text-3xl sm:text-4xl mb-3">📚</div>
+                <p className="text-sm sm:text-base text-gray-500">No homework assignments yet for this class.</p>
+              </GlassCard>
+            </motion.div>
+          )}
+          <AnimatePresence>
+            {list.map((h, index) => (
+              <motion.div
+                key={h.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ y: -4 }}
               >
-                {h.status || 'Pending'}
-              </span>
-            </div>
-            <div className="text-xs text-gray-500 mb-2">Due: {h.due}</div>
-            {h.description && (
-              <div className="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-2">{h.description}</div>
-            )}
-            <div className="mt-4 flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleComplete(h.id);
-                }}
-              >
-                {h.status === 'Completed' ? 'Mark Pending' : 'Mark Complete'}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm('Delete this homework?')) removeHomework(h.id);
-                }}
-              >
-                Delete
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
+                <GlassCard
+                  className="p-4 sm:p-5 bg-white cursor-pointer h-full flex flex-col"
+                  onClick={() => setView(h)}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="font-medium text-gray-900 flex-1 pr-2">{h.title}</div>
+                    <motion.span
+                      whileHover={{ scale: 1.05 }}
+                      className={`text-xs px-2 py-0.5 rounded whitespace-nowrap flex-shrink-0 ${
+                        h.status === 'Completed'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-rose-100 text-rose-700'
+                      }`}
+                    >
+                      {h.status || 'Pending'}
+                    </motion.span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
+                    <Clock className="w-3 h-3" />
+                    Due: {h.due}
+                  </div>
+                  {h.description && (
+                    <div className="text-sm text-gray-600 mt-2 mb-3 line-clamp-2 flex-1">{h.description}</div>
+                  )}
+                  <div className="mt-auto flex items-center gap-2">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex-1"
+                    >
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleComplete(h.id);
+                        }}
+                        className="w-full text-xs"
+                      >
+                        {h.status === 'Completed' ? 'Pending' : 'Complete'}
+                      </Button>
+                    </motion.div>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm('Delete this homework?')) removeHomework(h.id);
+                      }}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </motion.button>
+                  </div>
+                </GlassCard>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </motion.div>
 
       {/* Quick view modal */}
-      {view && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
-          <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={() => setView(null)} />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-md p-4 sm:p-6 animate-zoom-in">
-            <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">{view.title}</h3>
-            <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-              <span className="font-medium">Due:</span> {view.due}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-              <span className="font-medium">Status:</span>{' '}
-              <span
-                className={
-                  view.status === 'Completed' ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
-                }
-              >
-                {view.status || 'Pending'}
-              </span>
-            </div>
-            {view.description && (
-              <div className="mt-3 text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                {view.description}
-              </div>
-            )}
-            <div className="mt-4 text-right">
-              <Button variant="outline" onClick={() => setView(null)}>
-                Close
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {view && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/40"
+            onClick={() => setView(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md"
+            >
+              <GlassCard className="p-4 sm:p-6 bg-white">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold mb-2 text-gray-900">{view.title}</h3>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      view.status === 'Completed'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-rose-100 text-rose-700'
+                    }`}>
+                      {view.status || 'Pending'}
+                    </span>
+                    <div className="text-gray-600 flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      Due: {view.due}
+                    </div>
+                  </div>
+                </div>
+                {view.description && (
+                  <div className="mt-4 text-sm text-gray-700 bg-gray-50 p-4 rounded-lg whitespace-pre-wrap border border-gray-200">
+                    {view.description}
+                  </div>
+                )}
+                <div className="mt-6 flex gap-2 justify-end">
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        toggleComplete(view.id);
+                        setView(null);
+                      }}
+                      className="text-xs"
+                    >
+                      {view.status === 'Completed' ? 'Mark Pending' : 'Mark Complete'}
+                    </Button>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setView(null)}
+                      className="text-xs"
+                    >
+                      Close
+                    </Button>
+                  </motion.div>
+                </div>
+              </GlassCard>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

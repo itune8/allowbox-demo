@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GlassCard, Icon3D } from '../../../../components/ui';
+import { Bus, MapPin, Phone, Clock, X } from 'lucide-react';
 import { useAuth } from '../../../../contexts/auth-context';
 import {
   transportService,
@@ -90,43 +93,74 @@ export default function ParentTransportPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="rounded-full h-10 w-10 border-4 border-slate-200 border-t-slate-600"
+        />
       </div>
     );
   }
 
   if (children.length === 0 && !loading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Transport</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            View your child's transport route and schedule
-          </p>
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="space-y-6"
+      >
+        <div className="flex items-center gap-4">
+          <Icon3D gradient="from-slate-500 to-gray-600" size="lg">
+            <Bus className="w-6 h-6" />
+          </Icon3D>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Transport</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              View your child's transport route and schedule
+            </p>
+          </div>
         </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8 text-center">
-          <div className="text-4xl mb-3">👨‍👩‍👧</div>
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">No Children Linked</h3>
+        <GlassCard hover={false} className="p-8 text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+            className="w-16 h-16 mx-auto mb-4 bg-slate-50 rounded-full flex items-center justify-center"
+          >
+            <Bus className="w-8 h-8 text-slate-400" />
+          </motion.div>
+          <h3 className="font-semibold text-gray-900 mb-2">No Children Linked</h3>
           <p className="text-gray-500">
             No children are linked to your account. Please contact the school administrator.
           </p>
-        </div>
-      </div>
+        </GlassCard>
+      </motion.section>
     );
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="space-y-4 sm:space-y-6"
+    >
       <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Transport</h1>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
-            View your child's transport route
-          </p>
+        <div className="flex items-center gap-4 min-w-0">
+          <Icon3D gradient="from-slate-500 to-gray-600" size="lg">
+            <Bus className="w-6 h-6" />
+          </Icon3D>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Transport</h1>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
+              View your child's transport route
+            </p>
+          </div>
         </div>
         {children.length > 1 && (
           <select
-            className="border border-gray-300 dark:border-gray-700 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-w-0 max-w-[120px] sm:max-w-none"
+            className="border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white text-gray-900 min-w-0 max-w-[120px] sm:max-w-none"
             value={selectedChild?._id || selectedChild?.id || ''}
             onChange={(e) => {
               const child = children.find((c) => (c._id || c.id) === e.target.value);
@@ -143,103 +177,179 @@ export default function ParentTransportPage() {
       </div>
 
       {selectedChild && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-4">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-base sm:text-lg flex-shrink-0">
-              {selectedChild.firstName?.[0]}
-            </div>
-            <div className="min-w-0">
-              <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">
-                {selectedChild.firstName} {selectedChild.lastName}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <GlassCard hover={false} className="p-3 sm:p-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-slate-500 to-gray-600 flex items-center justify-center text-white font-semibold text-base sm:text-lg flex-shrink-0 shadow-md"
+              >
+                {selectedChild.firstName?.[0]}
+              </motion.div>
+              <div className="min-w-0">
+                <div className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                  {selectedChild.firstName} {selectedChild.lastName}
+                </div>
+                <div className="text-xs sm:text-sm text-gray-600 truncate">
+                  {selectedChild.classId?.name || 'No class assigned'}
+                </div>
               </div>
-              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
-                {selectedChild.classId?.name || 'No class assigned'}
-              </div>
             </div>
-          </div>
-        </div>
+          </GlassCard>
+        </motion.div>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-300">
-          {error}
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 flex items-center justify-between"
+          >
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {assignments.length === 0 ? (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8 text-center">
-          <div className="text-4xl mb-3">🚌</div>
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">No Transport Assigned</h3>
+        <GlassCard hover={false} className="p-8 text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+            className="w-16 h-16 mx-auto mb-4 bg-slate-50 rounded-full flex items-center justify-center"
+          >
+            <Bus className="w-8 h-8 text-slate-400" />
+          </motion.div>
+          <h3 className="font-semibold text-gray-900 mb-2">No Transport Assigned</h3>
           <p className="text-gray-500">
             Your child's transport details will appear here once assigned by the school.
           </p>
-        </div>
+        </GlassCard>
       ) : (
         <div className="grid gap-4">
-          {assignments.map((assignment) => (
-            <div
+          {assignments.map((assignment, index) => (
+            <motion.div
               key={assignment._id}
-              className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.05 }}
             >
-              <div className="flex items-start justify-between mb-3 sm:mb-4">
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">
-                    {assignment.studentId?.firstName} {assignment.studentId?.lastName}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-500 truncate">
-                    Route: {assignment.routeId?.name}
-                  </p>
+              <GlassCard hover className="p-4 sm:p-6">
+                <div className="flex items-start justify-between mb-3 sm:mb-4">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      className="w-10 h-10 bg-gradient-to-br from-slate-500 to-gray-600 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md flex-shrink-0"
+                    >
+                      {assignment.studentId?.firstName?.[0]}{assignment.studentId?.lastName?.[0]}
+                    </motion.div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                        {assignment.studentId?.firstName} {assignment.studentId?.lastName}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-gray-500 truncate flex items-center gap-1">
+                        <Bus className="w-3 h-3" />
+                        Route: {assignment.routeId?.name}
+                      </p>
+                    </div>
+                  </div>
+                  <motion.span
+                    initial={{ scale: 0.9 }}
+                    animate={{ scale: 1 }}
+                    className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs flex-shrink-0 ml-2"
+                  >
+                    Active
+                  </motion.span>
                 </div>
-                <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs flex-shrink-0 ml-2">Active</span>
-              </div>
 
-              <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-4">
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 sm:p-3">
-                  <div className="text-xs text-gray-500 mb-1">Pickup Stop</div>
-                  <div className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">
-                    {assignment.pickupStop}
+                <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-4">
+                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                    <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                      <MapPin className="w-3.5 h-3.5 text-blue-500" />
+                      Pickup Stop
+                    </div>
+                    <div className="font-medium text-gray-900 text-sm sm:text-base truncate">
+                      {assignment.pickupStop}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                    <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-500" />
+                      Drop Stop
+                    </div>
+                    <div className="font-medium text-gray-900 text-sm sm:text-base truncate">
+                      {assignment.dropStop}
+                    </div>
                   </div>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 sm:p-3">
-                  <div className="text-xs text-gray-500 mb-1">Drop Stop</div>
-                  <div className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">
-                    {assignment.dropStop}
-                  </div>
-                </div>
-              </div>
 
-              {assignment.routeId?.vehicleId && (
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-3 sm:pt-4">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2 text-sm sm:text-base">Vehicle Details</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
-                    <div>
-                      <span className="text-gray-500">Vehicle:</span>{' '}
-                      {assignment.routeId.vehicleId.vehicleNumber}
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Driver:</span>{' '}
-                      {assignment.routeId.vehicleId.driverName || 'Not assigned'}
-                    </div>
-                    {assignment.routeId.vehicleId.driverPhone && (
-                      <div>
-                        <span className="text-gray-500">Driver Phone:</span>{' '}
-                        {assignment.routeId.vehicleId.driverPhone}
+                {assignment.routeId?.vehicleId && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="border-t border-gray-200 pt-3 sm:pt-4"
+                  >
+                    <h4 className="font-semibold text-gray-900 mb-3 text-sm sm:text-base flex items-center gap-2">
+                      <Bus className="w-4 h-4 text-slate-600" />
+                      Vehicle Details
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
+                      <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                        <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                          <Bus className="w-3.5 h-3.5 text-slate-500" />
+                          Vehicle
+                        </div>
+                        <div className="font-medium text-gray-900">{assignment.routeId.vehicleId.vehicleNumber}</div>
                       </div>
-                    )}
-                  </div>
-                </div>
-              )}
+                      <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                        <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                          <Phone className="w-3.5 h-3.5 text-emerald-500" />
+                          Driver
+                        </div>
+                        <div className="font-medium text-gray-900">{assignment.routeId.vehicleId.driverName || 'Not assigned'}</div>
+                      </div>
+                      {assignment.routeId.vehicleId.driverPhone && (
+                        <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                            <Phone className="w-3.5 h-3.5 text-blue-500" />
+                            Driver Phone
+                          </div>
+                          <div className="font-medium text-gray-900">{assignment.routeId.vehicleId.driverPhone}</div>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
 
-              {assignment.specialInstructions && (
-                <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
-                  <div className="text-xs text-yellow-600 mb-1">Special Instructions</div>
-                  <p className="text-sm">{assignment.specialInstructions}</p>
-                </div>
-              )}
-            </div>
+                {assignment.specialInstructions && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                    className="mt-4 bg-yellow-50 border border-yellow-100 rounded-lg p-3"
+                  >
+                    <div className="flex items-center gap-1 text-xs text-yellow-600 mb-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      Special Instructions
+                    </div>
+                    <p className="text-sm text-yellow-800">{assignment.specialInstructions}</p>
+                  </motion.div>
+                )}
+              </GlassCard>
+            </motion.div>
           ))}
         </div>
       )}
-    </div>
+    </motion.section>
   );
 }

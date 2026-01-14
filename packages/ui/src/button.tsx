@@ -19,9 +19,9 @@ export const Button = ({
   const baseStyles = 'inline-flex items-center justify-center rounded-md font-medium transition-all duration-200 ease-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]';
 
   const variantStyles = {
-    default: 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 hover:shadow-md hover:-translate-y-0.5 focus-visible:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400',
-    outline: 'border border-gray-300 text-gray-900 bg-white hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:ring-indigo-500 dark:border-gray-700 dark:text-gray-100 dark:bg-transparent dark:hover:bg-gray-800/60',
-    ghost: 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus-visible:ring-indigo-500 dark:text-gray-200 dark:hover:bg-gray-800',
+    default: 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 hover:shadow-md hover:-translate-y-0.5 focus-visible:ring-indigo-500',
+    outline: 'border border-gray-300 text-gray-900 bg-white hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:ring-indigo-500',
+    ghost: 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus-visible:ring-indigo-500',
   };
 
   const sizeStyles = {
