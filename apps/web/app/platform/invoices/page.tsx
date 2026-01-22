@@ -118,7 +118,8 @@ export default function PlatformInvoicesPage() {
       overdue: { bg: 'bg-red-50', text: 'text-red-700', label: 'Overdue' },
       cancelled: { bg: 'bg-slate-100', text: 'text-slate-600', label: 'Cancelled' },
     };
-    const badge = badges[status] ?? badges.pending;
+    const defaultBadge = { bg: 'bg-amber-50', text: 'text-amber-700', label: 'Pending' };
+    const badge = badges[status] ?? defaultBadge;
     return (
       <span className={`text-xs px-2 py-1 rounded-md font-medium ${badge.bg} ${badge.text}`}>
         {badge.label}
