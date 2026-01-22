@@ -119,7 +119,7 @@ export default function TimetablePage() {
         className="flex items-center justify-between gap-3 flex-wrap"
       >
         <div className="flex items-center gap-4">
-          <Icon3D gradient="from-violet-500 to-purple-500" size="lg">
+          <Icon3D bgColor="bg-violet-500" size="lg">
             <Calendar className="w-6 h-6" />
           </Icon3D>
           <div className="min-w-0">
@@ -193,7 +193,7 @@ export default function TimetablePage() {
             title="Total Sessions"
             value={totalSessions}
             icon={<Clock className="w-5 h-5 text-white" />}
-            gradient="from-violet-500 to-purple-500"
+            iconBgColor="bg-violet-500"
             delay={0}
           />
         </motion.div>
@@ -206,7 +206,7 @@ export default function TimetablePage() {
             title="Days Scheduled"
             value={sessionsByDay}
             icon={<Calendar className="w-5 h-5 text-white" />}
-            gradient="from-cyan-500 to-blue-500"
+            iconBgColor="bg-cyan-500"
             delay={1}
           />
         </motion.div>
@@ -220,7 +220,7 @@ export default function TimetablePage() {
             title="Class"
             value={clsName || 'Select a class'}
             icon={<Book className="w-5 h-5 text-white" />}
-            gradient="from-amber-500 to-orange-500"
+            iconBgColor="bg-amber-500"
             delay={2}
           />
         </motion.div>
@@ -263,7 +263,7 @@ export default function TimetablePage() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: dayIdx * 0.05 + sessionIdx * 0.05 }}
                       whileHover={{ y: -2 }}
-                      className="p-2 sm:p-3 rounded-lg border border-violet-100 hover:shadow-md transition-all ease-in-out bg-gradient-to-br from-white via-violet-50/30 to-white"
+                      className="p-2 sm:p-3 rounded-lg border border-violet-100 hover:shadow-md transition-all ease-in-out bg-gray-50"
                     >
                       <div className="text-xs sm:text-sm text-gray-800 font-medium truncate">{s.subject}</div>
                       <div className="text-xs text-gray-500 mt-0.5 sm:mt-1 flex items-center gap-1">

@@ -95,7 +95,7 @@ export default function ClassTimetablePage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center space-y-3">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <div className="text-gray-500">Loading timetable...</div>
         </div>
       </div>
@@ -153,7 +153,7 @@ export default function ClassTimetablePage() {
           <select
             value={selectedSection}
             onChange={(e) => setSelectedSection(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-4 py-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
           >
             {classData.sections?.map((section) => (
               <option key={section} value={section}>Section {section}</option>
@@ -192,7 +192,7 @@ export default function ClassTimetablePage() {
                     return (
                       <td
                         key={`${day}-${periodIndex}`}
-                        className="px-3 py-4 text-sm border-r border-gray-200 last:border-r-0 cursor-pointer hover:bg-indigo-50 transition-colors"
+                        className="px-3 py-4 text-sm border-r border-gray-200 last:border-r-0 cursor-pointer hover:bg-primary-50 transition-colors"
                         onClick={() => setEditingSlot({ day, period: periodIndex + 1 })}
                       >
                         {slot ? (
@@ -265,7 +265,7 @@ export default function ClassTimetablePage() {
       {/* Note about timetable management */}
       <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
         <div className="flex items-start gap-2">
-          <svg className="w-5 h-5 mt-0.5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-5 h-5 mt-0.5 text-primary" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
           </svg>
           <div>

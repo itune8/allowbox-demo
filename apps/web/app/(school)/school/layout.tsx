@@ -1,7 +1,6 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Sidebar, type SidebarMenuItem } from '@repo/ui/sidebar';
 import { useAuth } from '../../../contexts/auth-context';
 import { ProtectedRoute } from '../../../components/protected-route';
 import { useMemo, useState, useEffect, ReactNode } from 'react';
@@ -24,74 +23,92 @@ import {
   BarChart3,
   Settings,
   HelpCircle,
-  MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  Bell,
+  Search,
+  LogOut,
+  Menu,
+  X,
   Home,
+  ChevronDown,
 } from 'lucide-react';
 
-// 3D Icon wrapper component with gradient backgrounds
-const Icon3D = ({ children, gradient }: { children: ReactNode; gradient: string }) => (
-  <div className={`relative p-1.5 rounded-lg bg-gradient-to-br ${gradient} shadow-sm`}>
-    <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/30 to-transparent" />
-    <div className="relative text-white">{children}</div>
-  </div>
-);
+// Professional menu structure
+interface MenuItem {
+  key: string;
+  label: string;
+  icon: ReactNode;
+  section?: string;
+}
 
-// Icon wrapper for standard icons
-const IconWrapper = ({ children }: { children: ReactNode }) => (
-  <div className="w-5 h-5 flex items-center justify-center">
-    {children}
-  </div>
-);
+interface MenuSection {
+  title: string;
+  items: MenuItem[];
+}
 
-const sidebarMenu: SidebarMenuItem[] = [
-  // Overview
-  { key: 'dashboard', label: 'Dashboard', icon: <Icon3D gradient="from-indigo-500 to-purple-600"><LayoutDashboard className="w-4 h-4" /></Icon3D> },
-
-  // People Section
-  { key: 'section-people', label: 'People', isSection: true },
-  { key: 'students', label: 'Students', icon: <Icon3D gradient="from-blue-500 to-cyan-500"><Users className="w-4 h-4" /></Icon3D> },
-  { key: 'staff', label: 'Staff & Teachers', icon: <Icon3D gradient="from-emerald-500 to-teal-500"><UserPlus className="w-4 h-4" /></Icon3D> },
-
-  // Academics Section
-  { key: 'section-academics', label: 'Academics', isSection: true },
-  { key: 'classes', label: 'Classes', icon: <Icon3D gradient="from-violet-500 to-purple-500"><BookOpen className="w-4 h-4" /></Icon3D> },
-  { key: 'grades', label: 'Grades & Results', icon: <Icon3D gradient="from-amber-500 to-orange-500"><GraduationCap className="w-4 h-4" /></Icon3D> },
-  { key: 'homework', label: 'Homework', icon: <Icon3D gradient="from-rose-500 to-pink-500"><FileText className="w-4 h-4" /></Icon3D> },
-  { key: 'diary', label: 'Daily Diary', icon: <Icon3D gradient="from-sky-500 to-blue-500"><BookMarked className="w-4 h-4" /></Icon3D> },
-
-  // Finance Section
-  { key: 'section-finance', label: 'Finance', isSection: true },
-  { key: 'fees', label: 'Fees & Billing', icon: <Icon3D gradient="from-yellow-500 to-amber-500"><DollarSign className="w-4 h-4" /></Icon3D> },
-
-  // Student Services Section
-  { key: 'section-services', label: 'Student Services', isSection: true },
-  { key: 'health', label: 'Health Records', icon: <Icon3D gradient="from-red-500 to-rose-500"><HeartPulse className="w-4 h-4" /></Icon3D> },
-  { key: 'transport', label: 'Transport', icon: <Icon3D gradient="from-slate-500 to-gray-600"><Bus className="w-4 h-4" /></Icon3D> },
-
-  // Administration Section
-  { key: 'section-admin', label: 'Administration', isSection: true },
-  { key: 'inventory', label: 'Inventory', icon: <Icon3D gradient="from-cyan-500 to-teal-500"><Package className="w-4 h-4" /></Icon3D> },
-  { key: 'leave-management', label: 'Leave Requests', icon: <Icon3D gradient="from-green-500 to-emerald-500"><CalendarCheck className="w-4 h-4" /></Icon3D> },
-  { key: 'events', label: 'Events', icon: <Icon3D gradient="from-fuchsia-500 to-pink-500"><Calendar className="w-4 h-4" /></Icon3D> },
-
-  // Communication Section
-  { key: 'section-comms', label: 'Communication', isSection: true },
-  { key: 'messages', label: 'Messages', icon: <Icon3D gradient="from-blue-500 to-indigo-500"><MessageSquare className="w-4 h-4" /></Icon3D> },
-
-  // Settings Section
-  { key: 'section-settings', label: 'System', isSection: true },
-  { key: 'reports', label: 'Reports', icon: <Icon3D gradient="from-purple-500 to-violet-500"><BarChart3 className="w-4 h-4" /></Icon3D> },
-  { key: 'settings', label: 'Settings', icon: <Icon3D gradient="from-gray-500 to-slate-600"><Settings className="w-4 h-4" /></Icon3D> },
-  { key: 'support', label: 'Help & Support', icon: <Icon3D gradient="from-orange-500 to-red-500"><HelpCircle className="w-4 h-4" /></Icon3D> },
+const menuSections: MenuSection[] = [
+  {
+    title: 'Overview',
+    items: [
+      { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+    ],
+  },
+  {
+    title: 'People',
+    items: [
+      { key: 'students', label: 'Students', icon: <Users className="w-5 h-5" /> },
+      { key: 'staff', label: 'Staff & Teachers', icon: <UserPlus className="w-5 h-5" /> },
+    ],
+  },
+  {
+    title: 'Academics',
+    items: [
+      { key: 'classes', label: 'Classes', icon: <BookOpen className="w-5 h-5" /> },
+      { key: 'grades', label: 'Grades & Results', icon: <GraduationCap className="w-5 h-5" /> },
+      { key: 'homework', label: 'Homework', icon: <FileText className="w-5 h-5" /> },
+      { key: 'diary', label: 'Daily Diary', icon: <BookMarked className="w-5 h-5" /> },
+    ],
+  },
+  {
+    title: 'Finance',
+    items: [
+      { key: 'fees', label: 'Fees & Billing', icon: <DollarSign className="w-5 h-5" /> },
+    ],
+  },
+  {
+    title: 'Services',
+    items: [
+      { key: 'health', label: 'Health Records', icon: <HeartPulse className="w-5 h-5" /> },
+      { key: 'transport', label: 'Transport', icon: <Bus className="w-5 h-5" /> },
+    ],
+  },
+  {
+    title: 'Administration',
+    items: [
+      { key: 'inventory', label: 'Inventory', icon: <Package className="w-5 h-5" /> },
+      { key: 'leave-management', label: 'Leave Requests', icon: <CalendarCheck className="w-5 h-5" /> },
+      { key: 'events', label: 'Events', icon: <Calendar className="w-5 h-5" /> },
+      { key: 'messages', label: 'Messages', icon: <MessageSquare className="w-5 h-5" /> },
+    ],
+  },
+  {
+    title: 'System',
+    items: [
+      { key: 'reports', label: 'Reports', icon: <BarChart3 className="w-5 h-5" /> },
+      { key: 'settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
+      { key: 'support', label: 'Help & Support', icon: <HelpCircle className="w-5 h-5" /> },
+    ],
+  },
 ];
 
-// Bottom navigation items for mobile - most important features
-const bottomNavItems: SidebarMenuItem[] = [
-  { key: 'dashboard', label: 'Home', icon: <IconWrapper><Home className="w-5 h-5" /></IconWrapper> },
-  { key: 'students', label: 'Students', icon: <IconWrapper><Users className="w-5 h-5" /></IconWrapper> },
-  { key: 'grades', label: 'Grades', icon: <IconWrapper><GraduationCap className="w-5 h-5" /></IconWrapper> },
-  { key: 'fees', label: 'Fees', icon: <IconWrapper><DollarSign className="w-5 h-5" /></IconWrapper> },
-  { key: 'more', label: 'More', icon: <IconWrapper><MoreHorizontal className="w-5 h-5" /></IconWrapper> },
+// Mobile bottom navigation
+const mobileNavItems = [
+  { key: 'dashboard', label: 'Home', icon: <Home className="w-5 h-5" /> },
+  { key: 'students', label: 'Students', icon: <Users className="w-5 h-5" /> },
+  { key: 'grades', label: 'Grades', icon: <GraduationCap className="w-5 h-5" /> },
+  { key: 'fees', label: 'Fees', icon: <DollarSign className="w-5 h-5" /> },
+  { key: 'menu', label: 'Menu', icon: <Menu className="w-5 h-5" /> },
 ];
 
 export default function SchoolLayout({
@@ -105,15 +122,15 @@ export default function SchoolLayout({
   const [tenantData, setTenantData] = useState<TenantData | null>(null);
   const [loadingTenant, setLoadingTenant] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // Determine active menu item from pathname
   const activeItem = useMemo(() => {
     if (pathname === '/school' || pathname === '/school/') return 'dashboard';
     const segments = pathname.split('/').filter(Boolean);
     return segments[segments.length - 1] || 'dashboard';
   }, [pathname]);
 
-  // Fetch tenant data
   useEffect(() => {
     const fetchTenantData = async () => {
       try {
@@ -133,9 +150,9 @@ export default function SchoolLayout({
     }
   }, [user]);
 
-  const handleMenuClick = (key: string) => {
-    if (key === 'more') {
-      // Open mobile menu - handled by sidebar component
+  const handleNavigation = (key: string) => {
+    if (key === 'menu') {
+      setMobileMenuOpen(true);
       return;
     }
     if (key === 'dashboard') {
@@ -143,95 +160,285 @@ export default function SchoolLayout({
     } else {
       router.push(`/school/${key}`);
     }
+    setMobileMenuOpen(false);
   };
 
   const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
+  const userInitials = user ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}` : 'U';
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/30 text-gray-900">
-        {/* Sidebar */}
-        <Sidebar
-          title={loadingTenant ? 'Loading...' : tenantData?.schoolName || 'AllowBox School'}
-          subtitle="School Management"
-          menu={sidebarMenu}
-          activeItem={activeItem}
-          onItemClick={handleMenuClick}
-          bottomNavItems={bottomNavItems}
-          onCollapsedChange={setSidebarCollapsed}
-          user={{
-            name: userName,
-            email: user?.email,
-            role: 'School Admin',
-          }}
-          onLogout={logout}
-        />
+      <div className="min-h-screen bg-slate-50">
+        {/* Professional Sidebar - Desktop */}
+        <aside
+          className={`hidden md:flex flex-col fixed inset-y-0 left-0 z-30 bg-white border-r border-slate-200 transition-all duration-300 ${
+            sidebarCollapsed ? 'w-[72px]' : 'w-64'
+          }`}
+        >
+          {/* Logo / Brand */}
+          <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200">
+            {!sidebarCollapsed && (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">A</span>
+                </div>
+                <div className="overflow-hidden">
+                  <h1 className="text-sm font-semibold text-slate-900 truncate">
+                    {loadingTenant ? 'Loading...' : tenantData?.schoolName || 'AllowBox'}
+                  </h1>
+                  <p className="text-xs text-slate-500">School Management</p>
+                </div>
+              </div>
+            )}
+            {sidebarCollapsed && (
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center mx-auto">
+                <span className="text-white font-bold text-sm">A</span>
+              </div>
+            )}
+          </div>
 
-        {/* Main content */}
-        <div className={`transition-all duration-300 ease-smooth ${sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-64'}`}>
-          {/* Mobile Header */}
-          <header className="md:hidden sticky top-0 z-20 glass-strong px-4 h-14 flex items-center justify-between safe-area-top">
-            <div className="ml-12">
-              <h1 className="text-base font-semibold text-gray-900 truncate">
-                {loadingTenant ? 'Loading...' : tenantData?.schoolName || 'AllowBox'}
-              </h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="relative p-2.5 rounded-xl hover:bg-gray-100/80 active:scale-95 transition-all">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto py-4 px-3">
+            {menuSections.map((section, sectionIndex) => (
+              <div key={section.title} className={sectionIndex > 0 ? 'mt-6' : ''}>
+                {!sidebarCollapsed && (
+                  <h3 className="px-3 mb-2 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    {section.title}
+                  </h3>
+                )}
+                <ul className="space-y-1">
+                  {section.items.map((item) => {
+                    const isActive = activeItem === item.key;
+                    return (
+                      <li key={item.key}>
+                        <button
+                          onClick={() => handleNavigation(item.key)}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                            isActive
+                              ? 'bg-primary text-white'
+                              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                          } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                          title={sidebarCollapsed ? item.label : undefined}
+                        >
+                          <span className={isActive ? 'text-white' : 'text-slate-400'}>
+                            {item.icon}
+                          </span>
+                          {!sidebarCollapsed && <span>{item.label}</span>}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </nav>
+
+          {/* Collapse Toggle */}
+          <div className="p-3 border-t border-slate-200">
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              {sidebarCollapsed ? (
+                <ChevronRight className="w-4 h-4" />
+              ) : (
+                <>
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Collapse</span>
+                </>
+              )}
+            </button>
+          </div>
+        </aside>
+
+        {/* Mobile Sidebar Overlay */}
+        {mobileMenuOpen && (
+          <div className="md:hidden fixed inset-0 z-50">
+            <div
+              className="absolute inset-0 bg-slate-900/50"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <aside className="absolute inset-y-0 left-0 w-72 bg-white shadow-xl">
+              <div className="h-14 flex items-center justify-between px-4 border-b border-slate-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">A</span>
+                  </div>
+                  <span className="font-semibold text-slate-900">
+                    {tenantData?.schoolName || 'AllowBox'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <nav className="overflow-y-auto py-4 px-3 h-[calc(100%-56px)]">
+                {menuSections.map((section, sectionIndex) => (
+                  <div key={section.title} className={sectionIndex > 0 ? 'mt-6' : ''}>
+                    <h3 className="px-3 mb-2 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      {section.title}
+                    </h3>
+                    <ul className="space-y-1">
+                      {section.items.map((item) => {
+                        const isActive = activeItem === item.key;
+                        return (
+                          <li key={item.key}>
+                            <button
+                              onClick={() => handleNavigation(item.key)}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                                isActive
+                                  ? 'bg-primary text-white'
+                                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                              }`}
+                            >
+                              <span className={isActive ? 'text-white' : 'text-slate-400'}>
+                                {item.icon}
+                              </span>
+                              <span>{item.label}</span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+              </nav>
+            </aside>
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        <div
+          className={`transition-all duration-300 ${
+            sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-64'
+          }`}
+        >
+          {/* Professional Header */}
+          <header className="sticky top-0 z-20 h-16 bg-white border-b border-slate-200">
+            <div className="h-full px-4 md:px-6 flex items-center justify-between">
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-700"
+              >
+                <Menu className="w-5 h-5" />
               </button>
-            </div>
-          </header>
 
-          {/* Desktop Header with Glassmorphism */}
-          <header className="hidden md:flex sticky top-0 z-20 glass-strong h-16 items-center justify-between px-6 border-b border-white/20">
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900 tracking-tight">
-                School Admin Dashboard
-              </h1>
-              <p className="text-xs text-gray-500">
-                Manage your school efficiently
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              {/* Search with glass effect */}
-              <div className="relative group">
-                <input
-                  type="text"
-                  placeholder="Search students, staff, classes..."
-                  className="w-72 pl-10 pr-4 py-2.5 text-sm bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:bg-white focus:border-indigo-300 transition-all placeholder:text-gray-400"
-                />
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="M21 21l-4.35-4.35" />
-                </svg>
+              {/* Page Title - Desktop */}
+              <div className="hidden md:block">
+                <h1 className="text-lg font-semibold text-slate-900">
+                  {activeItem === 'dashboard' ? 'Dashboard' :
+                   menuSections.flatMap(s => s.items).find(i => i.key === activeItem)?.label || 'Dashboard'}
+                </h1>
               </div>
 
-              {/* Notifications with animation */}
-              <button className="relative p-2.5 rounded-xl hover:bg-white/60 transition-all duration-200 group">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="group-hover:scale-110 transition-transform">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white animate-pulse"></span>
-              </button>
+              {/* Mobile Title */}
+              <div className="md:hidden flex-1 text-center">
+                <h1 className="text-base font-semibold text-slate-900">
+                  {tenantData?.schoolName || 'AllowBox'}
+                </h1>
+              </div>
 
-              {/* Quick Actions with gradient */}
-              <button className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 hover:scale-[1.02] active:scale-[0.98]">
-                + Add New
-              </button>
+              {/* Right Actions */}
+              <div className="flex items-center gap-2 md:gap-4">
+                {/* Search - Desktop */}
+                <div className="hidden lg:flex items-center">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      className="w-64 pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                    />
+                  </div>
+                </div>
+
+                {/* Notifications */}
+                <button className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+                  <Bell className="w-5 h-5" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+                </button>
+
+                {/* User Menu */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex items-center gap-2 p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                      <span className="text-white text-sm font-medium">{userInitials}</span>
+                    </div>
+                    <ChevronDown className="hidden md:block w-4 h-4 text-slate-400" />
+                  </button>
+
+                  {showUserMenu && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowUserMenu(false)}
+                      />
+                      <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                        <div className="px-4 py-3 border-b border-slate-100">
+                          <p className="text-sm font-medium text-slate-900">{userName}</p>
+                          <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            router.push('/school/settings');
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                        >
+                          <Settings className="w-4 h-4" />
+                          Settings
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            logout();
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Sign out
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </header>
 
-          {/* Page content with smooth transitions */}
-          <main className="p-4 md:p-6 pb-20 md:pb-6 min-h-[calc(100vh-56px)] md:min-h-[calc(100vh-64px)] animate-fade-in">
+          {/* Page Content */}
+          <main className="p-4 md:p-6 pb-24 md:pb-6 min-h-[calc(100vh-64px)]">
             {children}
           </main>
         </div>
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="md:hidden fixed bottom-0 inset-x-0 z-20 bg-white border-t border-slate-200 safe-area-bottom">
+          <div className="flex items-center justify-around h-16">
+            {mobileNavItems.map((item) => {
+              const isActive = activeItem === item.key;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => handleNavigation(item.key)}
+                  className={`flex flex-col items-center gap-1 px-3 py-2 min-w-[64px] ${
+                    isActive ? 'text-primary' : 'text-slate-400'
+                  }`}
+                >
+                  {item.icon}
+                  <span className="text-xs font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       </div>
     </ProtectedRoute>
   );

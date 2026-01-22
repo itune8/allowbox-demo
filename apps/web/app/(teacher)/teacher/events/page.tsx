@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet } from '@/components/ui';
 import {
   eventService,
   Event,
@@ -158,7 +158,7 @@ export default function TeacherEventsPage() {
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
               Events
-              <Icon3D gradient={gradients.fuchsia} size="sm">
+              <Icon3D bgColor="bg-gray-500" size="sm">
                 <Sparkles className="w-3.5 h-3.5" />
               </Icon3D>
             </h1>
@@ -200,7 +200,7 @@ export default function TeacherEventsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <GlassCard className="p-3 sm:p-4 bg-gradient-to-r from-fuchsia-50 to-pink-50 border-pink-100" hover={false}>
+        <GlassCard className="p-3 sm:p-4 bg-gray-50 border-pink-100" hover={false}>
           <div className="flex items-center justify-between">
             <motion.button
               whileHover={{ scale: 1.1 }}
@@ -242,7 +242,7 @@ export default function TeacherEventsPage() {
         transition={{ duration: 0.5, delay: 0.2 }}
       >
         <GlassCard className="p-0 bg-white/90" hover={false}>
-          <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-fuchsia-50/50 to-pink-50/50">
+          <div className="p-4 border-b border-gray-200 bg-gray-50">
             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
               <Calendar className="w-4 h-4 text-fuchsia-600" />
               Class Events
@@ -321,32 +321,23 @@ export default function TeacherEventsPage() {
       </motion.div>
 
       {/* Create Event Modal */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4"
-          >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setShowForm(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.2 }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6"
-            >
-            <h3 className="text-lg font-semibold mb-4 text-gray-900">
-              Create Class Event
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
+      <SlideSheet
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        title="Create Class Event"
+        size="lg"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={submitting} form="event-form">
+              {submitting ? 'Creating...' : 'Create Event'}
+            </Button>
+          </div>
+        }
+      >
+        <form id="event-form" onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-sm text-gray-700 mb-1">
@@ -474,55 +465,29 @@ export default function TeacherEventsPage() {
                   required
                 />
               </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? 'Creating...' : 'Create Event'}
-                </Button>
-              </div>
             </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </SlideSheet>
 
       {/* View Event Modal */}
-      <AnimatePresence>
+      <SlideSheet
+        isOpen={!!selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        title={selectedEvent?.title || ''}
+        size="md"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setSelectedEvent(null)}>
+              Close
+            </Button>
+          </div>
+        }
+      >
         {selectedEvent && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4"
-          >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setSelectedEvent(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.2 }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6"
-            >
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={`text-xs px-2 py-0.5 rounded ${typeColors[selectedEvent.type]}`}>
-                    {typeLabels[selectedEvent.type]}
-                  </span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {selectedEvent.title}
-                </h3>
-              </div>
+          <>
+            <div className="flex items-center gap-2 mb-4">
+              <span className={`text-xs px-2 py-0.5 rounded ${typeColors[selectedEvent.type]}`}>
+                {typeLabels[selectedEvent.type]}
+              </span>
             </div>
 
             <div className="space-y-4 text-sm">
@@ -551,20 +516,13 @@ export default function TeacherEventsPage() {
                 </p>
               </div>
 
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-500 mt-4">
                 Created by {selectedEvent.createdBy?.firstName} {selectedEvent.createdBy?.lastName}
               </div>
             </div>
-
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-              <Button variant="outline" onClick={() => setSelectedEvent(null)}>
-                Close
-              </Button>
-            </div>
-            </motion.div>
-          </motion.div>
+          </>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </motion.div>
   );
 }

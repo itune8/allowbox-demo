@@ -111,7 +111,7 @@ export default function ParentTransportPage() {
         className="space-y-6"
       >
         <div className="flex items-center gap-4">
-          <Icon3D gradient="from-slate-500 to-gray-600" size="lg">
+          <Icon3D bgColor="bg-slate-500" size="lg">
             <Bus className="w-6 h-6" />
           </Icon3D>
           <div>
@@ -148,7 +148,7 @@ export default function ParentTransportPage() {
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-4 min-w-0">
-          <Icon3D gradient="from-slate-500 to-gray-600" size="lg">
+          <Icon3D bgColor="bg-slate-500" size="lg">
             <Bus className="w-6 h-6" />
           </Icon3D>
           <div className="min-w-0">
@@ -186,7 +186,7 @@ export default function ParentTransportPage() {
             <div className="flex items-center gap-3 sm:gap-4">
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-slate-500 to-gray-600 flex items-center justify-center text-white font-semibold text-base sm:text-lg flex-shrink-0 shadow-md"
+                className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-slate-500 flex items-center justify-center text-white font-semibold text-base sm:text-lg flex-shrink-0 shadow-md"
               >
                 {selectedChild.firstName?.[0]}
               </motion.div>
@@ -248,7 +248,7 @@ export default function ParentTransportPage() {
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <motion.div
                       whileHover={{ scale: 1.1 }}
-                      className="w-10 h-10 bg-gradient-to-br from-slate-500 to-gray-600 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md flex-shrink-0"
+                      className="w-10 h-10 bg-slate-500 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md flex-shrink-0"
                     >
                       {assignment.studentId?.firstName?.[0]}{assignment.studentId?.lastName?.[0]}
                     </motion.div>

@@ -96,7 +96,7 @@ export default function ClassDetailPage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center space-y-3">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <div className="text-gray-500">Loading class details...</div>
         </div>
       </div>
@@ -206,7 +206,7 @@ export default function ClassDetailPage() {
               onClick={() => setActiveTab(tab.key as any)}
               className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === tab.key
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -301,7 +301,7 @@ export default function ClassDetailPage() {
                         <h4 className="font-semibold text-gray-900 text-lg">
                           Section {section}
                         </h4>
-                        <span className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 grid place-items-center font-semibold">
+                        <span className="w-10 h-10 rounded-full bg-primary-100 text-primary grid place-items-center font-semibold">
                           {section}
                         </span>
                       </div>
@@ -322,7 +322,7 @@ export default function ClassDetailPage() {
                           setSelectedSection(section);
                           setActiveTab('students');
                         }}
-                        className="mt-4 w-full text-sm text-indigo-600 hover:text-indigo-700 font-medium text-center py-2 border border-indigo-200 rounded-md hover:bg-indigo-50 transition-colors"
+                        className="mt-4 w-full text-sm text-primary hover:text-primary-dark font-medium text-center py-2 border border-indigo-200 rounded-md hover:bg-primary-50 transition-colors"
                       >
                         View Students →
                       </button>
@@ -359,7 +359,7 @@ export default function ClassDetailPage() {
                 {subjects.map((subject) => (
                   <div
                     key={subject._id}
-                    className="p-4 border border-gray-200 rounded-lg hover:border-indigo-500 hover:shadow-md transition-all"
+                    className="p-4 border border-gray-200 rounded-lg hover:border-primary hover:shadow-md transition-all"
                   >
                     <h4 className="font-semibold text-gray-900 text-lg mb-1">
                       {subject.name}
@@ -401,7 +401,7 @@ export default function ClassDetailPage() {
                 <select
                   value={selectedSection}
                   onChange={(e) => setSelectedSection(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="all">All Sections</option>
                   {classData.sections?.map((section) => (
@@ -413,7 +413,7 @@ export default function ClassDetailPage() {
                   placeholder="Search students..."
                   value={studentSearch}
                   onChange={(e) => setStudentSearch(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>

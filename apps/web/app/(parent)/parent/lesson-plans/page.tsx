@@ -10,8 +10,8 @@ import {
   ClassProgress,
 } from '../../../../lib/services/lesson-plan.service';
 import { userService, User } from '../../../../lib/services/user.service';
-import { GlassCard, Icon3D } from '../../../../components/ui';
-import { BookOpen, Calendar, X, Clock, CheckCircle } from 'lucide-react';
+import { GlassCard, Icon3D, SlideSheet, SheetSection, SheetDetailRow } from '../../../../components/ui';
+import { BookOpen, Calendar, Clock, CheckCircle } from 'lucide-react';
 
 interface Child extends User {
   classId?: {
@@ -179,7 +179,7 @@ export default function ParentLessonPlansPage() {
         className="space-y-6"
       >
         <motion.div variants={itemVariants} className="flex items-center gap-4">
-          <Icon3D gradient="from-purple-500 to-violet-500" size="lg">
+          <Icon3D bgColor="bg-purple-500" size="lg">
             <BookOpen className="w-6 h-6" />
           </Icon3D>
           <div>
@@ -211,7 +211,7 @@ export default function ParentLessonPlansPage() {
       {/* Header */}
       <motion.div variants={itemVariants} className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-4">
-          <Icon3D gradient="from-purple-500 to-violet-500" size="lg">
+          <Icon3D bgColor="bg-purple-500" size="lg">
             <BookOpen className="w-6 h-6" />
           </Icon3D>
           <div className="min-w-0">
@@ -255,7 +255,7 @@ export default function ParentLessonPlansPage() {
           <motion.div variants={itemVariants}>
             <GlassCard className="p-3 sm:p-4">
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center text-white font-semibold text-base sm:text-lg flex-shrink-0 shadow-lg shadow-purple-500/20">
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-purple-500 flex items-center justify-center text-white font-semibold text-base sm:text-lg flex-shrink-0 shadow-lg shadow-purple-500/20">
                   {selectedChild.firstName[0]}
                 </div>
                 <div className="min-w-0">
@@ -310,7 +310,7 @@ export default function ParentLessonPlansPage() {
                     initial={{ width: 0 }}
                     animate={{ width: `${progress.completionPercentage}%` }}
                     transition={{ duration: 1, ease: 'easeOut' }}
-                    className="bg-gradient-to-r from-purple-500 to-violet-500 h-3 rounded-full"
+                    className="bg-purple-500 h-3 rounded-full"
                   />
                 </div>
               </GlassCard>
@@ -461,139 +461,81 @@ export default function ParentLessonPlansPage() {
         </>
       )}
 
-      {/* Lesson Detail Modal */}
-      <AnimatePresence>
-        {selectedPlan && (
-          <motion.div
-            variants={backdropVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/50"
-            onClick={() => setSelectedPlan(null)}
-          >
-            <motion.div
-              variants={modalVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
+      {/* Lesson Detail Sheet */}
+      <SlideSheet
+        isOpen={!!selectedPlan}
+        onClose={() => setSelectedPlan(null)}
+        title={selectedPlan?.title || ''}
+        subtitle={selectedPlan ? `${selectedPlan.status.replace('_', ' ')} • ${new Date(selectedPlan.scheduledDate).toLocaleDateString()}` : ''}
+        size="lg"
+        footer={
+          <div className="flex justify-end">
+            <button
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              onClick={() => setSelectedPlan(null)}
             >
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Icon3D gradient="from-purple-500 to-violet-500" size="md">
-                    <BookOpen className="w-4 h-4" />
-                  </Icon3D>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {selectedPlan.title}
-                    </h3>
-                    <span className={`text-xs px-2 py-1 rounded ${statusColors[selectedPlan.status]}`}>
-                      {selectedPlan.status.replace('_', ' ')}
-                    </span>
-                  </div>
+              Close
+            </button>
+          </div>
+        }
+      >
+        {selectedPlan && (
+          <div className="space-y-6">
+            <SheetSection title="Details" icon={<BookOpen className="w-4 h-4" />}>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <SheetDetailRow label="Subject" value={selectedPlan.subjectId?.name || 'N/A'} />
+                <SheetDetailRow label="Teacher" value={`${selectedPlan.teacherId?.firstName} ${selectedPlan.teacherId?.lastName}`} />
+                <SheetDetailRow label="Scheduled" value={new Date(selectedPlan.scheduledDate).toLocaleDateString()} />
+                {selectedPlan.duration && <SheetDetailRow label="Duration" value={`${selectedPlan.duration} min`} />}
+              </div>
+            </SheetSection>
+
+            {selectedPlan.description && (
+              <SheetSection title="Description">
+                <p className="text-sm text-gray-600">{selectedPlan.description}</p>
+              </SheetSection>
+            )}
+
+            {selectedPlan.objectives && selectedPlan.objectives.length > 0 && (
+              <SheetSection title="Learning Objectives">
+                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                  {selectedPlan.objectives.map((obj, i) => (
+                    <li key={i}>{obj}</li>
+                  ))}
+                </ul>
+              </SheetSection>
+            )}
+
+            {selectedPlan.content && (
+              <SheetSection title="Lesson Content">
+                <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 whitespace-pre-wrap">
+                  {selectedPlan.content}
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setSelectedPlan(null)}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
-                >
-                  <X className="w-5 h-5" />
-                </motion.button>
-              </div>
+              </SheetSection>
+            )}
 
-              <div className="p-6 space-y-4 text-sm">
-                <div className="grid grid-cols-2 gap-4 text-gray-600">
-                  <div>
-                    <span className="font-medium">Subject:</span>{' '}
-                    {selectedPlan.subjectId?.name || 'N/A'}
-                  </div>
-                  <div>
-                    <span className="font-medium">Teacher:</span>{' '}
-                    {selectedPlan.teacherId?.firstName} {selectedPlan.teacherId?.lastName}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <span className="font-medium">Scheduled:</span>{' '}
-                    {new Date(selectedPlan.scheduledDate).toLocaleDateString()}
-                  </div>
-                  {selectedPlan.duration && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="font-medium">Duration:</span> {selectedPlan.duration} min
-                    </div>
-                  )}
-                </div>
-
-                {selectedPlan.description && (
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-1">Description</h4>
-                    <p className="text-gray-600">{selectedPlan.description}</p>
-                  </div>
-                )}
-
-                {selectedPlan.objectives && selectedPlan.objectives.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-1">
-                      Learning Objectives
-                    </h4>
-                    <ul className="list-disc list-inside text-gray-600 space-y-1">
-                      {selectedPlan.objectives.map((obj, i) => (
-                        <li key={i}>{obj}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {selectedPlan.content && (
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-1">
-                      Lesson Content
-                    </h4>
-                    <div className="bg-gray-50 rounded-lg p-3 text-gray-700 whitespace-pre-wrap">
-                      {selectedPlan.content}
-                    </div>
-                  </div>
-                )}
-
-                {selectedPlan.resources && selectedPlan.resources.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-1">Resources</h4>
-                    <ul className="space-y-1">
-                      {selectedPlan.resources.map((resource, i) => (
-                        <li key={i}>
-                          <a
-                            href={resource.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-purple-600 hover:underline"
-                          >
-                            {resource.title}
-                          </a>
-                          <span className="text-xs text-gray-500 ml-2">({resource.type})</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end p-6 pt-4 border-t border-gray-200">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                  onClick={() => setSelectedPlan(null)}
-                >
-                  Close
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
+            {selectedPlan.resources && selectedPlan.resources.length > 0 && (
+              <SheetSection title="Resources">
+                <ul className="space-y-1 text-sm">
+                  {selectedPlan.resources.map((resource, i) => (
+                    <li key={i}>
+                      <a
+                        href={resource.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-600 hover:underline"
+                      >
+                        {resource.title}
+                      </a>
+                      <span className="text-xs text-gray-500 ml-2">({resource.type})</span>
+                    </li>
+                  ))}
+                </ul>
+              </SheetSection>
+            )}
+          </div>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </motion.section>
   );
 }

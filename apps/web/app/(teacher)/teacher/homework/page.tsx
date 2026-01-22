@@ -10,7 +10,7 @@ import {
   type Homework as HomeworkType,
 } from '../../../../lib/data-store';
 import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet } from '@/components/ui';
 import { BookOpen, CheckCircle2, Clock, Trash2 } from 'lucide-react';
 
 export default function HomeworkPage() {
@@ -103,7 +103,7 @@ export default function HomeworkPage() {
       >
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
           Homework Management
-          <Icon3D gradient={gradients.rose} size="sm">
+          <Icon3D bgColor="bg-rose-500" size="sm">
             <BookOpen className="w-3.5 h-3.5" />
           </Icon3D>
         </h1>
@@ -149,7 +149,7 @@ export default function HomeworkPage() {
         <GlassCard className="p-4 sm:p-6 bg-white">
           <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
             Create New Assignment
-            <Icon3D gradient={gradients.rose} size="sm">
+            <Icon3D bgColor="bg-rose-500" size="sm">
               <BookOpen className="w-3 h-3" />
             </Icon3D>
           </h3>
@@ -298,74 +298,62 @@ export default function HomeworkPage() {
       </motion.div>
 
       {/* Quick view modal */}
-      <AnimatePresence>
+      <SlideSheet
+        isOpen={!!view}
+        onClose={() => setView(null)}
+        title={view?.title || ''}
+        size="sm"
+        footer={
+          view ? (
+            <div className="flex gap-2 justify-end">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    toggleComplete(view.id);
+                    setView(null);
+                  }}
+                >
+                  {view.status === 'Completed' ? 'Mark Pending' : 'Mark Complete'}
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setView(null)}
+                >
+                  Close
+                </Button>
+              </motion.div>
+            </div>
+          ) : undefined
+        }
+      >
         {view && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/40"
-            onClick={() => setView(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md"
-            >
-              <GlassCard className="p-4 sm:p-6 bg-white">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold mb-2 text-gray-900">{view.title}</h3>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      view.status === 'Completed'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-rose-100 text-rose-700'
-                    }`}>
-                      {view.status || 'Pending'}
-                    </span>
-                    <div className="text-gray-600 flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      Due: {view.due}
-                    </div>
-                  </div>
-                </div>
-                {view.description && (
-                  <div className="mt-4 text-sm text-gray-700 bg-gray-50 p-4 rounded-lg whitespace-pre-wrap border border-gray-200">
-                    {view.description}
-                  </div>
-                )}
-                <div className="mt-6 flex gap-2 justify-end">
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        toggleComplete(view.id);
-                        setView(null);
-                      }}
-                      className="text-xs"
-                    >
-                      {view.status === 'Completed' ? 'Mark Pending' : 'Mark Complete'}
-                    </Button>
-                  </motion.div>
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setView(null)}
-                      className="text-xs"
-                    >
-                      Close
-                    </Button>
-                  </motion.div>
-                </div>
-              </GlassCard>
-            </motion.div>
-          </motion.div>
+          <>
+            <div className="flex items-center gap-4 text-sm mb-4">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                view.status === 'Completed'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-rose-100 text-rose-700'
+              }`}>
+                {view.status || 'Pending'}
+              </span>
+              <div className="text-gray-600 flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                Due: {view.due}
+              </div>
+            </div>
+            {view.description && (
+              <div className="text-sm text-gray-700 bg-gray-50 p-4 rounded-lg whitespace-pre-wrap border border-gray-200">
+                {view.description}
+              </div>
+            )}
+          </>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </div>
   );
 }

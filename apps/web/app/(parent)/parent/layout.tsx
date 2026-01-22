@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar, type SidebarMenuItem } from '@repo/ui/sidebar';
+import { Icon3D } from '@/components/ui';
 import { useAuth } from '../../../contexts/auth-context';
 import { ProtectedRoute } from '../../../components/protected-route';
 import { useMemo, useState, ReactNode } from 'react';
@@ -23,14 +24,6 @@ import {
   Home,
 } from 'lucide-react';
 
-// 3D Icon wrapper component with gradient backgrounds
-const Icon3D = ({ children, gradient }: { children: ReactNode; gradient: string }) => (
-  <div className={`relative p-1.5 rounded-lg bg-gradient-to-br ${gradient} shadow-sm`}>
-    <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/30 to-transparent" />
-    <div className="relative text-white">{children}</div>
-  </div>
-);
-
 // Icon wrapper for standard icons
 const IconWrapper = ({ children }: { children: ReactNode }) => (
   <div className="w-5 h-5 flex items-center justify-center">
@@ -40,37 +33,37 @@ const IconWrapper = ({ children }: { children: ReactNode }) => (
 
 const sidebarMenu: SidebarMenuItem[] = [
   // Overview
-  { key: 'dashboard', label: 'Dashboard', icon: <Icon3D gradient="from-indigo-500 to-purple-600"><LayoutDashboard className="w-4 h-4" /></Icon3D> },
+  { key: 'dashboard', label: 'Dashboard', icon: <Icon3D bgColor="bg-primary"><LayoutDashboard className="w-4 h-4" /></Icon3D> },
 
   // My Children Section
   { key: 'section-children', label: 'My Children', isSection: true },
-  { key: 'children', label: 'Children Profile', icon: <Icon3D gradient="from-blue-500 to-cyan-500"><Users className="w-4 h-4" /></Icon3D> },
+  { key: 'children', label: 'Children Profile', icon: <Icon3D bgColor="bg-sky-500"><Users className="w-4 h-4" /></Icon3D> },
 
   // Academics Section
   { key: 'section-academics', label: 'Academics', isSection: true },
-  { key: 'grades', label: 'Grades & Results', icon: <Icon3D gradient="from-amber-500 to-orange-500"><GraduationCap className="w-4 h-4" /></Icon3D> },
-  { key: 'homework', label: 'Homework', icon: <Icon3D gradient="from-rose-500 to-pink-500"><FileText className="w-4 h-4" /></Icon3D> },
-  { key: 'diary', label: 'Daily Diary', icon: <Icon3D gradient="from-sky-500 to-blue-500"><BookMarked className="w-4 h-4" /></Icon3D> },
-  { key: 'lesson-plans', label: 'Lesson Plans', icon: <Icon3D gradient="from-purple-500 to-violet-500"><BookOpen className="w-4 h-4" /></Icon3D> },
+  { key: 'grades', label: 'Grades & Results', icon: <Icon3D bgColor="bg-amber-500"><GraduationCap className="w-4 h-4" /></Icon3D> },
+  { key: 'homework', label: 'Homework', icon: <Icon3D bgColor="bg-pink-500"><FileText className="w-4 h-4" /></Icon3D> },
+  { key: 'diary', label: 'Daily Diary', icon: <Icon3D bgColor="bg-cyan-500"><BookMarked className="w-4 h-4" /></Icon3D> },
+  { key: 'lesson-plans', label: 'Lesson Plans', icon: <Icon3D bgColor="bg-purple-500"><BookOpen className="w-4 h-4" /></Icon3D> },
 
   // Finance Section
   { key: 'section-finance', label: 'Finance', isSection: true },
-  { key: 'fees', label: 'Fee Structure', icon: <Icon3D gradient="from-yellow-500 to-amber-500"><CreditCard className="w-4 h-4" /></Icon3D> },
-  { key: 'payments', label: 'Payment History', icon: <Icon3D gradient="from-green-500 to-emerald-500"><DollarSign className="w-4 h-4" /></Icon3D> },
+  { key: 'fees', label: 'Fee Structure', icon: <Icon3D bgColor="bg-yellow-500"><CreditCard className="w-4 h-4" /></Icon3D> },
+  { key: 'payments', label: 'Payment History', icon: <Icon3D bgColor="bg-green-500"><DollarSign className="w-4 h-4" /></Icon3D> },
 
   // Services Section
   { key: 'section-services', label: 'Services', isSection: true },
-  { key: 'health', label: 'Health Records', icon: <Icon3D gradient="from-red-500 to-rose-500"><HeartPulse className="w-4 h-4" /></Icon3D> },
-  { key: 'transport', label: 'Transport', icon: <Icon3D gradient="from-slate-500 to-gray-600"><Bus className="w-4 h-4" /></Icon3D> },
+  { key: 'health', label: 'Health Records', icon: <Icon3D bgColor="bg-red-500"><HeartPulse className="w-4 h-4" /></Icon3D> },
+  { key: 'transport', label: 'Transport', icon: <Icon3D bgColor="bg-slate-500"><Bus className="w-4 h-4" /></Icon3D> },
 
   // Communication Section
   { key: 'section-comms', label: 'Communication', isSection: true },
-  { key: 'messages', label: 'Messages', icon: <Icon3D gradient="from-blue-500 to-indigo-500"><MessageSquare className="w-4 h-4" /></Icon3D> },
-  { key: 'events', label: 'School Events', icon: <Icon3D gradient="from-fuchsia-500 to-pink-500"><Calendar className="w-4 h-4" /></Icon3D> },
+  { key: 'messages', label: 'Messages', icon: <Icon3D bgColor="bg-blue-500"><MessageSquare className="w-4 h-4" /></Icon3D> },
+  { key: 'events', label: 'School Events', icon: <Icon3D bgColor="bg-fuchsia-500"><Calendar className="w-4 h-4" /></Icon3D> },
 
   // Support Section
   { key: 'section-support', label: 'Help', isSection: true },
-  { key: 'support', label: 'Help & Support', icon: <Icon3D gradient="from-orange-500 to-red-500"><HelpCircle className="w-4 h-4" /></Icon3D> },
+  { key: 'support', label: 'Help & Support', icon: <Icon3D bgColor="bg-orange-500"><HelpCircle className="w-4 h-4" /></Icon3D> },
 ];
 
 // Bottom navigation items for mobile - most important features
@@ -115,7 +108,7 @@ export default function ParentLayout({
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/30 text-gray-900">
+      <div className="min-h-screen bg-gray-50 text-gray-900">
         {/* Sidebar */}
         <Sidebar
           title="Parent Portal"
@@ -187,7 +180,7 @@ export default function ParentLayout({
               </button>
 
               {/* Quick Actions with gradient */}
-              <button className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 hover:scale-[1.02] active:scale-[0.98]">
+              <button className="px-5 py-2.5 text-sm font-medium text-white bg-gray-50 hover:from-indigo-700 hover:to-indigo-800 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 hover:scale-[1.02] active:scale-[0.98]">
                 Pay Fees
               </button>
             </div>

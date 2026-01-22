@@ -9,14 +9,13 @@ import {
   EventType,
   EventVisibility,
 } from '../../../../lib/services/event.service';
-import { GlassCard, Icon3D } from '@/components/ui';
+import { GlassCard, Icon3D, SlideSheet, SheetSection, SheetDetailRow } from '@/components/ui';
 import {
   Calendar,
   ChevronLeft,
   ChevronRight,
   MapPin,
   Clock,
-  X,
   Sparkles,
   CalendarDays,
 } from 'lucide-react';
@@ -50,13 +49,13 @@ export default function ParentEventsPage() {
   }
 
   const typeColors: Record<EventType, string> = {
-    [EventType.ACADEMIC]: 'from-blue-400 to-blue-600',
-    [EventType.SPORTS]: 'from-green-400 to-green-600',
-    [EventType.CULTURAL]: 'from-purple-400 to-purple-600',
-    [EventType.HOLIDAY]: 'from-yellow-400 to-yellow-600',
-    [EventType.MEETING]: 'from-gray-400 to-gray-600',
-    [EventType.EXAM]: 'from-red-400 to-red-600',
-    [EventType.OTHER]: 'from-indigo-400 to-indigo-600',
+    [EventType.ACADEMIC]: 'bg-blue-500',
+    [EventType.SPORTS]: 'bg-green-500',
+    [EventType.CULTURAL]: 'bg-purple-500',
+    [EventType.HOLIDAY]: 'bg-yellow-500',
+    [EventType.MEETING]: 'bg-gray-500',
+    [EventType.EXAM]: 'bg-red-500',
+    [EventType.OTHER]: 'bg-indigo-500',
   };
 
   const typeLabels: Record<EventType, string> = {
@@ -111,7 +110,7 @@ export default function ParentEventsPage() {
         transition={{ duration: 0.5 }}
         className="flex items-center gap-4"
       >
-        <Icon3D gradient="from-fuchsia-500 to-pink-500" size="lg">
+        <Icon3D bgColor="bg-fuchsia-500" size="lg">
           <CalendarDays className="w-6 h-6" />
         </Icon3D>
         <div>
@@ -150,9 +149,9 @@ export default function ParentEventsPage() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <GlassCard className="p-4 bg-gradient-to-br from-fuchsia-50 to-pink-50 border border-fuchsia-200">
+          <GlassCard className="p-4 bg-gray-50 border border-fuchsia-200">
             <div className="flex items-center gap-2 mb-3">
-              <Icon3D gradient="from-fuchsia-500 to-pink-500" size="sm">
+              <Icon3D bgColor="bg-fuchsia-500" size="sm">
                 <Clock className="w-3.5 h-3.5" />
               </Icon3D>
               <h3 className="font-semibold text-fuchsia-800">
@@ -238,12 +237,12 @@ export default function ParentEventsPage() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="p-4 hover:bg-gradient-to-r hover:from-fuchsia-50/50 hover:to-pink-50/50 cursor-pointer transition-all group"
+                  className="p-4 hover:bg-fuchsia-50 cursor-pointer transition-all group"
                   onClick={() => setSelectedEvent(event)}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 flex-1">
-                      <Icon3D gradient={typeColors[event.type]} size="md">
+                      <Icon3D bgColor="bg-gray-500" size="md">
                         <CalendarDays className="w-4 h-4" />
                       </Icon3D>
                       <div className="flex-1 min-w-0">
@@ -251,7 +250,7 @@ export default function ParentEventsPage() {
                           <span className="font-semibold text-gray-900 group-hover:text-fuchsia-700 transition-colors">
                             {event.title}
                           </span>
-                          <span className={`text-xs px-2.5 py-1 rounded-lg bg-gradient-to-r ${typeColors[event.type]} text-white font-medium`}>
+                          <span className={`text-xs px-2.5 py-1 rounded-lg ${typeColors[event.type]} text-white font-medium`}>
                             {typeLabels[event.type]}
                           </span>
                         </div>
@@ -285,102 +284,62 @@ export default function ParentEventsPage() {
         </GlassCard>
       </motion.div>
 
-      {/* View Event Modal */}
-      <AnimatePresence>
+      {/* View Event Sheet */}
+      <SlideSheet
+        isOpen={!!selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        title={selectedEvent?.title || ''}
+        subtitle={selectedEvent ? typeLabels[selectedEvent.type] : ''}
+        size="md"
+        footer={
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setSelectedEvent(null)}>
+              Close
+            </Button>
+          </div>
+        }
+      >
         {selectedEvent && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-              onClick={() => setSelectedEvent(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-            >
-              <div className="sticky top-0 bg-gradient-to-r from-fuchsia-500 to-pink-500 p-4 sm:p-6 rounded-t-2xl">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <Icon3D gradient="from-white/20 to-white/5" size="lg">
-                      <CalendarDays className="w-6 h-6" />
-                    </Icon3D>
-                    <div className="text-white">
-                      <span className={`inline-block text-xs px-2.5 py-1 rounded-lg bg-white/20 backdrop-blur-sm font-medium mb-2`}>
-                        {typeLabels[selectedEvent.type]}
-                      </span>
-                      <h3 className="text-xl font-bold">
-                        {selectedEvent.title}
-                      </h3>
-                    </div>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.1, rotate: 90 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setSelectedEvent(null)}
-                    className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5 text-white" />
-                  </motion.button>
-                </div>
-              </div>
-
-              <div className="p-4 sm:p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <GlassCard className="p-4 bg-fuchsia-50/50">
-                    <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      Start
-                    </div>
-                    <div className="font-semibold text-gray-900">
+          <div className="space-y-6">
+            <SheetSection title="Event Details" icon={<CalendarDays className="w-4 h-4" />}>
+              <div className="space-y-3">
+                <SheetDetailRow
+                  label="Start Date"
+                  value={
+                    <span>
                       {new Date(selectedEvent.startDate).toLocaleDateString()}
-                      {selectedEvent.startTime && <span className="text-sm text-gray-600 ml-2">{selectedEvent.startTime}</span>}
-                    </div>
-                  </GlassCard>
-                  <GlassCard className="p-4 bg-pink-50/50">
-                    <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      End
-                    </div>
-                    <div className="font-semibold text-gray-900">
+                      {selectedEvent.startTime && <span className="text-xs text-gray-500 ml-2">{selectedEvent.startTime}</span>}
+                    </span>
+                  }
+                />
+                <SheetDetailRow
+                  label="End Date"
+                  value={
+                    <span>
                       {new Date(selectedEvent.endDate).toLocaleDateString()}
-                      {selectedEvent.endTime && <span className="text-sm text-gray-600 ml-2">{selectedEvent.endTime}</span>}
-                    </div>
-                  </GlassCard>
-                </div>
-
+                      {selectedEvent.endTime && <span className="text-xs text-gray-500 ml-2">{selectedEvent.endTime}</span>}
+                    </span>
+                  }
+                />
                 {selectedEvent.location && (
-                  <GlassCard className="p-4 bg-white/80">
-                    <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5" />
-                      Location
-                    </div>
-                    <div className="font-medium text-gray-900">{selectedEvent.location}</div>
-                  </GlassCard>
+                  <SheetDetailRow
+                    label="Location"
+                    value={selectedEvent.location}
+                  />
                 )}
-
-                <GlassCard className="p-4 bg-gradient-to-br from-gray-50 to-gray-100/50">
-                  <div className="text-xs text-gray-600 mb-2 font-medium">Description</div>
-                  <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                    {selectedEvent.description}
-                  </p>
-                </GlassCard>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button variant="outline" onClick={() => setSelectedEvent(null)}>
-                      Close
-                    </Button>
-                  </motion.div>
-                </div>
               </div>
-            </motion.div>
+            </SheetSection>
+
+            <SheetSection title="Description">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {selectedEvent.description}
+                </p>
+              </div>
+            </SheetSection>
           </div>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </div>
   );
 }

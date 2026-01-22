@@ -12,7 +12,7 @@ interface AnimatedStatCardProps {
     isPositive?: boolean;
   };
   iconBgColor?: string;
-  gradient?: string; // For backwards compatibility - converts to iconBgColor
+  iconTextColor?: string;
   delay?: number;
   onClick?: () => void;
 }
@@ -23,12 +23,10 @@ export function AnimatedStatCard({
   icon,
   trend,
   iconBgColor = 'bg-indigo-50',
-  gradient,
+  iconTextColor = 'text-indigo-600',
   delay = 0,
   onClick,
 }: AnimatedStatCardProps) {
-  // Convert gradient to iconBgColor if provided
-  const bgClass = gradient ? `bg-gradient-to-br ${gradient}` : iconBgColor;
   const [displayValue, setDisplayValue] = useState(0);
   const numericValue = typeof value === 'number' ? value : parseInt(value) || 0;
 
@@ -98,7 +96,7 @@ export function AnimatedStatCard({
         <motion.div
           whileHover={{ scale: 1.1, rotate: 5 }}
           transition={{ type: 'spring', stiffness: 400 }}
-          className={`p-3 rounded-xl ${bgClass} ${gradient ? 'text-white' : ''}`}
+          className={`p-3 rounded-xl ${iconBgColor} ${iconTextColor}`}
         >
           {icon}
         </motion.div>

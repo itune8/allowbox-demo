@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import { AnimatedStatCard } from '@/components/ui';
 import {
   Building2,
   Users,
@@ -205,7 +205,7 @@ export default function DashboardPage() {
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
           >
-            <Loader2 className="h-12 w-12 text-indigo-600" />
+            <Loader2 className="h-12 w-12 text-primary" />
           </motion.div>
         </motion.div>
       </div>
@@ -217,29 +217,24 @@ export default function DashboardPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="space-y-6 bg-white min-h-screen p-6"
+      className="space-y-6"
     >
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="flex items-center justify-between"
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
-        <div className="flex items-center gap-4">
-          <Icon3D gradient={gradients.indigo} size="lg">
-            <Building2 className="w-6 h-6" />
-          </Icon3D>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-            <p className="text-gray-600 mt-1">Overview of your platform metrics and alerts</p>
-          </div>
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900">Dashboard</h2>
+          <p className="text-gray-600 mt-1">Overview of your platform metrics and alerts</p>
         </div>
         {canCreateSchools && (
           <motion.button
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => router.push('/platform/schools')}
-            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 font-medium"
+            className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 font-semibold"
           >
             <Plus className="w-5 h-5" />
             Add School
@@ -251,8 +246,8 @@ export default function DashboardPage() {
         <AnimatedStatCard
           title="Total Schools"
           value={metrics?.totalSchools || 0}
-          icon={<Building2 className="w-6 h-6 text-indigo-600" />}
-          iconBgColor="bg-indigo-50"
+          icon={<Building2 className="w-6 h-6 text-primary" />}
+          iconBgColor="bg-primary-50"
           trend={{
             value: `${metrics?.activeSchools} active`,
             isPositive: true
@@ -297,13 +292,13 @@ export default function DashboardPage() {
         />
       </div>
 
-      <GlassCard className="bg-white">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Icon3D gradient={gradients.rose} size="sm">
-                <AlertCircle className="w-4 h-4" />
-              </Icon3D>
+              <div className="p-2 rounded-xl bg-red-50">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
               <h3 className="text-lg font-semibold text-gray-900">Alerts & Notifications</h3>
             </div>
             <motion.span
@@ -377,20 +372,20 @@ export default function DashboardPage() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+              className="text-sm text-primary hover:text-primary-dark font-medium"
             >
               View all {alerts.length} alerts
             </motion.button>
           </div>
         )}
-      </GlassCard>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GlassCard className="bg-white p-6">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-4">
-            <Icon3D gradient={gradients.purple} size="sm">
-              <TrendingUp className="w-4 h-4" />
-            </Icon3D>
+            <div className="p-2 rounded-xl bg-purple-50">
+              <TrendingUp className="w-5 h-5 text-purple-600" />
+            </div>
             <h3 className="text-lg font-semibold text-gray-900">Subscription Distribution</h3>
           </div>
           <div className="space-y-3">
@@ -417,20 +412,20 @@ export default function DashboardPage() {
                       initial={{ width: 0 }}
                       animate={{ width: `${percentage}%` }}
                       transition={{ delay: index * 0.05, duration: 0.8, ease: 'easeOut' }}
-                      className={`h-2 rounded-full ${plan === 'free' ? 'bg-gray-400' : plan === 'basic' ? 'bg-blue-500' : plan === 'premium' ? 'bg-purple-500' : 'bg-indigo-600'}`}
+                      className={`h-2 rounded-full ${plan === 'free' ? 'bg-gray-400' : plan === 'basic' ? 'bg-blue-500' : plan === 'premium' ? 'bg-purple-500' : 'bg-primary'}`}
                     />
                   </motion.div>
                 </motion.div>
               );
             })}
           </div>
-        </GlassCard>
+        </div>
 
-        <GlassCard className="bg-white p-6">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-4">
-            <Icon3D gradient={gradients.emerald} size="sm">
-              <CheckCircle2 className="w-4 h-4" />
-            </Icon3D>
+            <div className="p-2 rounded-xl bg-emerald-50">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            </div>
             <h3 className="text-lg font-semibold text-gray-900">Status Overview</h3>
           </div>
           <div className="space-y-3">
@@ -460,7 +455,7 @@ export default function DashboardPage() {
               );
             })}
           </div>
-        </GlassCard>
+        </div>
       </div>
     </motion.div>
   );

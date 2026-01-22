@@ -10,7 +10,7 @@ import {
   type AnnouncementTarget,
   type AnnouncementPriority,
 } from '../../../lib/services/announcement.service';
-import { GlassCard, Icon3D } from '@/components/ui';
+import { GlassCard, Icon3D, SlideSheet, SheetSection, SheetField } from '@/components/ui';
 import {
   Megaphone,
   Bell,
@@ -148,7 +148,7 @@ export default function AnnouncementsPage() {
         className="flex items-center justify-between"
       >
         <div className="flex items-center gap-4">
-          <Icon3D gradient="from-rose-500 to-pink-500">
+          <Icon3D bgColor="bg-pink-500">
             <Megaphone className="w-5 h-5" />
           </Icon3D>
           <div>
@@ -205,7 +205,7 @@ export default function AnnouncementsPage() {
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: 'spring' }}
             >
-              <Icon3D gradient="from-rose-500 to-pink-500">
+              <Icon3D bgColor="bg-pink-500">
                 <Bell className="w-8 h-8" />
               </Icon3D>
             </motion.div>
@@ -236,7 +236,7 @@ export default function AnnouncementsPage() {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: index * 0.05 }}
-                        className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center"
+                        className="w-8 h-8 rounded-lg bg-pink-500 flex items-center justify-center"
                       >
                         <Bell className="w-4 h-4 text-white" />
                       </motion.div>
@@ -295,134 +295,109 @@ export default function AnnouncementsPage() {
         </motion.div>
       )}
 
-      {/* Create Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={() => setShowModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="w-full max-w-md"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <GlassCard className="bg-white p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Icon3D gradient="from-rose-500 to-pink-500">
-                    <Send className="w-4 h-4" />
-                  </Icon3D>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    New Announcement
-                  </h3>
-                </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Title
-                    </label>
-                    <input
-                      type="text"
-                      value={form.title}
-                      onChange={(e) => setForm({ ...form, title: e.target.value })}
-                      required
-                      className="w-full h-10 border border-gray-200 rounded-lg px-3 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                      placeholder="Announcement title"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Message
-                    </label>
-                    <textarea
-                      value={form.message}
-                      onChange={(e) => setForm({ ...form, message: e.target.value })}
-                      required
-                      rows={4}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                      placeholder="Write your announcement message..."
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Send To
-                      </label>
-                      <select
-                        value={form.target}
-                        onChange={(e) =>
-                          setForm({ ...form, target: e.target.value as AnnouncementTarget })
-                        }
-                        className="w-full h-10 border border-gray-200 rounded-lg px-3 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                      >
-                        <option value="ALL">All Schools</option>
-                        <option value="ACTIVE">Active Schools Only</option>
-                        <option value="TRIAL">Trial Schools Only</option>
-                        <option value="SUSPENDED">Suspended Schools</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Priority
-                      </label>
-                      <select
-                        value={form.priority}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            priority: e.target.value as AnnouncementPriority,
-                          })
-                        }
-                        className="w-full h-10 border border-gray-200 rounded-lg px-3 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                      >
-                        <option value="LOW">Low</option>
-                        <option value="NORMAL">Normal</option>
-                        <option value="HIGH">High</option>
-                        <option value="URGENT">Urgent</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-3 pt-2">
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button
-                        variant="outline"
-                        type="button"
-                        onClick={() => setShowModal(false)}
-                      >
-                        Cancel
-                      </Button>
-                    </motion.div>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button type="submit" disabled={submitting}>
-                        {submitting ? (
-                          <div className="flex items-center gap-2">
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                              className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
-                            />
-                            Sending...
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <Send className="w-4 h-4" />
-                            Send Announcement
-                          </div>
-                        )}
-                      </Button>
-                    </motion.div>
-                  </div>
-                </form>
-              </GlassCard>
+      {/* Create Announcement SlideSheet */}
+      <SlideSheet
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="New Announcement"
+        subtitle="Send a message to schools"
+        size="md"
+        footer={
+          <div className="flex justify-end gap-3">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => setShowModal(false)}
+              >
+                Cancel
+              </Button>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button onClick={handleSubmit} disabled={submitting}>
+                {submitting ? (
+                  <div className="flex items-center gap-2">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                    />
+                    Sending...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Send className="w-4 h-4" />
+                    Send Announcement
+                  </div>
+                )}
+              </Button>
+            </motion.div>
+          </div>
+        }
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <SheetSection>
+            <SheetField label="Title" required>
+              <input
+                type="text"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                required
+                className="w-full h-10 border border-gray-200 rounded-lg px-3 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                placeholder="Announcement title"
+              />
+            </SheetField>
+
+            <SheetField label="Message" required>
+              <textarea
+                value={form.message}
+                onChange={(e) => setForm({ ...form, message: e.target.value })}
+                required
+                rows={4}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                placeholder="Write your announcement message..."
+              />
+            </SheetField>
+          </SheetSection>
+
+          <SheetSection>
+            <div className="grid grid-cols-2 gap-4">
+              <SheetField label="Send To" required>
+                <select
+                  value={form.target}
+                  onChange={(e) =>
+                    setForm({ ...form, target: e.target.value as AnnouncementTarget })
+                  }
+                  className="w-full h-10 border border-gray-200 rounded-lg px-3 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                >
+                  <option value="ALL">All Schools</option>
+                  <option value="ACTIVE">Active Schools Only</option>
+                  <option value="TRIAL">Trial Schools Only</option>
+                  <option value="SUSPENDED">Suspended Schools</option>
+                </select>
+              </SheetField>
+
+              <SheetField label="Priority" required>
+                <select
+                  value={form.priority}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      priority: e.target.value as AnnouncementPriority,
+                    })
+                  }
+                  className="w-full h-10 border border-gray-200 rounded-lg px-3 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                >
+                  <option value="LOW">Low</option>
+                  <option value="NORMAL">Normal</option>
+                  <option value="HIGH">High</option>
+                  <option value="URGENT">Urgent</option>
+                </select>
+              </SheetField>
+            </div>
+          </SheetSection>
+        </form>
+      </SlideSheet>
     </section>
   );
 }

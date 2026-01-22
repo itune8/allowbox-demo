@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../../contexts/auth-context';
 import { getCurrentSchoolId, getEntities } from '../../../../lib/data-store';
 import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import { GlassCard, AnimatedStatCard, Icon3D } from '@/components/ui';
 import {
   BarChart3,
   TrendingUp,
@@ -124,7 +124,7 @@ export default function ReportsPage() {
     [homeworkRate, attendancePct]
   );
 
-  const SectionCard = ({ title, data, gradient }: { title: string; data: number[]; gradient: string }) => {
+  const SectionCard = ({ title, data, bgColor }: { title: string; data: number[]; bgColor: string }) => {
     const max = Math.max(1, ...data);
     return (
       <motion.div
@@ -135,7 +135,7 @@ export default function ReportsPage() {
         <GlassCard className="p-6 bg-white/90" hover={false}>
           <h3 className="font-semibold mb-4 text-gray-900 flex items-center gap-2">
             {title}
-            <Icon3D gradient={gradient} size="sm">
+            <Icon3D bgColor="bg-gray-500" size="sm">
               <BarChart3 className="w-3.5 h-3.5" />
             </Icon3D>
           </h3>
@@ -163,7 +163,7 @@ export default function ReportsPage() {
                     animate={{ height: `${Math.round((v / max) * 100)}%` }}
                     transition={{ delay: i * 0.1, duration: 0.6, ease: 'easeOut' }}
                     whileHover={{ scale: 1.05, originY: 'bottom' }}
-                    className={`w-full bg-gradient-to-t ${gradient} rounded-t transition-all`}
+                    className={`w-full ${bgColor} rounded-t transition-all`}
                     title={`${labels[i]}: ${v}%`}
                   />
                 </motion.div>
@@ -251,7 +251,7 @@ export default function ReportsPage() {
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
             Reports
-            <Icon3D gradient={gradients.purple} size="sm">
+            <Icon3D bgColor="bg-purple-500" size="sm">
               <PieChart className="w-3.5 h-3.5" />
             </Icon3D>
           </h1>
@@ -308,7 +308,7 @@ export default function ReportsPage() {
         <AnimatedStatCard
           title="Performance"
           value={perfTrend.length > 0 ? Math.round(perfTrend.reduce((a, b) => a + b, 0) / perfTrend.length) : 0}
-          icon={<TrendingUp className="w-5 h-5 text-indigo-600" />}
+          icon={<TrendingUp className="w-5 h-5 text-primary" />}
           iconBgColor="bg-indigo-50"
           delay={2}
         />
@@ -321,9 +321,9 @@ export default function ReportsPage() {
         transition={{ duration: 0.5, delay: 0.2 }}
         className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6"
       >
-        <SectionCard title="Attendance %" data={attendancePct} gradient={gradients.purple} />
-        <SectionCard title="Homework Rate" data={homeworkRate} gradient={gradients.violet} />
-        <SectionCard title="Performance Trend" data={perfTrend} gradient={gradients.indigo} />
+        <SectionCard title="Attendance %" data={attendancePct} bgColor="bg-purple-500" />
+        <SectionCard title="Homework Rate" data={homeworkRate} bgColor="bg-gray-500" />
+        <SectionCard title="Performance Trend" data={perfTrend} bgColor="bg-primary" />
       </motion.div>
     </div>
   );

@@ -120,11 +120,25 @@ class UserService {
   }
 
   /**
-   * Get users by role
+   * Link a parent to a student by email
+   */
+  async linkParent(studentId: string, parentEmail: string): Promise<User> {
+    // Find the parent by email
+    const parents = await this.getParents();
+    const parent = parents.find(p => p.email === parentEmail);
+    if (!parent) {
+      throw new Error('Parent with this email not found');
+    }
+    // Link the parent to the student
+    return this.linkParentToChild(parent._id || parent.id!, studentId);
+  }
+
+  /**
+   * Get users by role (uses backend endpoint for efficiency)
    */
   async getUsersByRole(role: string): Promise<User[]> {
-    const allUsers = await this.getUsers();
-    return allUsers.filter(user => user.role === role);
+    const response = await apiClient.get<User[]>(`/users/by-role?role=${role}`);
+    return response.data;
   }
 
   /**
@@ -139,6 +153,13 @@ class UserService {
    */
   async getTeachers(): Promise<User[]> {
     return this.getUsersByRole('teacher');
+  }
+
+  /**
+   * Get all parents
+   */
+  async getParents(): Promise<User[]> {
+    return this.getUsersByRole('parent');
   }
 
   /**

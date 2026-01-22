@@ -5,7 +5,7 @@ import { useAuth } from '../../../contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ROLES } from '@repo/config';
-import { AnimatedStatCard, GlassCard, Icon3D, gradients } from '@/components/ui';
+import { AnimatedStatCard, GlassCard, Icon3D } from '@/components/ui';
 import { userService, type User } from '@/lib/services/user.service';
 import { feeService, type Invoice } from '@/lib/services/fee.service';
 import { attendanceService, type Attendance } from '@/lib/services/attendance.service';
@@ -171,7 +171,7 @@ export default function ParentDashboardPage() {
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            className="w-12 h-12 border-4 border-gray-200 border-t-indigo-600 rounded-full mx-auto"
+            className="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full mx-auto"
           />
           <div className="text-gray-500">Loading dashboard...</div>
         </div>
@@ -189,7 +189,7 @@ export default function ParentDashboardPage() {
       >
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
           Dashboard Overview
-          <Icon3D gradient={gradients.indigo} size="sm">
+          <Icon3D bgColor="bg-primary" size="sm">
             <Users className="w-3.5 h-3.5" />
           </Icon3D>
         </h1>
@@ -210,12 +210,12 @@ export default function ParentDashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <GlassCard className="p-4 sm:p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-100" hover={false}>
+          <GlassCard className="p-4 sm:p-6 bg-primary-50 border-indigo-100" hover={false}>
             <div className="flex items-center justify-between mb-4 gap-3">
               <div className="min-w-0 flex-1">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate flex items-center gap-2">
                   My Class Information
-                  <Icon3D gradient={gradients.indigo} size="sm">
+                  <Icon3D bgColor="bg-primary" size="sm">
                     <BookOpen className="w-3.5 h-3.5" />
                   </Icon3D>
                 </h2>
@@ -233,7 +233,7 @@ export default function ParentDashboardPage() {
               {/* My Subjects */}
               <div className="bg-white/60 backdrop-blur rounded-lg p-3 sm:p-4 border border-gray-200">
                 <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm sm:text-base text-gray-900">
-                  <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 text-indigo-600" />
+                  <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 text-primary" />
                   My Subjects ({mySubjects.length})
                 </h3>
                 <div className="grid grid-cols-2 gap-1.5 sm:gap-2 max-h-28 sm:max-h-32 overflow-y-auto">
@@ -286,7 +286,7 @@ export default function ParentDashboardPage() {
         <AnimatedStatCard
           title="Children Linked"
           value={children.length}
-          icon={<Users className="w-5 h-5 text-indigo-600" />}
+          icon={<Users className="w-5 h-5 text-primary" />}
           iconBgColor="bg-indigo-50"
           delay={0}
         />
@@ -315,7 +315,7 @@ export default function ParentDashboardPage() {
         <GlassCard className="p-4 sm:p-6 bg-white/90" hover={false}>
           <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
             Quick Actions
-            <Icon3D gradient={gradients.blue} size="sm">
+            <Icon3D bgColor="bg-blue-500" size="sm">
               <TrendingUp className="w-3.5 h-3.5" />
             </Icon3D>
           </h3>
@@ -326,7 +326,7 @@ export default function ParentDashboardPage() {
               onClick={() => router.push('/parent/children')}
               className="flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all group touch-manipulation"
             >
-              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-indigo-600 mb-1 sm:mb-2" />
+              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-primary mb-1 sm:mb-2" />
               <span className="text-xs sm:text-sm font-medium text-gray-700 text-center leading-tight">Children</span>
             </motion.button>
 
@@ -372,7 +372,7 @@ export default function ParentDashboardPage() {
         <GlassCard className="p-4 sm:p-6 bg-white/90" hover={false}>
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
             Fee Overview
-            <Icon3D gradient={gradients.emerald} size="sm">
+            <Icon3D bgColor="bg-emerald-500" size="sm">
               <DollarSign className="w-3.5 h-3.5" />
             </Icon3D>
           </h3>
@@ -387,7 +387,7 @@ export default function ParentDashboardPage() {
                 >
                   <div className="text-xs text-gray-600 mb-1 text-center">Paid</div>
                   <div
-                    className="w-full bg-gradient-to-t from-green-500 to-green-400 rounded-t transition-all"
+                    className="w-full bg-green-500 rounded-t transition-all"
                     style={{
                       height: '100%',
                       minHeight: feeTotals.paid > 0 ? '20px' : '0px',
@@ -403,7 +403,7 @@ export default function ParentDashboardPage() {
                 >
                   <div className="text-xs text-gray-600 mb-1 text-center">Pending</div>
                   <div
-                    className="w-full bg-gradient-to-t from-amber-500 to-amber-400 rounded-t transition-all"
+                    className="w-full bg-amber-500 rounded-t transition-all"
                     style={{
                       height: '100%',
                       minHeight: feeTotals.pending > 0 ? '20px' : '0px',
@@ -456,7 +456,7 @@ export default function ParentDashboardPage() {
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
               Recent Invoices
-              <Icon3D gradient={gradients.amber} size="sm">
+              <Icon3D bgColor="bg-amber-500" size="sm">
                 <CreditCard className="w-3.5 h-3.5" />
               </Icon3D>
             </h3>
@@ -464,7 +464,7 @@ export default function ParentDashboardPage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => router.push('/parent/fees')}
-              className="text-xs sm:text-sm text-indigo-600 hover:text-indigo-700 font-medium touch-manipulation"
+              className="text-xs sm:text-sm text-primary hover:text-primary-dark font-medium touch-manipulation"
             >
               View All
             </motion.button>

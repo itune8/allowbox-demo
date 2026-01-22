@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../../contexts/auth-context';
 import { getCurrentSchoolId, getEntities, setAttendance } from '../../../../lib/data-store';
 import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet } from '@/components/ui';
 import { Users, CheckCircle2, XCircle, TrendingUp } from 'lucide-react';
 
 export default function AttendancePage() {
@@ -56,7 +56,7 @@ export default function AttendancePage() {
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
             Attendance
-            <Icon3D gradient={gradients.blue} size="sm">
+            <Icon3D bgColor="bg-blue-500" size="sm">
               <Users className="w-3.5 h-3.5" />
             </Icon3D>
           </h1>
@@ -251,68 +251,33 @@ export default function AttendancePage() {
       </motion.div>
 
       {/* Confirm Modal */}
-      <AnimatePresence>
-        {confirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] p-3 sm:p-4"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-sm shadow-xl border border-gray-100"
+      <SlideSheet
+        isOpen={confirm}
+        onClose={() => setConfirm(false)}
+        title="Confirm Attendance Submission?"
+        subtitle="This will save attendance for the selected class and date."
+        size="sm"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="outline" onClick={() => setConfirm(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setAttendance(schoolId, today, selectedClass, local);
+                setConfirm(false);
+              }}
             >
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="text-lg font-semibold mb-2 text-gray-900"
-              >
-                Confirm Attendance Submission?
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.15 }}
-                className="text-sm text-gray-600 mb-1"
-              >
-                This will save attendance for the selected class and date.
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="text-sm text-gray-500 mb-4"
-              >
-                Present: <span className="font-semibold text-green-600">{presentCount}</span> | Absent:{' '}
-                <span className="font-semibold text-red-600">{total - presentCount}</span>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.25 }}
-                className="flex items-center justify-end gap-2"
-              >
-                <Button variant="outline" onClick={() => setConfirm(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => {
-                    setAttendance(schoolId, today, selectedClass, local);
-                    setConfirm(false);
-                  }}
-                >
-                  Confirm
-                </Button>
-              </motion.div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              Confirm
+            </Button>
+          </div>
+        }
+      >
+        <div className="text-sm text-gray-700 py-2">
+          Present: <span className="font-semibold text-green-600">{presentCount}</span> | Absent:{' '}
+          <span className="font-semibold text-red-600">{total - presentCount}</span>
+        </div>
+      </SlideSheet>
     </div>
   );
 }

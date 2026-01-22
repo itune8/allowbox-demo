@@ -69,7 +69,7 @@ export const MobileBottomNav = ({
             className={cn(
               "flex flex-col items-center justify-center flex-1 h-full py-1 px-1 rounded-lg transition-colors duration-100",
               displayActive === item.key
-                ? "text-indigo-600"
+                ? "text-primary"
                 : "text-gray-500 active:bg-gray-100"
             )}
           >
@@ -176,7 +176,7 @@ const MobileMenu = ({
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
             {logo || (
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-lg shadow-md">
                 {title[0]}
               </div>
             )}
@@ -214,7 +214,7 @@ const MobileMenu = ({
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-3 transition-colors duration-100",
                   displayActive === item.key
-                    ? "bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600"
+                    ? "bg-primary-50 text-primary border-r-4 border-primary"
                     : "text-gray-700 hover:bg-gray-50"
                 )}
               >
@@ -234,7 +234,7 @@ const MobileMenu = ({
         {user && (
           <div className="p-4 border-t border-gray-200">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-700 font-semibold">
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-semibold">
                 {user.avatar ? (
                   <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
                 ) : (
@@ -363,7 +363,7 @@ export const Sidebar = ({
           {!isCollapsed ? (
             <div className="flex items-center gap-3 min-w-0">
               {logo || (
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold flex-shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white font-bold flex-shrink-0 shadow-md">
                   {title[0]}
                 </div>
               )}
@@ -380,7 +380,7 @@ export const Sidebar = ({
             </div>
           ) : (
             logo || (
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
+              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white font-bold shadow-md">
                 {title[0]}
               </div>
             )
@@ -433,8 +433,8 @@ export const Sidebar = ({
                   isCollapsed ? "justify-center px-2 mx-2 rounded-lg" : "px-4",
                   displayActive === item.key
                     ? isCollapsed
-                      ? "bg-indigo-50 text-indigo-600"
-                      : "bg-gradient-to-r from-indigo-50 to-transparent text-indigo-600 border-r-[3px] border-indigo-600"
+                      ? "bg-primary-50 text-primary"
+                      : "bg-primary-50 text-primary border-r-[3px] border-primary"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 )}
                 title={isCollapsed ? item.label : undefined}
@@ -483,7 +483,7 @@ export const Sidebar = ({
               isCollapsed ? "justify-center p-2" : "gap-3 p-2 hover:bg-gray-50"
             )}>
               <div className={cn(
-                "rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-700 font-semibold flex-shrink-0",
+                "rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-semibold flex-shrink-0",
                 isCollapsed ? "w-9 h-9" : "w-9 h-9"
               )}>
                 {user.avatar ? (

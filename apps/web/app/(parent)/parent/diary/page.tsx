@@ -11,8 +11,8 @@ import {
   AcknowledgementStatus,
 } from '../../../../lib/services/daily-diary.service';
 import { userService, User } from '../../../../lib/services/user.service';
-import { GlassCard, Icon3D } from '../../../../components/ui';
-import { BookOpen, Calendar, X, CheckCircle, Clock } from 'lucide-react';
+import { GlassCard, Icon3D, SlideSheet, SheetSection } from '../../../../components/ui';
+import { BookOpen, Calendar, CheckCircle, Clock, User as UserIcon } from 'lucide-react';
 
 interface Child extends User {
   classId?: { _id: string; name: string; grade?: string };
@@ -197,7 +197,7 @@ export default function ParentDiaryPage() {
         className="space-y-6"
       >
         <motion.div variants={itemVariants} className="flex items-center gap-4">
-          <Icon3D gradient="from-sky-500 to-blue-500" size="lg">
+          <Icon3D bgColor="bg-cyan-500" size="lg">
             <BookOpen className="w-6 h-6" />
           </Icon3D>
           <div>
@@ -229,7 +229,7 @@ export default function ParentDiaryPage() {
     >
       <motion.div variants={itemVariants} className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-4">
-          <Icon3D gradient="from-sky-500 to-blue-500" size="lg">
+          <Icon3D bgColor="bg-cyan-500" size="lg">
             <BookOpen className="w-6 h-6" />
           </Icon3D>
           <div className="min-w-0">
@@ -261,7 +261,7 @@ export default function ParentDiaryPage() {
         <motion.div variants={itemVariants}>
           <GlassCard className="p-3 sm:p-4">
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center text-white font-semibold text-base sm:text-lg flex-shrink-0 shadow-lg shadow-sky-500/20">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-cyan-500 flex items-center justify-center text-white font-semibold text-base sm:text-lg flex-shrink-0 shadow-lg shadow-sky-500/20">
                 {selectedChild.firstName?.[0]}
               </div>
               <div className="min-w-0">
@@ -384,110 +384,74 @@ export default function ParentDiaryPage() {
         </motion.div>
       )}
 
-      <AnimatePresence>
+      <SlideSheet
+        isOpen={!!selectedDiary}
+        onClose={() => setSelectedDiary(null)}
+        title={selectedDiary?.title || ''}
+        subtitle={selectedDiary ? `${selectedDiary.studentId?.firstName} ${selectedDiary.studentId?.lastName} • ${new Date(selectedDiary.date).toLocaleDateString()}` : ''}
+        size="md"
+        footer={
+          selectedDiary?.acknowledgementStatus === AcknowledgementStatus.PENDING ? (
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setSelectedDiary(null)}>Cancel</Button>
+              <Button onClick={handleAcknowledge}>
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Acknowledge
+              </Button>
+            </div>
+          ) : (
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setSelectedDiary(null)}>Close</Button>
+            </div>
+          )
+        }
+      >
         {selectedDiary && (
-          <motion.div
-            variants={backdropVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/50"
-            onClick={() => setSelectedDiary(null)}
-          >
-            <motion.div
-              variants={modalVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Icon3D gradient="from-sky-500 to-blue-500" size="md">
-                    <BookOpen className="w-4 h-4" />
-                  </Icon3D>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{selectedDiary.title}</h3>
-                    <div className="text-sm text-gray-500 flex items-center gap-1">
-                      {selectedDiary.studentId?.firstName} {selectedDiary.studentId?.lastName} •{' '}
-                      {new Date(selectedDiary.date).toLocaleDateString()}
-                    </div>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{typeIcons[selectedDiary.type]}</span>
+              <span className={`px-2 py-0.5 rounded text-xs ${typeColors[selectedDiary.type]}`}>
+                {selectedDiary.type.replace('_', ' ')}
+              </span>
+            </div>
+
+            <SheetSection title="Message">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                  {selectedDiary.content}
+                </p>
+              </div>
+            </SheetSection>
+
+            <SheetSection title="From" icon={<UserIcon className="w-4 h-4" />}>
+              <div className="text-sm text-gray-600">
+                {selectedDiary.createdBy?.firstName} {selectedDiary.createdBy?.lastName}
+                {selectedDiary.createdBy?.role && ` (${selectedDiary.createdBy.role})`}
+              </div>
+            </SheetSection>
+
+            {selectedDiary.acknowledgementStatus === AcknowledgementStatus.PENDING ? (
+              <SheetSection title="Your Comment (Optional)">
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Add a comment (optional)"
+                  rows={3}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-sky-500/50 focus:border-sky-300 transition-all"
+                />
+              </SheetSection>
+            ) : (
+              selectedDiary.parentComment && (
+                <SheetSection title="Your Comment" icon={<CheckCircle className="w-4 h-4" />}>
+                  <div className="bg-blue-50 rounded-lg p-3">
+                    <p className="text-sm">{selectedDiary.parentComment}</p>
                   </div>
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setSelectedDiary(null)}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
-                >
-                  <X className="w-5 h-5" />
-                </motion.button>
-              </div>
-
-              <div className="p-6 space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{typeIcons[selectedDiary.type]}</span>
-                  <span className={`px-2 py-0.5 rounded text-xs ${typeColors[selectedDiary.type]}`}>
-                    {selectedDiary.type.replace('_', ' ')}
-                  </span>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-gray-700 whitespace-pre-wrap">
-                    {selectedDiary.content}
-                  </p>
-                </div>
-
-                <div className="text-xs text-gray-500">
-                  From: {selectedDiary.createdBy?.firstName} {selectedDiary.createdBy?.lastName}
-                  {selectedDiary.createdBy?.role && ` (${selectedDiary.createdBy.role})`}
-                </div>
-
-                {selectedDiary.acknowledgementStatus === AcknowledgementStatus.PENDING ? (
-                  <>
-                    <textarea
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      placeholder="Add a comment (optional)"
-                      rows={3}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-sky-500/50 focus:border-sky-300 transition-all"
-                    />
-                    <div className="flex justify-end gap-3">
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                        <Button variant="outline" onClick={() => setSelectedDiary(null)}>Cancel</Button>
-                      </motion.div>
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                        <Button onClick={handleAcknowledge}>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Acknowledge
-                        </Button>
-                      </motion.div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {selectedDiary.parentComment && (
-                      <div className="bg-blue-50 rounded-lg p-3">
-                        <div className="text-xs text-blue-600 mb-1 flex items-center gap-1">
-                          <CheckCircle className="w-3 h-3" />
-                          Your Comment
-                        </div>
-                        <p className="text-sm">{selectedDiary.parentComment}</p>
-                      </div>
-                    )}
-                    <div className="flex justify-end">
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                        <Button variant="outline" onClick={() => setSelectedDiary(null)}>Close</Button>
-                      </motion.div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
+                </SheetSection>
+              )
+            )}
+          </div>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </motion.section>
   );
 }

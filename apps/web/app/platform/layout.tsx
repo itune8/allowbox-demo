@@ -26,7 +26,7 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'dashboard',
     label: 'Dashboard',
     icon: (
-      <Icon3D gradient="from-indigo-500 to-purple-600">
+      <Icon3D bgColor="bg-primary">
         <LayoutDashboard size={20} />
       </Icon3D>
     ),
@@ -38,7 +38,7 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'schools',
     label: 'Schools',
     icon: (
-      <Icon3D gradient="from-blue-500 to-cyan-500">
+      <Icon3D bgColor="bg-sky-500">
         <School size={20} />
       </Icon3D>
     ),
@@ -47,7 +47,7 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'users',
     label: 'Users & Roles',
     icon: (
-      <Icon3D gradient="from-violet-500 to-purple-500">
+      <Icon3D bgColor="bg-violet-500">
         <Users size={20} />
       </Icon3D>
     ),
@@ -59,7 +59,7 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'finance',
     label: 'Finance & Billing',
     icon: (
-      <Icon3D gradient="from-green-500 to-emerald-500">
+      <Icon3D bgColor="bg-green-500">
         <DollarSign size={20} />
       </Icon3D>
     ),
@@ -68,7 +68,7 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'invoices',
     label: 'Invoices',
     icon: (
-      <Icon3D gradient="from-amber-500 to-orange-500">
+      <Icon3D bgColor="bg-amber-500">
         <FileText size={20} />
       </Icon3D>
     ),
@@ -80,7 +80,7 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'announcements',
     label: 'Announcements',
     icon: (
-      <Icon3D gradient="from-rose-500 to-pink-500">
+      <Icon3D bgColor="bg-pink-500">
         <Bell size={20} />
       </Icon3D>
     ),
@@ -89,7 +89,7 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'support',
     label: 'Support Tickets',
     icon: (
-      <Icon3D gradient="from-teal-500 to-cyan-500">
+      <Icon3D bgColor="bg-teal-500">
         <HelpCircle size={20} />
       </Icon3D>
     ),
@@ -101,7 +101,7 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'reports',
     label: 'Reports',
     icon: (
-      <Icon3D gradient="from-purple-500 to-pink-500">
+      <Icon3D bgColor="bg-purple-500">
         <BarChart3 size={20} />
       </Icon3D>
     ),
@@ -110,7 +110,7 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'activity',
     label: 'Activity Logs',
     icon: (
-      <Icon3D gradient="from-sky-500 to-blue-500">
+      <Icon3D bgColor="bg-cyan-500">
         <Activity size={20} />
       </Icon3D>
     ),
@@ -122,7 +122,7 @@ const sidebarMenu: SidebarMenuItem[] = [
     key: 'settings',
     label: 'Settings',
     icon: (
-      <Icon3D gradient="from-gray-500 to-slate-600">
+      <Icon3D bgColor="bg-gray-500">
         <Settings size={20} />
       </Icon3D>
     ),
@@ -182,56 +182,79 @@ export default function PlatformLayout({
 
   return (
     <ProtectedRoute>
-      <div className="relative flex transition-opacity duration-300 ease-in-out text-gray-900 bg-white">
+      <div className="relative flex min-h-screen bg-gray-50">
         {/* Sidebar */}
         <Sidebar
-          title="SuperAdmin Portal"
+          title="Allowbox Platform"
+          subtitle="Super Admin"
           menu={sidebarMenu}
           activeItem={activeItem}
           onItemClick={handleMenuClick}
-          footer={
-            <Button variant="outline" size="sm" onClick={logout} className="w-full">
-              Logout
-            </Button>
-          }
+          user={{
+            name: `${user?.firstName} ${user?.lastName}`,
+            email: user?.email,
+            role: userRole,
+          }}
+          onLogout={logout}
         />
 
         {/* Main content - add left margin to account for fixed sidebar */}
-        <div className="flex-1 flex flex-col ml-64">
+        <div className="flex-1 flex flex-col md:ml-64">
           {/* Topbar */}
-          <header className="bg-white shadow-sm sticky top-0 z-10 border-b border-gray-200 animate-slide-in-top">
-            <div className="mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-              <h1 className="text-xl font-bold text-gray-900 tracking-tight">
-                Platform Management
-              </h1>
-              <div className="flex items-center gap-3 relative" ref={profileRef}>
+          <header className="bg-white shadow-sm sticky top-0 z-30 border-b border-gray-200">
+            <div className="container-padding h-16 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+                  Platform Management
+                </h1>
+                <span className="hidden md:inline-flex px-3 py-1 bg-primary-50 text-primary text-xs font-semibold rounded-full">
+                  {userRole.replace('_', ' ').toUpperCase()}
+                </span>
+              </div>
+
+              {/* Desktop Profile */}
+              <div className="hidden md:flex items-center gap-3 relative" ref={profileRef}>
                 <button
-                  className="flex items-center gap-2 rounded-full hover:bg-gray-100 transition-colors ease-smooth px-2 py-1"
+                  className="flex items-center gap-3 rounded-xl hover:bg-gray-50 transition-colors px-3 py-2"
                   onClick={() => setShowProfileMenu((s) => !s)}
                 >
-                  <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold">
-                    {user?.firstName?.[0] ?? 'S'}{user?.lastName?.[0] ?? 'A'}
+                  <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-semibold shadow-md">
+                    {user?.firstName?.[0]}{user?.lastName?.[0]}
                   </div>
-                  <span className="text-sm text-gray-900 hidden sm:block">
-                    {user?.firstName} {user?.lastName}
-                  </span>
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {user?.firstName} {user?.lastName}
+                    </p>
+                    <p className="text-xs text-gray-500">{user?.email}</p>
+                  </div>
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
+
                 {showProfileMenu && (
-                  <div className="absolute right-0 top-12 w-48 bg-white border border-gray-200 rounded-md shadow-lg animate-zoom-in">
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-xl animate-zoom-in overflow-hidden">
+                    <div className="p-3 bg-gray-50 border-b border-gray-200">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Account</p>
+                    </div>
                     <button
-                      className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm text-gray-900 transition-colors"
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm text-gray-900 transition-colors flex items-center gap-2"
                       onClick={() => {
                         setShowProfileMenu(false);
                         router.push('/auth/forgot_password');
                       }}
                     >
+                      <Settings className="w-4 h-4" />
                       Reset Password
                     </button>
                     <div className="h-px bg-gray-200" />
                     <button
-                      className="w-full text-left px-3 py-2 hover:bg-red-50 text-sm text-red-600 transition-colors"
+                      className="w-full text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors flex items-center gap-2"
                       onClick={logout}
                     >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
                       Logout
                     </button>
                   </div>
@@ -241,7 +264,7 @@ export default function PlatformLayout({
           </header>
 
           {/* Page content */}
-          <main className="mx-auto w-full p-4 sm:p-6 lg:p-8 h-[calc(100vh-64px)] overflow-y-auto animate-slide-in-bottom">
+          <main className="flex-1 container-padding py-6 md:py-8 overflow-y-auto pb-20 md:pb-8">
             {children}
           </main>
         </div>

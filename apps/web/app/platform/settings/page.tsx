@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet } from '@/components/ui';
 import {
   Settings,
   Building2,
@@ -138,7 +138,7 @@ export default function SettingsPage() {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Icon3D gradient={gradients.gray} size="lg">
+          <Icon3D bgColor="bg-gray-500" size="lg">
             <Settings className="w-6 h-6" />
           </Icon3D>
           <div>
@@ -205,7 +205,7 @@ export default function SettingsPage() {
       >
         <GlassCard className="bg-white">
           <div className="flex items-center gap-3 mb-4">
-            <Icon3D gradient={gradients.gray} size="md">
+            <Icon3D bgColor="bg-gray-500" size="md">
               <Building2 className="w-4 h-4" />
             </Icon3D>
             <h3 className="text-lg font-semibold text-gray-900">
@@ -247,7 +247,7 @@ export default function SettingsPage() {
       >
         <GlassCard className="bg-white">
           <div className="flex items-center gap-3 mb-4">
-            <Icon3D gradient={gradients.gray} size="md">
+            <Icon3D bgColor="bg-gray-500" size="md">
               <Shield className="w-4 h-4" />
             </Icon3D>
             <h3 className="text-lg font-semibold text-gray-900">
@@ -323,7 +323,7 @@ export default function SettingsPage() {
       >
         <GlassCard className="bg-white">
           <div className="flex items-center gap-3 mb-4">
-            <Icon3D gradient={gradients.gray} size="md">
+            <Icon3D bgColor="bg-gray-500" size="md">
               <DollarSign className="w-4 h-4" />
             </Icon3D>
             <h3 className="text-lg font-semibold text-gray-900">Pricing & Plans</h3>
@@ -382,7 +382,7 @@ export default function SettingsPage() {
       >
         <GlassCard className="bg-white">
           <div className="flex items-center gap-3 mb-4">
-            <Icon3D gradient={gradients.gray} size="md">
+            <Icon3D bgColor="bg-gray-500" size="md">
               <Sliders className="w-4 h-4" />
             </Icon3D>
             <h3 className="text-lg font-semibold text-gray-900">
@@ -430,7 +430,7 @@ export default function SettingsPage() {
       >
         <GlassCard className="bg-white">
           <div className="flex items-center gap-3 mb-4">
-            <Icon3D gradient={gradients.gray} size="md">
+            <Icon3D bgColor="bg-gray-500" size="md">
               <Bell className="w-4 h-4" />
             </Icon3D>
             <h3 className="text-lg font-semibold text-gray-900">
@@ -502,7 +502,7 @@ export default function SettingsPage() {
       >
         <GlassCard className="bg-white">
           <div className="flex items-center gap-3 mb-4">
-            <Icon3D gradient={gradients.gray} size="md">
+            <Icon3D bgColor="bg-gray-500" size="md">
               <CreditCard className="w-4 h-4" />
             </Icon3D>
             <h3 className="text-lg font-semibold text-gray-900">
@@ -575,51 +575,37 @@ export default function SettingsPage() {
         </motion.div>
       </motion.div>
 
-      {/* Reset Confirmation Modal */}
-      <AnimatePresence>
-        {showResetConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setShowResetConfirm(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', duration: 0.5 }}
-              className="relative bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <Icon3D gradient={gradients.gray} size="md">
-                  <AlertCircle className="w-4 h-4" />
-                </Icon3D>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Reset to Defaults?
-                </h3>
-              </div>
-              <p className="text-sm text-gray-600 mb-6">
-                This will reset all settings to their default values. This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-3">
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button variant="outline" onClick={() => setShowResetConfirm(false)}>
-                    Cancel
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button onClick={handleReset} className="bg-red-600 hover:bg-red-700">
-                    Reset Settings
-                  </Button>
-                </motion.div>
-              </div>
+      {/* Reset Confirmation SlideSheet */}
+      <SlideSheet
+        isOpen={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        title="Reset to Defaults?"
+        subtitle="This will reset all settings to their default values"
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-3">
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button variant="outline" onClick={() => setShowResetConfirm(false)}>
+                Cancel
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button onClick={handleReset} className="bg-red-600 hover:bg-red-700">
+                Reset Settings
+              </Button>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        }
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <Icon3D bgColor="bg-gray-500" size="md">
+            <AlertCircle className="w-4 h-4" />
+          </Icon3D>
+          <p className="text-sm text-gray-600">
+            This action cannot be undone. All your customized settings will be restored to their default values.
+          </p>
+        </div>
+      </SlideSheet>
     </motion.div>
   );
 }

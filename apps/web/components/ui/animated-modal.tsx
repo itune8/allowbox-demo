@@ -72,7 +72,7 @@ export function AnimatedModal({
                 className={`w-full ${sizeClasses[size]} bg-white rounded-2xl shadow-2xl overflow-hidden my-8`}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50">
                   <motion.h2
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}

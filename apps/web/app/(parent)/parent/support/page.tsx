@@ -11,11 +11,10 @@ import {
   TicketCategory,
   CreateTicketDto,
 } from '../../../../lib/services/support-ticket.service';
-import { GlassCard, Icon3D } from '@/components/ui';
+import { GlassCard, Icon3D, SlideSheet, SheetSection, SheetField, SheetDetailRow } from '@/components/ui';
 import {
   HelpCircle,
   Plus,
-  X,
   Sparkles,
   ChevronDown,
   MessageSquare,
@@ -104,18 +103,18 @@ export default function ParentSupportPage() {
   }
 
   const statusColors: Record<TicketStatus, string> = {
-    [TicketStatus.OPEN]: 'from-yellow-400 to-yellow-600',
-    [TicketStatus.IN_PROGRESS]: 'from-blue-400 to-blue-600',
-    [TicketStatus.WAITING_FOR_USER]: 'from-orange-400 to-orange-600',
-    [TicketStatus.RESOLVED]: 'from-green-400 to-green-600',
-    [TicketStatus.CLOSED]: 'from-gray-400 to-gray-600',
+    [TicketStatus.OPEN]: 'bg-yellow-500',
+    [TicketStatus.IN_PROGRESS]: 'bg-blue-500',
+    [TicketStatus.WAITING_FOR_USER]: 'bg-orange-500',
+    [TicketStatus.RESOLVED]: 'bg-green-500',
+    [TicketStatus.CLOSED]: 'bg-gray-500',
   };
 
   const priorityColors: Record<TicketPriority, string> = {
-    [TicketPriority.LOW]: 'from-gray-400 to-gray-500',
-    [TicketPriority.MEDIUM]: 'from-blue-400 to-blue-500',
-    [TicketPriority.HIGH]: 'from-orange-400 to-orange-500',
-    [TicketPriority.URGENT]: 'from-red-400 to-red-500',
+    [TicketPriority.LOW]: 'bg-gray-400',
+    [TicketPriority.MEDIUM]: 'bg-blue-400',
+    [TicketPriority.HIGH]: 'bg-orange-400',
+    [TicketPriority.URGENT]: 'bg-red-400',
   };
 
   const categoryLabels: Record<TicketCategory, string> = {
@@ -158,7 +157,7 @@ export default function ParentSupportPage() {
         transition={{ duration: 0.5 }}
         className="flex items-center gap-4"
       >
-        <Icon3D gradient="from-orange-500 to-red-500" size="lg">
+        <Icon3D bgColor="bg-orange-500" size="lg">
           <HelpCircle className="w-6 h-6" />
         </Icon3D>
         <div>
@@ -220,7 +219,7 @@ export default function ParentSupportPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium shadow-lg hover:from-orange-600 hover:to-red-600 transition-all text-xs sm:text-sm"
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-orange-500 text-white rounded-lg font-medium shadow-lg hover:from-orange-600 hover:to-red-600 transition-all text-xs sm:text-sm"
               >
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">New </span>Ticket
@@ -252,10 +251,10 @@ export default function ParentSupportPage() {
                   className="cursor-pointer group"
                   onClick={() => setSelectedTicket(ticket)}
                 >
-                  <GlassCard className="p-4 bg-white/80 hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-red-50/50 transition-all">
+                  <GlassCard className="p-4 bg-white/80 hover:bg-orange-50 transition-all">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3 flex-1">
-                        <Icon3D gradient={statusColors[ticket.status]} size="md">
+                        <Icon3D bgColor="bg-gray-500" size="md">
                           <MessageSquare className="w-4 h-4" />
                         </Icon3D>
                         <div className="flex-1 min-w-0">
@@ -268,10 +267,10 @@ export default function ParentSupportPage() {
                             </span>
                           </div>
                           <div className="flex items-center gap-2 flex-wrap mb-2">
-                            <span className={`text-xs px-2.5 py-1 rounded-lg bg-gradient-to-r ${statusColors[ticket.status]} text-white font-medium`}>
+                            <span className={`text-xs px-2.5 py-1 rounded-lg ${statusColors[ticket.status]} text-white font-medium`}>
                               {ticket.status.replace('_', ' ')}
                             </span>
-                            <span className={`text-xs px-2.5 py-1 rounded-lg bg-gradient-to-r ${priorityColors[ticket.priority]} text-white font-medium`}>
+                            <span className={`text-xs px-2.5 py-1 rounded-lg ${priorityColors[ticket.priority]} text-white font-medium`}>
                               {ticket.priority}
                             </span>
                             <span className="text-xs text-gray-600">
@@ -313,12 +312,12 @@ export default function ParentSupportPage() {
                 transition={{ delay: idx * 0.05 }}
               >
                 <GlassCard
-                  className="p-3 sm:p-4 bg-white/80 hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-red-50/50 cursor-pointer transition-all"
+                  className="p-3 sm:p-4 bg-white/80 hover:bg-orange-50 cursor-pointer transition-all"
                   onClick={() => setExpandedFAQ(expandedFAQ === idx ? null : idx)}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="font-medium text-gray-900 text-sm sm:text-base flex items-center gap-2">
-                      <Icon3D gradient="from-orange-500 to-red-500" size="sm">
+                      <Icon3D bgColor="bg-orange-500" size="sm">
                         <HelpCircle className="w-3.5 h-3.5" />
                       </Icon3D>
                       {faq.q}
@@ -350,255 +349,162 @@ export default function ParentSupportPage() {
         </GlassCard>
       </motion.div>
 
-      {/* Create Ticket Modal */}
-      <AnimatePresence>
-        {showForm && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-              onClick={() => setShowForm(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+      {/* Create Ticket Sheet */}
+      <SlideSheet
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        title="Create Support Ticket"
+        subtitle="Submit a new support request"
+        size="md"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={submitting}
+              onClick={(e) => {
+                e.preventDefault();
+                handleSubmit(e as any);
+              }}
             >
-              <div className="sticky top-0 bg-gradient-to-r from-orange-500 to-red-500 p-4 sm:p-6 rounded-t-2xl">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <Icon3D gradient="from-white/20 to-white/5" size="lg">
-                      <Plus className="w-6 h-6" />
-                    </Icon3D>
-                    <h3 className="text-xl font-bold text-white">
-                      Create Support Ticket
-                    </h3>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.1, rotate: 90 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setShowForm(false)}
-                    className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5 text-white" />
-                  </motion.button>
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
-                    <select
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400"
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value as TicketCategory })}
-                    >
-                      {Object.entries(categoryLabels).map(([value, label]) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Priority</label>
-                    <select
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400"
-                      value={formData.priority}
-                      onChange={(e) => setFormData({ ...formData, priority: e.target.value as TicketPriority })}
-                    >
-                      {Object.values(TicketPriority).map((priority) => (
-                        <option key={priority} value={priority}>{priority}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Subject <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400"
-                    value={formData.subject}
-                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    placeholder="Brief description of your issue..."
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Description <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 resize-none"
-                    rows={5}
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Please provide details about your issue..."
-                    required
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4">
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                      Cancel
-                    </Button>
-                  </motion.div>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="submit"
-                    disabled={submitting}
-                    className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium shadow-lg hover:from-orange-600 hover:to-red-600 transition-all disabled:opacity-50"
-                  >
-                    {submitting ? 'Creating...' : 'Submit Ticket'}
-                  </motion.button>
-                </div>
-              </form>
-            </motion.div>
+              {submitting ? 'Creating...' : 'Submit Ticket'}
+            </Button>
           </div>
-        )}
-      </AnimatePresence>
+        }
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <SheetField label="Category">
+              <select
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value as TicketCategory })}
+              >
+                {Object.entries(categoryLabels).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </SheetField>
+            <SheetField label="Priority">
+              <select
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400"
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value as TicketPriority })}
+              >
+                {Object.values(TicketPriority).map((priority) => (
+                  <option key={priority} value={priority}>{priority}</option>
+                ))}
+              </select>
+            </SheetField>
+          </div>
 
-      {/* View Ticket Modal */}
-      <AnimatePresence>
+          <SheetField label="Subject" required>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400"
+              value={formData.subject}
+              onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+              placeholder="Brief description of your issue..."
+              required
+            />
+          </SheetField>
+
+          <SheetField label="Description" required>
+            <textarea
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 resize-none"
+              rows={5}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Please provide details about your issue..."
+              required
+            />
+          </SheetField>
+        </form>
+      </SlideSheet>
+
+      {/* View Ticket Sheet */}
+      <SlideSheet
+        isOpen={!!selectedTicket}
+        onClose={() => setSelectedTicket(null)}
+        title={selectedTicket?.subject || ''}
+        subtitle={selectedTicket ? `#${selectedTicket.ticketNumber} • ${selectedTicket.status.replace('_', ' ')} • ${new Date(selectedTicket.createdAt).toLocaleString()}` : ''}
+        size="lg"
+        footer={
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setSelectedTicket(null)}>
+              Close
+            </Button>
+          </div>
+        }
+      >
         {selectedTicket && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-              onClick={() => setSelectedTicket(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-            >
-              <div className="sticky top-0 bg-gradient-to-r from-orange-500 to-red-500 p-4 sm:p-6 rounded-t-2xl">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <Icon3D gradient="from-white/20 to-white/5" size="lg">
-                      <MessageSquare className="w-6 h-6" />
-                    </Icon3D>
-                    <div className="text-white flex-1">
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className="text-xs px-2.5 py-1 rounded-lg bg-white/20 backdrop-blur-sm font-medium">
-                          #{selectedTicket.ticketNumber}
-                        </span>
-                        <span className={`text-xs px-2.5 py-1 rounded-lg bg-white/20 backdrop-blur-sm font-medium`}>
-                          {selectedTicket.status.replace('_', ' ')}
-                        </span>
-                      </div>
-                      <h3 className="text-xl font-bold">{selectedTicket.subject}</h3>
-                      <div className="flex items-center gap-1 text-sm text-orange-100 mt-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        {new Date(selectedTicket.createdAt).toLocaleString()}
-                      </div>
-                    </div>
+          <div className="space-y-4">
+            <SheetSection title="Description">
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                {selectedTicket.description}
+              </p>
+            </SheetSection>
+
+            {selectedTicket.assignedTo && (
+              <SheetSection title="Assigned To" icon={<User className="w-4 h-4" />}>
+                <div className="p-3 bg-orange-50 rounded-lg">
+                  <div className="font-semibold text-gray-900">
+                    {selectedTicket.assignedTo.firstName} {selectedTicket.assignedTo.lastName}
                   </div>
-                  <motion.button
-                    whileHover={{ scale: 1.1, rotate: 90 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setSelectedTicket(null)}
-                    className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                </div>
+              </SheetSection>
+            )}
+
+            {/* Comments */}
+            {selectedTicket.comments.filter(c => !c.isInternal).length > 0 && (
+              <SheetSection title="Replies" icon={<MessageSquare className="w-4 h-4" />}>
+                <div className="space-y-3">
+                  {selectedTicket.comments.filter(c => !c.isInternal).map((comment, idx) => (
+                    <div key={idx} className="p-3 bg-white border border-gray-200 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+                          <User className="w-3.5 h-3.5" />
+                          {comment.userId?.firstName} {comment.userId?.lastName}
+                        </span>
+                        <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          {new Date(comment.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 text-sm">{comment.content}</p>
+                    </div>
+                  ))}
+                </div>
+              </SheetSection>
+            )}
+
+            {/* Add Comment */}
+            {selectedTicket.status !== TicketStatus.CLOSED && (
+              <SheetSection title="Add Reply">
+                <textarea
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 resize-none"
+                  rows={3}
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Type your reply..."
+                />
+                <div className="flex justify-end mt-2">
+                  <button
+                    onClick={handleAddComment}
+                    disabled={!newComment.trim()}
+                    className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-all disabled:opacity-50"
                   >
-                    <X className="w-5 h-5 text-white" />
-                  </motion.button>
+                    <Send className="w-4 h-4" />
+                    Send Reply
+                  </button>
                 </div>
-              </div>
-
-              <div className="p-4 sm:p-6 space-y-4">
-                <GlassCard className="p-4 bg-gradient-to-br from-gray-50 to-gray-100/50">
-                  <div className="text-xs text-gray-600 mb-2 font-medium">Description</div>
-                  <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                    {selectedTicket.description}
-                  </p>
-                </GlassCard>
-
-                {selectedTicket.assignedTo && (
-                  <GlassCard className="p-4 bg-orange-50/50">
-                    <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                      <User className="w-3.5 h-3.5" />
-                      Assigned to
-                    </div>
-                    <div className="font-semibold text-gray-900">
-                      {selectedTicket.assignedTo.firstName} {selectedTicket.assignedTo.lastName}
-                    </div>
-                  </GlassCard>
-                )}
-
-                {/* Comments */}
-                {selectedTicket.comments.filter(c => !c.isInternal).length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-orange-500" />
-                      Replies
-                    </h4>
-                    {selectedTicket.comments.filter(c => !c.isInternal).map((comment, idx) => (
-                      <GlassCard key={idx} className="p-3 bg-white/80">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-semibold text-gray-900 text-sm flex items-center gap-2">
-                            <User className="w-3.5 h-3.5" />
-                            {comment.userId?.firstName} {comment.userId?.lastName}
-                          </span>
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            {new Date(comment.createdAt).toLocaleString()}
-                          </span>
-                        </div>
-                        <p className="text-gray-700 text-sm">{comment.content}</p>
-                      </GlassCard>
-                    ))}
-                  </div>
-                )}
-
-                {/* Add Comment */}
-                {selectedTicket.status !== TicketStatus.CLOSED && (
-                  <GlassCard className="p-4 bg-gradient-to-br from-orange-50 to-red-50/50">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Add Reply</label>
-                    <textarea
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 resize-none"
-                      rows={3}
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Type your reply..."
-                    />
-                    <div className="flex justify-end mt-2">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleAddComment}
-                        disabled={!newComment.trim()}
-                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium shadow-lg hover:from-orange-600 hover:to-red-600 transition-all disabled:opacity-50"
-                      >
-                        <Send className="w-4 h-4" />
-                        Send Reply
-                      </motion.button>
-                    </div>
-                  </GlassCard>
-                )}
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button variant="outline" onClick={() => setSelectedTicket(null)}>
-                      Close
-                    </Button>
-                  </motion.div>
-                </div>
-              </div>
-            </motion.div>
+              </SheetSection>
+            )}
           </div>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </div>
   );
 }

@@ -4,12 +4,11 @@ import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Building2, Search, X, Eye, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '@repo/ui/button';
-import { Portal } from '../../../components/portal';
 import { CreateSchoolModal } from '../../../components/modals/create-school-modal';
 import { useAuth } from '../../../contexts/auth-context';
 import { hasPermission } from '../../../lib/permissions';
 import { schoolService, type School } from '../../../lib/services/superadmin/school.service';
-import { GlassCard, AnimatedStatCard, Icon3D } from '../../../components/ui';
+import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet, SheetSection, SheetDetailRow } from '../../../components/ui';
 
 export default function SchoolsPage() {
   const { user } = useAuth();
@@ -93,7 +92,7 @@ export default function SchoolsPage() {
   const getPlanBadge = (plan: string) => {
     const badges: Record<string, { bg: string; text: string }> = {
       free: { bg: 'bg-gray-100/30', text: 'text-gray-700' },
-      basic: { bg: 'bg-indigo-100', text: 'text-indigo-700' },
+      basic: { bg: 'bg-primary-100', text: 'text-primary-dark' },
       premium: { bg: 'bg-purple-100', text: 'text-purple-700' },
       enterprise: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
     };
@@ -181,7 +180,7 @@ export default function SchoolsPage() {
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center gap-4"
       >
-        <Icon3D gradient="from-blue-500 to-cyan-500">
+        <Icon3D bgColor="bg-sky-500">
           <Building2 className="w-8 h-8" />
         </Icon3D>
         <div>
@@ -203,25 +202,25 @@ export default function SchoolsPage() {
           title="Total Schools"
           value={stats.totalSchools.toString()}
           icon={<Building2 className="w-5 h-5 text-white" />}
-          gradient="from-blue-500 to-cyan-500"
+          iconBgColor="bg-sky-500"
         />
         <AnimatedStatCard
           title="Active Schools"
           value={stats.activeSchools.toString()}
           icon={<Building2 className="w-5 h-5 text-white" />}
-          gradient="from-green-500 to-emerald-500"
+          iconBgColor="bg-green-500"
         />
         <AnimatedStatCard
           title="Total Students"
           value={stats.totalStudents.toLocaleString()}
-          icon={<Building2 className="w-5 h-5 text-white" />}
-          gradient="from-purple-500 to-pink-500"
+          icon={<Building2 className="w-5 h-5 text-purple-600" />}
+          iconBgColor="bg-purple-50"
         />
         <AnimatedStatCard
           title="Monthly Revenue"
           value={`$${stats.totalMRR.toLocaleString()}`}
           icon={<Building2 className="w-5 h-5 text-white" />}
-          gradient="from-orange-500 to-red-500"
+          iconBgColor="bg-orange-500"
         />
       </motion.div>
 
@@ -440,151 +439,101 @@ export default function SchoolsPage() {
         </GlassCard>
       </motion.div>
 
-      {/* School Details Modal */}
-      <AnimatePresence>
-        {selectedSchool && (
-          <Portal>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50"
-              onClick={() => setSelectedSchool(null)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ type: "spring", duration: 0.5 }}
-                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-2xl font-bold text-gray-900">School Details</h3>
-                    <motion.button
-                      whileHover={{ scale: 1.1, rotate: 90 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setSelectedSchool(null)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="w-6 h-6" />
-                    </motion.button>
-                  </div>
-
-                  <div className="space-y-4 text-sm">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="py-3 border-b border-gray-200">
-                        <span className="text-gray-600">School Name</span>
-                        <p className="font-medium text-gray-900 mt-1">{selectedSchool.schoolName}</p>
-                      </div>
-                      <div className="py-3 border-b border-gray-200">
-                        <span className="text-gray-600">Tenant ID</span>
-                        <p className="font-medium text-gray-900 mt-1 font-mono text-xs">{selectedSchool.tenantId}</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="py-3 border-b border-gray-200">
-                        <span className="text-gray-600">Status</span>
-                        <div className="mt-1">{getStatusBadge(selectedSchool.subscriptionStatus)}</div>
-                      </div>
-                      <div className="py-3 border-b border-gray-200">
-                        <span className="text-gray-600">Plan</span>
-                        <div className="mt-1">{getPlanBadge(selectedSchool.subscriptionPlan)}</div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="py-3 border-b border-gray-200">
-                        <span className="text-gray-600">Students</span>
-                        <p className="font-medium text-gray-900 mt-1">{selectedSchool.studentCount || 0}</p>
-                      </div>
-                      <div className="py-3 border-b border-gray-200">
-                        <span className="text-gray-600">Teachers</span>
-                        <p className="font-medium text-gray-900 mt-1">{selectedSchool.teacherCount || 0}</p>
-                      </div>
-                      <div className="py-3 border-b border-gray-200">
-                        <span className="text-gray-600">Staff</span>
-                        <p className="font-medium text-gray-900 mt-1">{selectedSchool.staffCount || 0}</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="py-3 border-b border-gray-200">
-                        <span className="text-gray-600">MRR</span>
-                        <p className="font-medium text-gray-900 mt-1">${selectedSchool.mrr?.toFixed(2) || '0.00'}/month</p>
-                      </div>
-                      <div className="py-3 border-b border-gray-200">
-                        <span className="text-gray-600">ARR</span>
-                        <p className="font-medium text-gray-900 mt-1">${selectedSchool.arr?.toFixed(2) || '0.00'}/year</p>
-                      </div>
-                    </div>
-
-                    <div className="py-3 border-b border-gray-200">
-                      <span className="text-gray-600">Contact Email</span>
-                      <p className="font-medium text-gray-900 mt-1">{selectedSchool.contactEmail}</p>
-                    </div>
-
-                    {selectedSchool.contactPhone && (
-                      <div className="py-3 border-b border-gray-200">
-                        <span className="text-gray-600">Contact Phone</span>
-                        <p className="font-medium text-gray-900 mt-1">{selectedSchool.contactPhone}</p>
-                      </div>
-                    )}
-
-                    {selectedSchool.address && (
-                      <div className="py-3 border-b border-gray-200">
-                        <span className="text-gray-600">Address</span>
-                        <p className="font-medium text-gray-900 mt-1">
-                          {selectedSchool.address}
-                          {selectedSchool.city && `, ${selectedSchool.city}`}
-                          {selectedSchool.state && `, ${selectedSchool.state}`}
-                          {selectedSchool.postalCode && ` ${selectedSchool.postalCode}`}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedSchool.adminId && (
-                      <div className="py-3 border-b border-gray-200">
-                        <span className="text-gray-600">Admin</span>
-                        <p className="font-medium text-gray-900 mt-1">
-                          {selectedSchool.adminId.firstName} {selectedSchool.adminId.lastName}
-                          <span className="text-gray-500 text-xs ml-2">({selectedSchool.adminId.email})</span>
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedSchool.notes && (
-                      <div className="py-3">
-                        <span className="text-gray-600">Notes</span>
-                        <p className="font-medium text-gray-900 mt-1">{selectedSchool.notes}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-6 flex justify-end gap-3">
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button variant="outline" onClick={() => setSelectedSchool(null)}>
-                        Close
-                      </Button>
-                    </motion.div>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button onClick={() => {
-                        setEditingSchool(selectedSchool);
-                        setShowCreateModal(true);
-                        setSelectedSchool(null);
-                      }}>
-                        Edit School
-                      </Button>
-                    </motion.div>
-                  </div>
-                </div>
-              </motion.div>
+      {/* School Details SlideSheet */}
+      <SlideSheet
+        isOpen={selectedSchool !== null}
+        onClose={() => setSelectedSchool(null)}
+        title={selectedSchool ? selectedSchool.schoolName : ''}
+        subtitle="School Details"
+        size="lg"
+        footer={
+          <div className="flex justify-end gap-3">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button variant="outline" onClick={() => setSelectedSchool(null)}>
+                Close
+              </Button>
             </motion.div>
-          </Portal>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button onClick={() => {
+                if (selectedSchool) {
+                  setEditingSchool(selectedSchool);
+                  setShowCreateModal(true);
+                  setSelectedSchool(null);
+                }
+              }}>
+                Edit School
+              </Button>
+            </motion.div>
+          </div>
+        }
+      >
+        {selectedSchool && (
+          <>
+            <SheetSection title="Basic Information">
+              <div className="grid grid-cols-2 gap-4">
+                <SheetDetailRow label="School Name" value={selectedSchool.schoolName} />
+                <SheetDetailRow label="Tenant ID" value={selectedSchool.tenantId} valueClassName="font-mono text-xs" />
+              </div>
+            </SheetSection>
+
+            <SheetSection title="Subscription">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="py-3 border-b border-gray-200">
+                  <span className="text-sm text-gray-600">Status</span>
+                  <div className="mt-1">{getStatusBadge(selectedSchool.subscriptionStatus)}</div>
+                </div>
+                <div className="py-3 border-b border-gray-200">
+                  <span className="text-sm text-gray-600">Plan</span>
+                  <div className="mt-1">{getPlanBadge(selectedSchool.subscriptionPlan)}</div>
+                </div>
+              </div>
+            </SheetSection>
+
+            <SheetSection title="Statistics">
+              <div className="grid grid-cols-3 gap-4">
+                <SheetDetailRow label="Students" value={(selectedSchool.studentCount || 0).toString()} />
+                <SheetDetailRow label="Teachers" value={(selectedSchool.teacherCount || 0).toString()} />
+                <SheetDetailRow label="Staff" value={(selectedSchool.staffCount || 0).toString()} />
+              </div>
+            </SheetSection>
+
+            <SheetSection title="Revenue">
+              <div className="grid grid-cols-2 gap-4">
+                <SheetDetailRow label="MRR" value={`$${selectedSchool.mrr?.toFixed(2) || '0.00'}/month`} />
+                <SheetDetailRow label="ARR" value={`$${selectedSchool.arr?.toFixed(2) || '0.00'}/year`} />
+              </div>
+            </SheetSection>
+
+            <SheetSection title="Contact Information">
+              <SheetDetailRow label="Contact Email" value={selectedSchool.contactEmail} />
+              {selectedSchool.contactPhone && (
+                <SheetDetailRow label="Contact Phone" value={selectedSchool.contactPhone} />
+              )}
+              {selectedSchool.address && (
+                <SheetDetailRow
+                  label="Address"
+                  value={`${selectedSchool.address}${selectedSchool.city ? `, ${selectedSchool.city}` : ''}${selectedSchool.state ? `, ${selectedSchool.state}` : ''}${selectedSchool.postalCode ? ` ${selectedSchool.postalCode}` : ''}`}
+                />
+              )}
+            </SheetSection>
+
+            {selectedSchool.adminId && (
+              <SheetSection title="Administrator">
+                <SheetDetailRow
+                  label="Admin"
+                  value={`${selectedSchool.adminId.firstName} ${selectedSchool.adminId.lastName} (${selectedSchool.adminId.email})`}
+                />
+              </SheetSection>
+            )}
+
+            {selectedSchool.notes && (
+              <SheetSection title="Notes">
+                <p className="text-sm text-gray-900">{selectedSchool.notes}</p>
+              </SheetSection>
+            )}
+          </>
         )}
-      </AnimatePresence>
+      </SlideSheet>
 
       {/* Create/Edit School Modal */}
       <CreateSchoolModal

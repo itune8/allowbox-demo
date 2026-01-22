@@ -22,7 +22,7 @@ export default function PlatformPage() {
           rotate: { duration: 1, repeat: Infinity, ease: 'linear' }
         }}
       >
-        <Loader2 className="h-12 w-12 text-indigo-600" />
+        <Loader2 className="h-12 w-12 text-primary" />
       </motion.div>
     </div>
   );

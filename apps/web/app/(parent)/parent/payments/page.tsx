@@ -10,7 +10,7 @@ import {
   type Invoice as InvoiceType,
 } from '../../../../lib/data-store';
 import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D } from '../../../../components/ui';
+import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet, SheetSection, SheetField } from '../../../../components/ui';
 import {
   CreditCard,
   Download,
@@ -19,7 +19,6 @@ import {
   CheckCircle,
   DollarSign,
   Calendar,
-  X,
   Upload,
 } from 'lucide-react';
 
@@ -105,7 +104,7 @@ export default function PaymentsPage() {
     >
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Icon3D gradient="from-green-500 to-emerald-500" size="lg">
+        <Icon3D bgColor="bg-green-500" size="lg">
           <CreditCard className="w-6 h-6" />
         </Icon3D>
         <div>
@@ -144,7 +143,7 @@ export default function PaymentsPage() {
       {/* Filters */}
       <GlassCard>
         <div className="flex items-center gap-3 mb-4">
-          <Icon3D gradient="from-green-500 to-emerald-500" size="sm">
+          <Icon3D bgColor="bg-green-500" size="sm">
             <Calendar className="w-4 h-4" />
           </Icon3D>
           <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
@@ -197,14 +196,14 @@ export default function PaymentsPage() {
       {/* Payments Table */}
       <GlassCard>
         <div className="flex items-center gap-3 mb-6">
-          <Icon3D gradient="from-green-500 to-emerald-500" size="sm">
+          <Icon3D bgColor="bg-green-500" size="sm">
             <Receipt className="w-4 h-4" />
           </Icon3D>
           <h3 className="text-lg font-semibold text-gray-900">Payment Records</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gradient-to-r from-gray-50 to-gray-100/80">
+            <thead className="bg-gray-50">
               <tr className="text-left">
                 <th className="py-4 px-4 font-semibold text-gray-700">Payment ID</th>
                 <th className="py-4 px-4 font-semibold text-gray-700">Child</th>
@@ -279,176 +278,81 @@ export default function PaymentsPage() {
         </div>
       </GlassCard>
 
-      {/* Refund Modal */}
-      <AnimatePresence>
-        {refundFor && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4"
-            onClick={() => setRefundFor(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="relative w-full max-w-md overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
+      {/* Refund Sheet */}
+      <SlideSheet
+        isOpen={!!refundFor}
+        onClose={() => setRefundFor(null)}
+        title="Request Refund"
+        subtitle="Submit a refund request"
+        size="md"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setRefundFor(null)}
             >
-              {/* Glass morphism container */}
-              <div className="relative rounded-3xl bg-white/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-white/20 overflow-hidden">
-                {/* Gradient Header */}
-                <div className="relative bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 px-6 py-5 overflow-hidden">
-                  {/* Animated background patterns */}
-                  <motion.div
-                    className="absolute inset-0 opacity-30"
-                    initial={{ backgroundPosition: '0% 0%' }}
-                    animate={{ backgroundPosition: '100% 100%' }}
-                    transition={{ duration: 20, repeat: Infinity, repeatType: 'reverse' }}
-                    style={{
-                      backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(255,255,255,0.2) 0%, transparent 50%)',
-                      backgroundSize: '100% 100%',
-                    }}
-                  />
-                  <div className="relative flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <motion.div
-                        initial={{ rotate: -10, scale: 0 }}
-                        animate={{ rotate: 0, scale: 1 }}
-                        transition={{ type: 'spring', stiffness: 300, delay: 0.1 }}
-                      >
-                        <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg border border-white/30">
-                          <Receipt className="w-7 h-7 text-white drop-shadow-md" />
-                        </div>
-                      </motion.div>
-                      <div>
-                        <motion.h3
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.2 }}
-                          className="text-xl font-bold text-white drop-shadow-sm"
-                        >
-                          Request Refund
-                        </motion.h3>
-                        <motion.p
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.3 }}
-                          className="text-sm text-white/80"
-                        >
-                          Submit a refund request
-                        </motion.p>
-                      </div>
-                    </div>
-                    <motion.button
-                      whileHover={{ scale: 1.1, rotate: 90 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setRefundFor(null)}
-                      className="p-2.5 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all border border-white/30"
-                    >
-                      <X className="w-5 h-5 text-white" />
-                    </motion.button>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                alert('Refund request submitted');
+                setRefundFor(null);
+              }}
+            >
+              Submit Request
+            </Button>
+          </div>
+        }
+      >
+        {refundFor && (
+          <div className="space-y-4">
+            <SheetSection title="Invoice Details" icon={<Receipt className="w-4 h-4" />}>
+              <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="text-sm text-gray-600 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span>Invoice:</span>
+                    <span className="font-medium text-gray-900">{refundFor.inv.title}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Child:</span>
+                    <span className="font-medium text-gray-900">{refundFor.child.name}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                    <span>Amount:</span>
+                    <span className="font-bold text-green-600">${refundFor.inv.amount}</span>
                   </div>
                 </div>
-
-                {/* Form Content */}
-                <div className="p-6 space-y-4">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl border border-gray-100"
-                  >
-                    <div className="text-sm text-gray-600 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span>Invoice:</span>
-                        <span className="font-medium text-gray-900">{refundFor.inv.title}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Child:</span>
-                        <span className="font-medium text-gray-900">{refundFor.child.name}</span>
-                      </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                        <span>Amount:</span>
-                        <span className="font-bold text-green-600">${refundFor.inv.amount}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Reason for refund request
-                    </label>
-                    <textarea
-                      className="w-full border border-gray-200 bg-white/80 backdrop-blur-sm text-gray-900 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500/50 focus:border-green-300 transition-all resize-none"
-                      rows={4}
-                      placeholder="Please describe your reason for requesting a refund..."
-                    />
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Supporting documents (optional)
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="file"
-                        className="hidden"
-                        id="file-upload"
-                      />
-                      <label
-                        htmlFor="file-upload"
-                        className="flex items-center justify-center gap-2 w-full border-2 border-dashed border-gray-300 rounded-xl px-4 py-6 text-sm text-gray-600 hover:border-green-400 hover:bg-green-50/50 transition-all cursor-pointer"
-                      >
-                        <Upload className="w-5 h-5" />
-                        <span>Click to upload files</span>
-                      </label>
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                    className="flex justify-end gap-3 pt-4 border-t border-gray-100"
-                  >
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setRefundFor(null)}
-                      className="px-6 py-3 rounded-xl text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all"
-                    >
-                      Cancel
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.02, boxShadow: '0 10px 40px rgba(34, 197, 94, 0.3)' }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => {
-                        alert('Refund request submitted');
-                        setRefundFor(null);
-                      }}
-                      className="px-8 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg shadow-green-500/25"
-                    >
-                      Submit Request
-                    </motion.button>
-                  </motion.div>
-                </div>
               </div>
-            </motion.div>
-          </motion.div>
+            </SheetSection>
+
+            <SheetField label="Reason for refund request" required>
+              <textarea
+                className="w-full border border-gray-200 bg-white text-gray-900 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-green-500/50 focus:border-green-300 transition-all resize-none"
+                rows={4}
+                placeholder="Please describe your reason for requesting a refund..."
+              />
+            </SheetField>
+
+            <SheetField label="Supporting documents (optional)">
+              <div className="relative">
+                <input
+                  type="file"
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="flex items-center justify-center gap-2 w-full border-2 border-dashed border-gray-300 rounded-lg px-4 py-6 text-sm text-gray-600 hover:border-green-400 hover:bg-green-50/50 transition-all cursor-pointer"
+                >
+                  <Upload className="w-5 h-5" />
+                  <span>Click to upload files</span>
+                </label>
+              </div>
+            </SheetField>
+          </div>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </motion.section>
   );
 }

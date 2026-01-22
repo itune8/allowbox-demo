@@ -17,6 +17,7 @@ import { useAuth } from '../../../contexts/auth-context';
 import { GlassCard } from '@/components/ui/glass-card';
 import { AnimatedStatCard } from '@/components/ui/animated-stat-card';
 import { Icon3D } from '@/components/ui/icon-3d';
+import { SlideSheet, SheetSection, SheetField, SheetDetailRow } from '@/components/ui';
 import {
   HeadphonesIcon,
   MessageCircle,
@@ -249,7 +250,7 @@ export default function SupportPage() {
         transition={{ duration: 0.5 }}
         className="flex items-center gap-4"
       >
-        <Icon3D gradient="from-teal-500 to-cyan-500" size="lg">
+        <Icon3D bgColor="bg-teal-500" size="lg">
           <HeadphonesIcon className="w-6 h-6" />
         </Icon3D>
         <div>
@@ -284,35 +285,35 @@ export default function SupportPage() {
           title="Total Tickets"
           value={stats?.total || 0}
           icon={<FileText className="w-5 h-5" />}
-          gradient="from-teal-500 to-cyan-500"
+          iconBgColor="bg-teal-500"
           delay={0}
         />
         <AnimatedStatCard
           title="Open"
           value={stats?.open || 0}
           icon={<AlertCircle className="w-5 h-5" />}
-          gradient="from-blue-500 to-indigo-500"
+          iconBgColor="bg-blue-500"
           delay={1}
         />
         <AnimatedStatCard
           title="In Progress"
           value={stats?.inProgress || 0}
           icon={<Clock className="w-5 h-5" />}
-          gradient="from-yellow-500 to-amber-500"
+          iconBgColor="bg-yellow-500"
           delay={2}
         />
         <AnimatedStatCard
           title="Resolved"
           value={stats?.resolved || 0}
           icon={<CheckCircle className="w-5 h-5" />}
-          gradient="from-green-500 to-emerald-500"
+          iconBgColor="bg-green-500"
           delay={3}
         />
         <AnimatedStatCard
           title="Avg. Resolution"
           value={stats?.avgResolutionTimeHours ? `${Math.round(stats.avgResolutionTimeHours)}h` : '-'}
           icon={<TrendingUp className="w-5 h-5" />}
-          gradient="from-purple-500 to-violet-500"
+          iconBgColor="bg-purple-500"
           delay={4}
         />
       </motion.div>
@@ -478,290 +479,199 @@ export default function SupportPage() {
         )}
       </GlassCard>
 
-      {/* Ticket Detail Slide-in Panel */}
-      <AnimatePresence>
-        {showDetailModal && selectedTicket && (
-          <div className="fixed inset-0 z-50 flex justify-end">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
-              onClick={() => {
-                setShowDetailModal(false);
-                setSelectedTicket(null);
-                setNewComment('');
-              }}
-            />
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="relative bg-white w-full max-w-2xl h-full overflow-y-auto shadow-2xl border-l border-gray-200"
-            >
-              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
-                <div className="flex items-center gap-3">
-                  <Icon3D gradient="from-teal-500 to-cyan-500" size="sm">
-                    <MessageCircle className="w-3.5 h-3.5" />
-                  </Icon3D>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Ticket {selectedTicket.ticketNumber}
-                    </h3>
-                    <p className="text-sm text-gray-500">{selectedTicket.tenantId?.schoolName}</p>
-                  </div>
-                </div>
-                <motion.button
-                  onClick={() => {
-                    setShowDetailModal(false);
-                    setSelectedTicket(null);
-                    setNewComment('');
-                  }}
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </motion.button>
-              </div>
-
-              <div className="p-6 space-y-4">
-                {/* Header Info */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="grid grid-cols-2 md:grid-cols-4 gap-4"
-                >
-                  <div>
-                    <p className="text-sm text-gray-600">Status</p>
-                    <div className="mt-1">{getStatusBadge(selectedTicket.status)}</div>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Priority</p>
-                    <div className="mt-1">{getPriorityBadge(selectedTicket.priority)}</div>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Category</p>
-                    <p className="text-sm font-medium text-gray-900 mt-1">
-                      {getCategoryLabel(selectedTicket.category)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Assigned To</p>
-                    <p className="text-sm font-medium text-gray-900 mt-1">
-                      {selectedTicket.assignedTo
-                        ? `${selectedTicket.assignedTo.firstName} ${selectedTicket.assignedTo.lastName}`
-                        : 'Unassigned'}
-                    </p>
-                  </div>
-                </motion.div>
-
-                {/* Subject & Description */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="border-t border-gray-200 pt-4"
-                >
-                  <p className="text-sm text-gray-600">Subject</p>
-                  <p className="text-base font-medium text-gray-900 mt-1">
-                    {selectedTicket.subject}
-                  </p>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <p className="text-sm text-gray-600">Description</p>
-                  <p className="text-sm text-gray-900 mt-1 whitespace-pre-wrap">
-                    {selectedTicket.description}
-                  </p>
-                </motion.div>
-
-                {/* Created By & Dates */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="border-t border-gray-200 pt-4 grid grid-cols-2 gap-4"
-                >
-                  <div>
-                    <p className="text-sm text-gray-600">Created By</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {selectedTicket.createdBy.firstName} {selectedTicket.createdBy.lastName}
-                    </p>
-                    {selectedTicket.createdBy.email && (
-                      <p className="text-xs text-gray-500">{selectedTicket.createdBy.email}</p>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Created</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {formatDate(selectedTicket.createdAt)}
-                    </p>
-                  </div>
-                </motion.div>
-
-                {/* Comments */}
-                {selectedTicket.comments && selectedTicket.comments.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                    className="border-t border-gray-200 pt-4"
-                  >
-                    <p className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4" />
-                      Comments ({selectedTicket.comments.length})
-                    </p>
-                    <div className="space-y-3 max-h-60 overflow-y-auto">
-                      {selectedTicket.comments.map((comment, idx) => (
-                        <motion.div
-                          key={idx}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.6 + idx * 0.1 }}
-                          className="bg-gray-50 rounded-lg p-3 border border-gray-100"
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium text-gray-900 flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              {comment.userId.firstName} {comment.userId.lastName}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {formatDate(comment.createdAt)}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-700">{comment.content}</p>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Add Comment */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="border-t border-gray-200 pt-4"
-                >
-                  <p className="text-sm font-medium text-gray-900 mb-2">Add Comment</p>
-                  <textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Write your response..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                  <div className="flex justify-end mt-2">
-                    <motion.button
-                      onClick={handleAddComment}
-                      disabled={addingComment || !newComment.trim()}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-teal-500/30"
-                    >
-                      <Send className="w-4 h-4" />
-                      {addingComment ? 'Sending...' : 'Send Reply'}
-                    </motion.button>
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Actions Footer */}
-              <div className="sticky bottom-0 bg-gray-50/80 backdrop-blur-sm px-6 py-4 border-t border-gray-200 flex flex-wrap gap-3 justify-between">
-                <div className="flex gap-2 flex-wrap">
-                  {!selectedTicket.assignedTo && (
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleClaimTicket}
-                        disabled={updatingTicket}
-                      >
-                        Claim Ticket
-                      </Button>
-                    </motion.div>
-                  )}
-                  {selectedTicket.status === TicketStatus.OPEN && (
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Button
-                        size="sm"
-                        onClick={() => handleUpdateStatus(TicketStatus.IN_PROGRESS)}
-                        disabled={updatingTicket}
-                      >
-                        Start Working
-                      </Button>
-                    </motion.div>
-                  )}
-                  {selectedTicket.status === TicketStatus.IN_PROGRESS && (
-                    <>
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleUpdateStatus(TicketStatus.WAITING_FOR_USER)}
-                          disabled={updatingTicket}
-                        >
-                          Waiting for User
-                        </Button>
-                      </motion.div>
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                        <Button
-                          size="sm"
-                          onClick={() => handleUpdateStatus(TicketStatus.RESOLVED)}
-                          disabled={updatingTicket}
-                        >
-                          Mark Resolved
-                        </Button>
-                      </motion.div>
-                    </>
-                  )}
-                  {selectedTicket.status === TicketStatus.WAITING_FOR_USER && (
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Button
-                        size="sm"
-                        onClick={() => handleUpdateStatus(TicketStatus.IN_PROGRESS)}
-                        disabled={updatingTicket}
-                      >
-                        Resume
-                      </Button>
-                    </motion.div>
-                  )}
-                  {selectedTicket.status === TicketStatus.RESOLVED && (
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Button
-                        size="sm"
-                        onClick={() => handleUpdateStatus(TicketStatus.CLOSED)}
-                        disabled={updatingTicket}
-                      >
-                        Close Ticket
-                      </Button>
-                    </motion.div>
-                  )}
-                </div>
+      {/* Ticket Detail SlideSheet */}
+      <SlideSheet
+        isOpen={showDetailModal && selectedTicket !== null}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedTicket(null);
+          setNewComment('');
+        }}
+        title={selectedTicket ? `Ticket ${selectedTicket.ticketNumber}` : ''}
+        subtitle={selectedTicket?.tenantId?.schoolName}
+        size="lg"
+        footer={
+          <div className="flex flex-wrap gap-3 justify-between">
+            <div className="flex gap-2 flex-wrap">
+              {selectedTicket && !selectedTicket.assignedTo && (
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      setSelectedTicket(null);
-                      setNewComment('');
-                    }}
+                    size="sm"
+                    onClick={handleClaimTicket}
+                    disabled={updatingTicket}
                   >
-                    Close
+                    Claim Ticket
                   </Button>
                 </motion.div>
-              </div>
+              )}
+              {selectedTicket && selectedTicket.status === TicketStatus.OPEN && (
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    size="sm"
+                    onClick={() => handleUpdateStatus(TicketStatus.IN_PROGRESS)}
+                    disabled={updatingTicket}
+                  >
+                    Start Working
+                  </Button>
+                </motion.div>
+              )}
+              {selectedTicket && selectedTicket.status === TicketStatus.IN_PROGRESS && (
+                <>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleUpdateStatus(TicketStatus.WAITING_FOR_USER)}
+                      disabled={updatingTicket}
+                    >
+                      Waiting for User
+                    </Button>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      size="sm"
+                      onClick={() => handleUpdateStatus(TicketStatus.RESOLVED)}
+                      disabled={updatingTicket}
+                    >
+                      Mark Resolved
+                    </Button>
+                  </motion.div>
+                </>
+              )}
+              {selectedTicket && selectedTicket.status === TicketStatus.WAITING_FOR_USER && (
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    size="sm"
+                    onClick={() => handleUpdateStatus(TicketStatus.IN_PROGRESS)}
+                    disabled={updatingTicket}
+                  >
+                    Resume
+                  </Button>
+                </motion.div>
+              )}
+              {selectedTicket && selectedTicket.status === TicketStatus.RESOLVED && (
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    size="sm"
+                    onClick={() => handleUpdateStatus(TicketStatus.CLOSED)}
+                    disabled={updatingTicket}
+                  >
+                    Close Ticket
+                  </Button>
+                </motion.div>
+              )}
+            </div>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setSelectedTicket(null);
+                  setNewComment('');
+                }}
+              >
+                Close
+              </Button>
             </motion.div>
           </div>
+        }
+      >
+        {selectedTicket && (
+          <>
+            <SheetSection>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Status</p>
+                  <div className="mt-1">{getStatusBadge(selectedTicket.status)}</div>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Priority</p>
+                  <div className="mt-1">{getPriorityBadge(selectedTicket.priority)}</div>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Category</p>
+                  <p className="text-sm font-medium text-gray-900 mt-1">
+                    {getCategoryLabel(selectedTicket.category)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Assigned To</p>
+                  <p className="text-sm font-medium text-gray-900 mt-1">
+                    {selectedTicket.assignedTo
+                      ? `${selectedTicket.assignedTo.firstName} ${selectedTicket.assignedTo.lastName}`
+                      : 'Unassigned'}
+                  </p>
+                </div>
+              </div>
+            </SheetSection>
+
+            <SheetSection title="Ticket Details">
+              <SheetDetailRow label="Subject" value={selectedTicket.subject} />
+              <div className="py-3 border-b border-gray-200">
+                <p className="text-sm text-gray-600 mb-2">Description</p>
+                <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                  {selectedTicket.description}
+                </p>
+              </div>
+              <SheetDetailRow
+                label="Created By"
+                value={`${selectedTicket.createdBy.firstName} ${selectedTicket.createdBy.lastName}`}
+              />
+              <SheetDetailRow label="Created" value={formatDate(selectedTicket.createdAt)} />
+            </SheetSection>
+
+            {selectedTicket.comments && selectedTicket.comments.length > 0 && (
+              <SheetSection title={`Comments (${selectedTicket.comments.length})`}>
+                <div className="space-y-3 max-h-60 overflow-y-auto">
+                  {selectedTicket.comments.map((comment, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="bg-gray-50 rounded-lg p-3 border border-gray-100"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {comment.userId.firstName} {comment.userId.lastName}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {formatDate(comment.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700">{comment.content}</p>
+                    </motion.div>
+                  ))}
+                </div>
+              </SheetSection>
+            )}
+
+            <SheetSection title="Add Comment">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Write your response..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+              <div className="flex justify-end mt-2">
+                <motion.button
+                  onClick={handleAddComment}
+                  disabled={addingComment || !newComment.trim()}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-4 py-2 bg-teal-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-teal-500/30"
+                >
+                  <Send className="w-4 h-4" />
+                  {addingComment ? 'Sending...' : 'Send Reply'}
+                </motion.button>
+              </div>
+            </SheetSection>
+          </>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </div>
   );
 }

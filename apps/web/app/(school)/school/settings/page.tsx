@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
 import { subjectService, type Subject } from '@/lib/services/subject.service';
 import { tenantService, type TenantData } from '@/lib/services/tenant.service';
 import { classService, type Class } from '@/lib/services/class.service';
-import { CreateSubjectModal, type SubjectFormData } from '@/components/modals/create-subject-modal';
-import { GlassCard, AnimatedStatCard, Icon3D } from '@/components/ui';
+import { SlideSheet, SheetSection, SheetField, SheetDetailRow } from '@/components/ui';
 import {
   Settings,
   BookOpen,
@@ -24,16 +22,27 @@ import {
   Bell,
   Download,
   CheckCircle,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
+
+export interface SubjectFormData {
+  name: string;
+  code: string;
+  description?: string;
+  maxMarks?: number;
+  passingMarks?: number;
+  classes?: string[];
+}
 
 export default function SettingsPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
+  const [isSubjectSheetOpen, setIsSubjectSheetOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
-  const [banner, setBanner] = useState<string | null>(null);
+  const [banner, setBanner] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [schoolInfo, setSchoolInfo] = useState({
     name: '',
     email: '',
@@ -41,6 +50,16 @@ export default function SettingsPage() {
     address: '',
   });
   const [editingSchool, setEditingSchool] = useState(false);
+  const [subjectFormData, setSubjectFormData] = useState<SubjectFormData>({
+    name: '',
+    code: '',
+    description: '',
+    maxMarks: 100,
+    passingMarks: 40,
+    classes: [],
+  });
+  const [submittingSubject, setSubmittingSubject] = useState(false);
+  const [subjectFormError, setSubjectFormError] = useState('');
 
   useEffect(() => {
     fetchSubjects();
@@ -106,39 +125,125 @@ export default function SettingsPage() {
 //   address: schoolInfo.address,
 // });
 
-      setBanner('School information updated successfully!');
+      setBanner({ message: 'School information updated successfully!', type: 'success' });
       setTimeout(() => setBanner(null), 3000);
       setEditingSchool(false);
       await fetchSchoolInfo();
     } catch (err) {
       console.error('Failed to update school info:', err);
-      alert('Failed to update school information');
+      setBanner({ message: 'Failed to update school information', type: 'error' });
+      setTimeout(() => setBanner(null), 3000);
     }
   };
 
-  const handleCreateSubject = async (subjectData: SubjectFormData) => {
+  const handleOpenSubjectSheet = (subject?: Subject) => {
+    if (subject) {
+      setEditingSubject(subject);
+      setSubjectFormData({
+        name: subject.name || '',
+        code: subject.code || '',
+        description: subject.description || '',
+        maxMarks: subject.maxMarks || 100,
+        passingMarks: subject.passingMarks || 40,
+        classes: subject.classes || [],
+      });
+    } else {
+      setEditingSubject(null);
+      setSubjectFormData({
+        name: '',
+        code: '',
+        description: '',
+        maxMarks: 100,
+        passingMarks: 40,
+        classes: [],
+      });
+    }
+    setSubjectFormError('');
+    setIsSubjectSheetOpen(true);
+  };
+
+  const handleCloseSubjectSheet = () => {
+    setIsSubjectSheetOpen(false);
+    setEditingSubject(null);
+    setSubjectFormData({
+      name: '',
+      code: '',
+      description: '',
+      maxMarks: 100,
+      passingMarks: 40,
+      classes: [],
+    });
+    setSubjectFormError('');
+  };
+
+  const handleSubjectFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setSubjectFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === 'maxMarks' || name === 'passingMarks'
+          ? value
+            ? parseInt(value)
+            : undefined
+          : value,
+    }));
+  };
+
+  const handleClassToggle = (classId: string) => {
+    setSubjectFormData((prev) => {
+      const currentClasses = prev.classes || [];
+      const isSelected = currentClasses.includes(classId);
+
+      return {
+        ...prev,
+        classes: isSelected
+          ? currentClasses.filter((id) => id !== classId)
+          : [...currentClasses, classId],
+      };
+    });
+  };
+
+  const handleSubmitSubject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubjectFormError('');
+
+    // Validation
+    if (
+      subjectFormData.maxMarks &&
+      subjectFormData.passingMarks &&
+      subjectFormData.passingMarks > subjectFormData.maxMarks
+    ) {
+      setSubjectFormError('Passing marks cannot be greater than maximum marks');
+      return;
+    }
+
+    setSubmittingSubject(true);
     try {
       if (editingSubject) {
-        await subjectService.updateSubject(editingSubject._id, subjectData);
-        setBanner('Subject updated successfully!');
+        await subjectService.updateSubject(editingSubject._id, subjectFormData);
+        setBanner({ message: 'Subject updated successfully!', type: 'success' });
       } else {
-        await subjectService.createSubject(subjectData);
-        setBanner('Subject created successfully!');
+        await subjectService.createSubject(subjectFormData);
+        setBanner({ message: 'Subject created successfully!', type: 'success' });
       }
       setTimeout(() => setBanner(null), 3000);
-      setIsSubjectModalOpen(false);
-      setEditingSubject(null);
+      handleCloseSubjectSheet();
       await fetchSubjects();
     } catch (error) {
       console.error('Failed to save subject:', error);
-      throw error;
+      setSubjectFormError(
+        error instanceof Error ? error.message : 'Failed to save subject'
+      );
+    } finally {
+      setSubmittingSubject(false);
     }
   };
 
   const handleEditSubject = (subject: Subject, e: React.MouseEvent) => {
     e.stopPropagation();
-    setEditingSubject(subject);
-    setIsSubjectModalOpen(true);
+    handleOpenSubjectSheet(subject);
   };
 
   const handleDeleteSubject = async (subjectId: string, e: React.MouseEvent) => {
@@ -148,11 +253,12 @@ export default function SettingsPage() {
     try {
       await subjectService.deleteSubject(subjectId);
       setSubjects(prev => prev.filter(s => s._id !== subjectId));
-      setBanner('Subject deleted successfully');
+      setBanner({ message: 'Subject deleted successfully', type: 'success' });
       setTimeout(() => setBanner(null), 3000);
     } catch (err) {
       console.error('Failed to delete subject:', err);
-      alert('Failed to delete subject. Please try again.');
+      setBanner({ message: 'Failed to delete subject. Please try again.', type: 'error' });
+      setTimeout(() => setBanner(null), 3000);
     }
   };
 
@@ -185,36 +291,34 @@ export default function SettingsPage() {
   ];
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="space-y-6"
-    >
+    <section className="space-y-6">
       {/* Banner */}
-      <AnimatePresence>
-        {banner && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="glass-strong rounded-xl border border-green-200 px-4 py-3 text-green-700 flex items-center gap-2"
-          >
+      {banner && (
+        <div
+          className={`rounded-xl border px-4 py-3 flex items-center gap-2 ${
+            banner.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+              : 'bg-red-50 border-red-200 text-red-700'
+          }`}
+        >
+          {banner.type === 'success' ? (
             <CheckCircle className="w-5 h-5" />
-            {banner}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          ) : (
+            <AlertCircle className="w-5 h-5" />
+          )}
+          {banner.message}
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Icon3D gradient="from-gray-500 to-slate-600" size="lg">
-            <Settings className="w-6 h-6" />
-          </Icon3D>
+          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
+            <Settings className="w-6 h-6 text-slate-600" />
+          </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">School Settings</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-2xl font-bold text-slate-900">School Settings</h1>
+            <p className="text-sm text-slate-500">
               Manage subjects and other school configurations
             </p>
           </div>
@@ -222,231 +326,211 @@ export default function SettingsPage() {
       </div>
 
       {/* Error Message */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="glass-strong rounded-xl border border-red-200 px-4 py-3 text-red-700"
-          >
-            {error}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {error && (
+        <div className="rounded-xl border bg-red-50 border-red-200 px-4 py-3 text-red-700 flex items-center gap-2">
+          <AlertCircle className="w-5 h-5" />
+          {error}
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <AnimatedStatCard
-          title="Total Subjects"
-          value={subjects.length}
-          icon={<BookOpen className="w-5 h-5" />}
-          gradient="from-gray-500 to-slate-600"
-          delay={0}
-        />
-        <AnimatedStatCard
-          title="Active"
-          value={activeSubjects}
-          icon={<CheckCircle className="w-5 h-5" />}
-          gradient="from-green-500 to-emerald-500"
-          delay={0.1}
-        />
-        <AnimatedStatCard
-          title="Inactive"
-          value={inactiveSubjects}
-          icon={<BookOpen className="w-5 h-5" />}
-          gradient="from-gray-400 to-gray-500"
-          delay={0.2}
-        />
-        <AnimatedStatCard
-          title="Classes"
-          value={classes.length}
-          icon={<Building className="w-5 h-5" />}
-          gradient="from-indigo-500 to-purple-500"
-          delay={0.3}
-        />
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Total Subjects</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{subjects.length}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-slate-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Active</p>
+              <p className="text-2xl font-bold text-emerald-600 mt-1">{activeSubjects}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-emerald-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Inactive</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{inactiveSubjects}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-slate-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Classes</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{classes.length}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+              <Building className="w-5 h-5 text-blue-600" />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Subjects Section */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.2 }}
-      >
+      <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Icon3D gradient="from-indigo-500 to-purple-500" size="md">
-              <BookOpen className="w-5 h-5" />
-            </Icon3D>
-            <h2 className="text-xl font-semibold text-gray-900">
+            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-blue-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-slate-900">
               Subjects {!loading && `(${subjects.length})`}
             </h2>
           </div>
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button
-              size="sm"
-              onClick={() => {
-                setEditingSubject(null);
-                setIsSubjectModalOpen(true);
-              }}
-              className="shadow-lg shadow-indigo-500/25"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Subject
-            </Button>
-          </motion.div>
+          <Button
+            size="sm"
+            onClick={() => handleOpenSubjectSheet()}
+            className="bg-primary hover:bg-primary-dark"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Subject
+          </Button>
         </div>
 
-        <GlassCard hover={false} className="p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className="w-12 h-12 border-3 border-indigo-500 border-t-transparent rounded-full"
-              />
-              <div className="text-gray-500">Loading subjects...</div>
+              <Loader2 className="w-12 h-12 text-primary animate-spin" />
+              <div className="text-slate-500">Loading subjects...</div>
             </div>
           ) : subjects.length === 0 ? (
-            <div className="py-10 text-center text-gray-500 space-y-3">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 200 }}
-              >
-                <BookOpen className="w-16 h-16 mx-auto text-gray-300" />
-              </motion.div>
+            <div className="py-10 text-center text-slate-500 space-y-3">
+              <BookOpen className="w-16 h-16 mx-auto text-slate-300" />
               <div>No subjects added yet</div>
-              <Button onClick={() => setIsSubjectModalOpen(true)}>
+              <Button onClick={() => handleOpenSubjectSheet()}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Your First Subject
               </Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {subjects.map((subject, index) => (
-                <motion.div
+              {subjects.map((subject) => (
+                <div
                   key={subject._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  className="p-4 border border-gray-200 rounded-xl hover:border-indigo-300 hover:shadow-lg transition-all duration-200 group bg-white/60 backdrop-blur-sm"
+                  className="p-4 border border-slate-200 rounded-xl hover:border-slate-300 hover:shadow-sm transition-all duration-200 group bg-white"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 text-lg group-hover:text-indigo-600 transition-colors">
+                      <h3 className="font-semibold text-slate-900 text-lg group-hover:text-primary transition-colors">
                         {subject.name}
                       </h3>
-                      <p className="text-sm text-gray-500 font-mono">
+                      <p className="text-sm text-slate-500 font-mono">
                         Code: {subject.code}
                       </p>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
+                      <button
                         title="Edit Subject"
-                        className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all"
+                        className="p-1.5 text-slate-400 hover:text-primary hover:bg-blue-50 rounded-lg transition-all"
                         onClick={(e) => handleEditSubject(subject, e)}
                       >
                         <Edit className="w-4 h-4" />
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
+                      </button>
+                      <button
                         title="Delete Subject"
-                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                         onClick={(e) => handleDeleteSubject(subject._id, e)}
                       >
                         <Trash2 className="w-4 h-4" />
-                      </motion.button>
+                      </button>
                     </div>
                   </div>
 
                   {subject.description && (
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    <p className="text-sm text-slate-600 mb-3 line-clamp-2">
                       {subject.description}
                     </p>
                   )}
 
                   <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-                    <div className="bg-gray-50/80 p-2 rounded-lg">
-                      <div className="text-gray-500">Max Marks</div>
-                      <div className="font-semibold text-gray-900">
+                    <div className="bg-slate-50 p-2 rounded-lg">
+                      <div className="text-slate-500">Max Marks</div>
+                      <div className="font-semibold text-slate-900">
                         {subject.maxMarks || 'N/A'}
                       </div>
                     </div>
-                    <div className="bg-gray-50/80 p-2 rounded-lg">
-                      <div className="text-gray-500">Pass Marks</div>
-                      <div className="font-semibold text-gray-900">
+                    <div className="bg-slate-50 p-2 rounded-lg">
+                      <div className="text-slate-500">Pass Marks</div>
+                      <div className="font-semibold text-slate-900">
                         {subject.passingMarks || 'N/A'}
                       </div>
                     </div>
                   </div>
 
                   {/* Assigned Classes */}
-                  <div className="bg-indigo-50/80 p-2 rounded-lg text-xs">
-                    <div className="text-indigo-700 font-medium mb-1">Assigned to:</div>
-                    <div className="text-indigo-600">
+                  <div className="bg-blue-50 p-2 rounded-lg text-xs">
+                    <div className="text-blue-900 font-medium mb-1">Assigned to:</div>
+                    <div className="text-blue-700">
                       {getClassNamesForSubject(subject.classes)}
                     </div>
                   </div>
 
                   {subject.isActive !== undefined && (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
+                    <div className="mt-3 pt-3 border-t border-slate-200">
                       <span
                         className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                           subject.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800/30'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-slate-100 text-slate-600'
                         }`}
                       >
                         {subject.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                   )}
-                </motion.div>
+                </div>
               ))}
             </div>
           )}
-        </GlassCard>
-      </motion.div>
+        </div>
+      </div>
 
       {/* School Information Section */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.3 }}
-      >
+      <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Icon3D gradient="from-blue-500 to-cyan-500" size="md">
-              <Building className="w-5 h-5" />
-            </Icon3D>
-            <h2 className="text-xl font-semibold text-gray-900">
+            <div className="w-10 h-10 rounded-lg bg-sky-100 flex items-center justify-center">
+              <Building className="w-5 h-5 text-sky-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-slate-900">
               School Information
             </h2>
           </div>
           {!editingSchool && (
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setEditingSchool(true)}
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Information
-              </Button>
-            </motion.div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setEditingSchool(true)}
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              Edit Information
+            </Button>
           )}
         </div>
 
-        <GlassCard hover={false} className="p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
           {editingSchool ? (
             <form onSubmit={handleUpdateSchoolInfo} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   School Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -454,42 +538,42 @@ export default function SettingsPage() {
                   value={schoolInfo.name}
                   onChange={(e) => setSchoolInfo({ ...schoolInfo, name: e.target.value })}
                   required
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-300 bg-white/80 text-gray-900 transition-all"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-blue-300 bg-white text-slate-900 transition-all"
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
                     Contact Email
                   </label>
                   <input
                     type="email"
                     value={schoolInfo.email}
                     onChange={(e) => setSchoolInfo({ ...schoolInfo, email: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-300 bg-white/80 text-gray-900 transition-all"
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-blue-300 bg-white text-slate-900 transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
                     Contact Phone
                   </label>
                   <input
                     type="tel"
                     value={schoolInfo.phone}
                     onChange={(e) => setSchoolInfo({ ...schoolInfo, phone: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-300 bg-white/80 text-gray-900 transition-all"
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-blue-300 bg-white text-slate-900 transition-all"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Address
                 </label>
                 <textarea
                   value={schoolInfo.address}
                   onChange={(e) => setSchoolInfo({ ...schoolInfo, address: e.target.value })}
                   rows={3}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-300 bg-white/80 text-gray-900 transition-all"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-blue-300 bg-white text-slate-900 transition-all"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
@@ -509,122 +593,235 @@ export default function SettingsPage() {
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <motion.div
-                  whileHover={{ scale: 1.01 }}
-                  className="p-4 bg-gray-50/80 rounded-xl border border-gray-100"
-                >
-                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:bg-slate-100 transition-colors">
+                  <div className="flex items-center gap-2 text-sm text-slate-500 mb-1">
                     <Building className="w-4 h-4" />
                     School Name
                   </div>
-                  <div className="font-medium text-gray-900">
+                  <div className="font-medium text-slate-900">
                     {schoolInfo.name || 'Not set'}
                   </div>
-                </motion.div>
-                <motion.div
-                  whileHover={{ scale: 1.01 }}
-                  className="p-4 bg-gray-50/80 rounded-xl border border-gray-100"
-                >
-                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:bg-slate-100 transition-colors">
+                  <div className="flex items-center gap-2 text-sm text-slate-500 mb-1">
                     <Mail className="w-4 h-4" />
                     Contact Email
                   </div>
-                  <div className="font-medium text-gray-900">
+                  <div className="font-medium text-slate-900">
                     {schoolInfo.email || 'Not set'}
                   </div>
-                </motion.div>
-                <motion.div
-                  whileHover={{ scale: 1.01 }}
-                  className="p-4 bg-gray-50/80 rounded-xl border border-gray-100"
-                >
-                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:bg-slate-100 transition-colors">
+                  <div className="flex items-center gap-2 text-sm text-slate-500 mb-1">
                     <Phone className="w-4 h-4" />
                     Contact Phone
                   </div>
-                  <div className="font-medium text-gray-900">
+                  <div className="font-medium text-slate-900">
                     {schoolInfo.phone || 'Not set'}
                   </div>
-                </motion.div>
-                <motion.div
-                  whileHover={{ scale: 1.01 }}
-                  className="p-4 bg-gray-50/80 rounded-xl border border-gray-100 md:col-span-2"
-                >
-                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:bg-slate-100 transition-colors md:col-span-2">
+                  <div className="flex items-center gap-2 text-sm text-slate-500 mb-1">
                     <MapPin className="w-4 h-4" />
                     Address
                   </div>
-                  <div className="font-medium text-gray-900">
+                  <div className="font-medium text-slate-900">
                     {schoolInfo.address || 'Not set'}
                   </div>
-                </motion.div>
+                </div>
               </div>
             </div>
           )}
-        </GlassCard>
-      </motion.div>
+        </div>
+      </div>
 
       {/* Additional Settings Sections */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.4 }}
-      >
+      <div>
         <div className="flex items-center gap-3 mb-4">
-          <Icon3D gradient="from-amber-500 to-orange-500" size="md">
-            <Settings className="w-5 h-5" />
-          </Icon3D>
-          <h2 className="text-xl font-semibold text-gray-900">
+          <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+            <Settings className="w-5 h-5 text-amber-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-slate-900">
             System Settings
           </h2>
         </div>
 
-        <GlassCard hover={false} className="p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
           <div className="space-y-3">
-            {systemSettings.map((setting, index) => (
-              <motion.div
+            {systemSettings.map((setting) => (
+              <div
                 key={setting.title}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 + index * 0.05 }}
-                whileHover={{ scale: 1.01, x: 4 }}
-                className="flex items-center justify-between p-4 bg-gray-50/80 rounded-xl hover:bg-gray-100/80 transition-all cursor-pointer group border border-transparent hover:border-gray-200"
+                className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-all cursor-pointer group border border-transparent hover:border-slate-200"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                    <setting.icon className="w-5 h-5 text-gray-600 group-hover:text-indigo-600 transition-colors" />
+                  <div className="p-2 bg-white rounded-lg shadow-sm group-hover:shadow-md transition-shadow border border-slate-100">
+                    <setting.icon className="w-5 h-5 text-slate-600 group-hover:text-primary transition-colors" />
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900 text-sm group-hover:text-indigo-600 transition-colors">
+                    <div className="font-medium text-slate-900 text-sm group-hover:text-primary transition-colors">
                       {setting.title}
                     </div>
-                    <div className="text-xs text-gray-500 mt-0.5">
+                    <div className="text-xs text-slate-500 mt-0.5">
                       {setting.description}
                     </div>
                   </div>
                 </div>
-                <motion.div
-                  initial={{ x: 0 }}
-                  whileHover={{ x: 4 }}
-                  className="text-gray-400 group-hover:text-indigo-500 transition-colors"
-                >
+                <div className="text-slate-400 group-hover:text-primary transition-colors">
                   <ChevronRight className="w-5 h-5" />
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             ))}
           </div>
-        </GlassCard>
-      </motion.div>
+        </div>
+      </div>
 
-      {/* Create/Edit Subject Modal */}
-      <CreateSubjectModal
-        isOpen={isSubjectModalOpen}
-        onClose={() => {
-          setIsSubjectModalOpen(false);
-          setEditingSubject(null);
-        }}
-        onSubmit={handleCreateSubject}
-        initialData={editingSubject || undefined}
-      />
-    </motion.section>
+      {/* Create/Edit Subject Sheet */}
+      <SlideSheet
+        isOpen={isSubjectSheetOpen}
+        onClose={handleCloseSubjectSheet}
+        title={editingSubject ? 'Edit Subject' : 'Add New Subject'}
+        subtitle={
+          editingSubject
+            ? 'Update the subject details below'
+            : 'Create a new subject for your school'
+        }
+        size="lg"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCloseSubjectSheet}
+              disabled={submittingSubject}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              onClick={handleSubmitSubject}
+              disabled={submittingSubject}
+              style={{ backgroundColor: 'var(--color-primary)' }}
+            >
+              {submittingSubject
+                ? editingSubject
+                  ? 'Updating...'
+                  : 'Creating...'
+                : editingSubject
+                ? 'Update Subject'
+                : 'Create Subject'}
+            </Button>
+          </div>
+        }
+      >
+        <form onSubmit={handleSubmitSubject} className="space-y-6">
+          {subjectFormError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800">{subjectFormError}</p>
+            </div>
+          )}
+
+          <SheetSection title="Basic Information" icon={<BookOpen className="w-4 h-4 text-slate-600" />}>
+            <SheetField label="Subject Name" required>
+              <input
+                type="text"
+                name="name"
+                value={subjectFormData.name}
+                onChange={handleSubjectFormChange}
+                required
+                placeholder="e.g., Mathematics, Physics, English"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-blue-300 bg-white text-slate-900 transition-all"
+              />
+            </SheetField>
+
+            <SheetField label="Subject Code" required>
+              <input
+                type="text"
+                name="code"
+                value={subjectFormData.code}
+                onChange={handleSubjectFormChange}
+                required
+                placeholder="e.g., MATH101, PHY201, ENG301"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-blue-300 bg-white text-slate-900 transition-all"
+              />
+            </SheetField>
+
+            <SheetField label="Description">
+              <textarea
+                name="description"
+                value={subjectFormData.description}
+                onChange={handleSubjectFormChange}
+                rows={3}
+                placeholder="Additional information about this subject"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-blue-300 bg-white text-slate-900 transition-all"
+              />
+            </SheetField>
+          </SheetSection>
+
+          <SheetSection title="Grading" icon={<Award className="w-4 h-4 text-slate-600" />}>
+            <div className="grid grid-cols-2 gap-4">
+              <SheetField label="Maximum Marks">
+                <input
+                  type="number"
+                  name="maxMarks"
+                  value={subjectFormData.maxMarks || ''}
+                  onChange={handleSubjectFormChange}
+                  min="1"
+                  placeholder="100"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-blue-300 bg-white text-slate-900 transition-all"
+                />
+              </SheetField>
+
+              <SheetField label="Passing Marks">
+                <input
+                  type="number"
+                  name="passingMarks"
+                  value={subjectFormData.passingMarks || ''}
+                  onChange={handleSubjectFormChange}
+                  min="1"
+                  max={subjectFormData.maxMarks}
+                  placeholder="40"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-blue-300 bg-white text-slate-900 transition-all"
+                />
+              </SheetField>
+            </div>
+          </SheetSection>
+
+          <SheetSection title="Assign to Classes" icon={<Building className="w-4 h-4 text-slate-600" />}>
+            {classes.length === 0 ? (
+              <p className="text-sm text-slate-500 py-2">
+                No classes available. Create classes first.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-xl p-3 space-y-2">
+                  {classes.map((cls) => (
+                    <label
+                      key={cls._id}
+                      className="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-2.5 rounded-lg transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={subjectFormData.classes?.includes(cls._id) || false}
+                        onChange={() => handleClassToggle(cls._id)}
+                        className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary/50"
+                      />
+                      <span className="text-sm text-slate-900">
+                        {cls.name} (Grade {cls.grade})
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {subjectFormData.classes && subjectFormData.classes.length > 0 && (
+                  <p className="text-xs text-slate-500">
+                    Selected {subjectFormData.classes.length} class
+                    {subjectFormData.classes.length > 1 ? 'es' : ''}
+                  </p>
+                )}
+              </div>
+            )}
+          </SheetSection>
+        </form>
+      </SlideSheet>
+    </section>
   );
 }

@@ -175,7 +175,7 @@ export default function ChildrenPage() {
         transition={{ duration: 0.5 }}
         className="flex items-center gap-4"
       >
-        <Icon3D gradient="from-blue-500 to-cyan-500" size="lg">
+        <Icon3D bgColor="bg-sky-500" size="lg">
           <Users className="w-6 h-6" />
         </Icon3D>
         <div>
@@ -247,7 +247,7 @@ export default function ChildrenPage() {
                   <div className="flex items-center mb-3 sm:mb-4">
                     <motion.div
                       whileHover={{ scale: 1.05 }}
-                      className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-white font-bold grid place-items-center text-lg sm:text-xl flex-shrink-0 shadow-lg"
+                      className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-sky-500 text-white font-bold grid place-items-center text-lg sm:text-xl flex-shrink-0 shadow-lg"
                     >
                       {child.firstName?.[0]}{child.lastName?.[0]}
                     </motion.div>

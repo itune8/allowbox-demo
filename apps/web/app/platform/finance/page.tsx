@@ -178,14 +178,14 @@ export default function FinancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-white to-gray-50 space-y-6">
+    <div className="min-h-screen bg-gray-50 space-y-6">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="flex items-start gap-4"
       >
-        <Icon3D gradient="from-green-500 to-emerald-500" size="lg">
+        <Icon3D bgColor="bg-green-500" size="lg">
           <DollarSign className="w-6 h-6" />
         </Icon3D>
         <div>
@@ -209,7 +209,7 @@ export default function FinancePage() {
           title="Monthly Recurring Revenue"
           value={formatCurrency(metrics?.totalMRR || 0)}
           icon={<DollarSign className="w-6 h-6" />}
-          gradient="from-green-500 to-emerald-500"
+          iconBgColor="bg-green-500"
           delay={0}
         />
 
@@ -217,15 +217,15 @@ export default function FinancePage() {
           title="Annual Recurring Revenue"
           value={formatCurrency(metrics?.totalARR || 0)}
           icon={<TrendingUp className="w-6 h-6" />}
-          gradient="from-emerald-500 to-teal-500"
+          iconBgColor="bg-emerald-500"
           delay={1}
         />
 
         <AnimatedStatCard
           title="Total Revenue"
           value={formatCurrency(metrics?.totalRevenue || 0)}
-          icon={<Wallet className="w-6 h-6" />}
-          gradient="from-teal-500 to-green-600"
+          icon={<Wallet className="w-6 h-6 text-emerald-600" />}
+          iconBgColor="bg-emerald-50"
           delay={2}
         />
 
@@ -233,7 +233,7 @@ export default function FinancePage() {
           title="Outstanding Balance"
           value={formatCurrency(metrics?.outstandingBalance || 0)}
           icon={<AlertCircle className="w-6 h-6" />}
-          gradient="from-red-500 to-rose-500"
+          iconBgColor="bg-red-500"
           delay={3}
         />
       </motion.div>
@@ -255,7 +255,7 @@ export default function FinancePage() {
               variants={itemVariants}
               whileHover={{ y: -4, scale: 1.02 }}
               transition={{ duration: 0.2 }}
-              className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-lg p-4 cursor-pointer"
+              className="bg-emerald-50 border border-green-100 rounded-lg p-4 cursor-pointer"
             >
               <p className="text-sm text-gray-600">{item.plan}</p>
               <p className="text-xl font-bold text-gray-900 mt-1">
@@ -298,7 +298,7 @@ export default function FinancePage() {
 
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gradient-to-r from-green-50/50 to-emerald-50/50 border-b border-gray-100">
+            <thead className="bg-emerald-50 border-b border-gray-100">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Invoice ID

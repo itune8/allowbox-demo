@@ -8,11 +8,10 @@ import {
   Message,
   MessagePriority,
 } from '../../../../lib/services/message.service';
-import { GlassCard, Icon3D } from '@/components/ui';
+import { GlassCard, Icon3D, SlideSheet, SheetSection, SheetDetailRow } from '@/components/ui';
 import {
   Mail,
   Inbox,
-  X,
   Sparkles,
   User,
   Clock,
@@ -53,10 +52,10 @@ export default function ParentMessagesPage() {
   }
 
   const priorityColors: Record<MessagePriority, string> = {
-    [MessagePriority.LOW]: 'from-gray-400 to-gray-500',
-    [MessagePriority.NORMAL]: 'from-blue-400 to-blue-500',
-    [MessagePriority.HIGH]: 'from-orange-400 to-orange-500',
-    [MessagePriority.URGENT]: 'from-red-400 to-red-500',
+    [MessagePriority.LOW]: 'bg-gray-400',
+    [MessagePriority.NORMAL]: 'bg-blue-400',
+    [MessagePriority.HIGH]: 'bg-orange-400',
+    [MessagePriority.URGENT]: 'bg-red-400',
   };
 
   const unreadCount = messages.filter((m) => {
@@ -85,7 +84,7 @@ export default function ParentMessagesPage() {
         className="flex items-center justify-between gap-3"
       >
         <div className="flex items-center gap-4">
-          <Icon3D gradient="from-blue-500 to-indigo-500" size="lg">
+          <Icon3D bgColor="bg-blue-500" size="lg">
             <Inbox className="w-6 h-6" />
           </Icon3D>
           <div className="min-w-0">
@@ -109,7 +108,7 @@ export default function ParentMessagesPage() {
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200 }}
           >
-            <GlassCard className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-3 py-2 text-sm font-semibold shadow-lg">
+            <GlassCard className="bg-blue-500 text-white px-3 py-2 text-sm font-semibold shadow-lg">
               {unreadCount} unread
             </GlassCard>
           </motion.div>
@@ -161,7 +160,7 @@ export default function ParentMessagesPage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className={`p-3 sm:p-4 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 cursor-pointer transition-all group ${
+                    className={`p-3 sm:p-4 hover:bg-blue-50 cursor-pointer transition-all group ${
                       isUnread ? 'bg-blue-50/30' : ''
                     }`}
                     onClick={() => {
@@ -173,7 +172,7 @@ export default function ParentMessagesPage() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
-                        <Icon3D gradient={priorityColors[message.priority]} size="md">
+                        <Icon3D bgColor="bg-gray-500" size="md">
                           <Mail className="w-4 h-4" />
                         </Icon3D>
                         <div className="flex-1 min-w-0">
@@ -188,7 +187,7 @@ export default function ParentMessagesPage() {
                             <span className={`font-medium text-gray-900 text-sm sm:text-base truncate group-hover:text-blue-700 transition-colors ${isUnread ? 'font-bold' : ''}`}>
                               {message.subject}
                             </span>
-                            <span className={`text-xs px-2.5 py-1 rounded-lg bg-gradient-to-r ${priorityColors[message.priority]} text-white font-medium flex-shrink-0`}>
+                            <span className={`text-xs px-2.5 py-1 rounded-lg ${priorityColors[message.priority]} text-white font-medium flex-shrink-0`}>
                               {message.priority}
                             </span>
                           </div>
@@ -223,111 +222,63 @@ export default function ParentMessagesPage() {
         </GlassCard>
       </motion.div>
 
-      {/* View Message Modal */}
-      <AnimatePresence>
+      {/* View Message Sheet */}
+      <SlideSheet
+        isOpen={!!selectedMessage}
+        onClose={() => setSelectedMessage(null)}
+        title={selectedMessage?.subject || ''}
+        subtitle={selectedMessage ? `${selectedMessage.priority} Priority • ${new Date(selectedMessage.createdAt).toLocaleString()}` : ''}
+        size="md"
+        footer={
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setSelectedMessage(null)}>
+              Close
+            </Button>
+          </div>
+        }
+      >
         {selectedMessage && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-              onClick={() => setSelectedMessage(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-            >
-              <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-indigo-500 p-4 sm:p-6 rounded-t-2xl">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <Icon3D gradient="from-white/20 to-white/5" size="lg">
-                      <Mail className="w-6 h-6" />
-                    </Icon3D>
-                    <div className="text-white flex-1">
-                      <span className={`inline-block text-xs px-2.5 py-1 rounded-lg bg-white/20 backdrop-blur-sm font-medium mb-2`}>
-                        {selectedMessage.priority}
-                      </span>
-                      <h3 className="text-xl font-bold">
-                        {selectedMessage.subject}
-                      </h3>
-                      <div className="flex items-center gap-1 text-sm text-blue-100 mt-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        {new Date(selectedMessage.createdAt).toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.1, rotate: 90 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setSelectedMessage(null)}
-                    className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5 text-white" />
-                  </motion.button>
+          <div className="space-y-4">
+            <SheetSection title="From" icon={<User className="w-4 h-4" />}>
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <div className="font-semibold text-gray-900">
+                  {selectedMessage.senderId?.firstName} {selectedMessage.senderId?.lastName}
+                  {selectedMessage.senderId?.role && (
+                    <span className="text-sm text-gray-600 ml-2">({selectedMessage.senderId.role})</span>
+                  )}
                 </div>
               </div>
+            </SheetSection>
 
-              <div className="p-4 sm:p-6 space-y-4">
-                <GlassCard className="p-4 bg-blue-50/50">
-                  <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                    <User className="w-3.5 h-3.5" />
-                    From
-                  </div>
-                  <div className="font-semibold text-gray-900">
-                    {selectedMessage.senderId?.firstName} {selectedMessage.senderId?.lastName}
-                    {selectedMessage.senderId?.role && (
-                      <span className="text-sm text-gray-600 ml-2">({selectedMessage.senderId.role})</span>
-                    )}
-                  </div>
-                </GlassCard>
-
-                <GlassCard className="p-4 bg-gradient-to-br from-gray-50 to-gray-100/50">
-                  <div className="text-xs text-gray-600 mb-2 font-medium">Message</div>
-                  <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                    {selectedMessage.content}
-                  </p>
-                </GlassCard>
-
-                {selectedMessage.attachments && selectedMessage.attachments.length > 0 && (
-                  <GlassCard className="p-4 bg-white/80">
-                    <div className="text-xs text-gray-600 mb-2 font-medium flex items-center gap-1">
-                      <Paperclip className="w-3.5 h-3.5" />
-                      Attachments ({selectedMessage.attachments.length})
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedMessage.attachments.map((attachment, index) => (
-                        <motion.a
-                          key={index}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          href={attachment.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-sm text-white bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 px-3 py-2 rounded-lg transition-all shadow-lg"
-                        >
-                          <Paperclip className="w-4 h-4" />
-                          {attachment.name}
-                        </motion.a>
-                      ))}
-                    </div>
-                  </GlassCard>
-                )}
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button variant="outline" onClick={() => setSelectedMessage(null)}>
-                      Close
-                    </Button>
-                  </motion.div>
-                </div>
+            <SheetSection title="Message">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {selectedMessage.content}
+                </p>
               </div>
-            </motion.div>
+            </SheetSection>
+
+            {selectedMessage.attachments && selectedMessage.attachments.length > 0 && (
+              <SheetSection title={`Attachments (${selectedMessage.attachments.length})`} icon={<Paperclip className="w-4 h-4" />}>
+                <div className="flex flex-wrap gap-2">
+                  {selectedMessage.attachments.map((attachment, index) => (
+                    <a
+                      key={index}
+                      href={attachment.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-white bg-blue-500 hover:bg-blue-600 px-3 py-2 rounded-lg transition-all"
+                    >
+                      <Paperclip className="w-4 h-4" />
+                      {attachment.name}
+                    </a>
+                  ))}
+                </div>
+              </SheetSection>
+            )}
           </div>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </div>
   );
 }

@@ -462,7 +462,7 @@ export function AssignTeacherModal({ isOpen, onClose, teacher, onSuccess }: Assi
                           className="mb-6"
                         >
                           <div className="flex items-center gap-2 mb-4">
-                            <Icon3D gradient="from-emerald-500 to-teal-500" size="sm">
+                            <Icon3D gradient="from-emerald-500 to-emerald-500" size="sm">
                               <Check className="w-4 h-4" />
                             </Icon3D>
                             <h3 className="font-semibold text-gray-900">

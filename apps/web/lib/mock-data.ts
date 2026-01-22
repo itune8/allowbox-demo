@@ -22,7 +22,7 @@ export const mockUsers: Record<string, User> = {
     tenantId: 'school-1',
     firstName: 'School',
     lastName: 'Admin',
-    roles: [ROLES.SCHOOL_ADMIN],
+    roles: [ROLES.TENANT_ADMIN],
     permissions: ['manage_students', 'manage_staff', 'manage_classes', 'view_invoices'],
     tenantTheme: {
       primaryColor: '#10b981',

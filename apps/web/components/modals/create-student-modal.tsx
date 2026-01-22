@@ -368,7 +368,7 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit, initialData }: C
                   className="mb-6"
                 >
                   <div className="flex items-center gap-2 mb-4">
-                    <Icon3D gradient="from-blue-500 to-cyan-500" size="sm">
+                    <Icon3D gradient="from-sky-500 to-sky-600" size="sm">
                       <User className="w-4 h-4" />
                     </Icon3D>
                     <h3 className="font-semibold text-gray-900">Basic Information</h3>
@@ -488,7 +488,7 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit, initialData }: C
                   className="mb-6"
                 >
                   <div className="flex items-center gap-2 mb-4">
-                    <Icon3D gradient="from-emerald-500 to-teal-500" size="sm">
+                    <Icon3D gradient="from-emerald-500 to-emerald-600" size="sm">
                       <BookOpen className="w-4 h-4" />
                     </Icon3D>
                     <h3 className="font-semibold text-gray-900">Academic Information</h3>
@@ -583,7 +583,7 @@ export function CreateStudentModal({ isOpen, onClose, onSubmit, initialData }: C
                   className="mb-6"
                 >
                   <div className="flex items-center gap-2 mb-4">
-                    <Icon3D gradient="from-rose-500 to-pink-500" size="sm">
+                    <Icon3D gradient="from-pink-500 to-pink-600" size="sm">
                       <UserPlus className="w-4 h-4" />
                     </Icon3D>
                     <h3 className="font-semibold text-gray-900">Parent/Guardian Information</h3>

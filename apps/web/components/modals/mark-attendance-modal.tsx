@@ -350,7 +350,7 @@ export function MarkAttendanceModal({ isOpen, onClose, classId, section, onSucce
                   className="mb-6"
                 >
                   <div className="flex items-center gap-2 mb-4">
-                    <Icon3D gradient="from-blue-500 to-cyan-500" size="sm">
+                    <Icon3D gradient="from-sky-500 to-sky-600" size="sm">
                       <Calendar className="w-4 h-4" />
                     </Icon3D>
                     <h3 className="font-semibold text-gray-900">Date & Period</h3>
@@ -409,7 +409,7 @@ export function MarkAttendanceModal({ isOpen, onClose, classId, section, onSucce
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handleMarkAll('absent')}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all"
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-red-500 text-white shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all"
                     >
                       <XCircle className="w-4 h-4" />
                       Absent
@@ -429,7 +429,7 @@ export function MarkAttendanceModal({ isOpen, onClose, classId, section, onSucce
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handleMarkAll('excused')}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-blue-500 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
                     >
                       <Shield className="w-4 h-4" />
                       Excused
@@ -449,7 +449,7 @@ export function MarkAttendanceModal({ isOpen, onClose, classId, section, onSucce
                       icon={Users}
                       label="Total"
                       count={students.length}
-                      colorClass="bg-gradient-to-br from-gray-500 to-slate-600"
+                      colorClass="bg-gray-500"
                       delay={0.1}
                     />
                     <SummaryCard
@@ -599,7 +599,7 @@ export function MarkAttendanceModal({ isOpen, onClose, classId, section, onSucce
                                       onClick={() => handleStatusChange(student.studentId, 'absent')}
                                       icon={XCircle}
                                       label="Absent"
-                                      colorClass="bg-gradient-to-r from-red-500 to-rose-500"
+                                      colorClass="bg-red-500"
                                     />
                                     <StatusButton
                                       status="late"
@@ -615,7 +615,7 @@ export function MarkAttendanceModal({ isOpen, onClose, classId, section, onSucce
                                       onClick={() => handleStatusChange(student.studentId, 'excused')}
                                       icon={Shield}
                                       label="Excused"
-                                      colorClass="bg-gradient-to-r from-blue-500 to-indigo-500"
+                                      colorClass="bg-blue-500"
                                     />
                                   </div>
                                 </td>
@@ -667,7 +667,7 @@ export function MarkAttendanceModal({ isOpen, onClose, classId, section, onSucce
                     <Button
                       type="submit"
                       disabled={loading || students.length === 0}
-                      className="px-6 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25"
+                      className="px-6 bg-emerald-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25"
                     >
                       {loading ? (
                         <span className="flex items-center gap-2">

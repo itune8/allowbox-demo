@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet } from '@/components/ui';
 import {
   dailyDiaryService,
   DailyDiary,
@@ -197,7 +197,7 @@ export default function TeacherDiaryPage() {
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
               Daily Diary
-              <Icon3D gradient={gradients.sky} size="sm">
+              <Icon3D bgColor="bg-sky-500" size="sm">
                 <BookOpen className="w-3.5 h-3.5" />
               </Icon3D>
             </h1>
@@ -403,28 +403,27 @@ export default function TeacherDiaryPage() {
       </motion.div>
 
       {/* Add Diary Modal */}
-      <AnimatePresence>
-        {showAddModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-3 sm:p-4"
-            onClick={() => setShowAddModal(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg"
-            >
-              <GlassCard className="p-6 bg-white max-h-[90vh] overflow-y-auto">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  New Diary Entry
-                </h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
+      <SlideSheet
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="New Diary Entry"
+        size="md"
+        footer={
+          <div className="flex justify-end gap-3">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button variant="outline" type="button" onClick={() => setShowAddModal(false)}>
+                Cancel
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button type="submit" disabled={submitting} form="diary-form">
+                {submitting ? 'Creating...' : 'Create Entry'}
+              </Button>
+            </motion.div>
+          </div>
+        }
+      >
+        <form id="diary-form" onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-gray-700 mb-1">
@@ -514,64 +513,38 @@ export default function TeacherDiaryPage() {
                       required
                     />
                   </div>
-                  <div className="flex justify-end gap-3 pt-4">
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button variant="outline" type="button" onClick={() => setShowAddModal(false)}>
-                        Cancel
-                      </Button>
-                    </motion.div>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button type="submit" disabled={submitting}>
-                        {submitting ? 'Creating...' : 'Create Entry'}
-                      </Button>
-                    </motion.div>
-                  </div>
                 </form>
-              </GlassCard>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </SlideSheet>
 
       {/* View Diary Modal */}
-      <AnimatePresence>
+      <SlideSheet
+        isOpen={!!selectedDiary}
+        onClose={() => setSelectedDiary(null)}
+        title={selectedDiary?.title || ''}
+        subtitle={selectedDiary ? `${selectedDiary.studentId?.firstName} ${selectedDiary.studentId?.lastName} • ${new Date(selectedDiary.date).toLocaleDateString()}` : ''}
+        size="md"
+        footer={
+          selectedDiary ? (
+            <div className="flex justify-end gap-2">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant="outline" onClick={() => setSelectedDiary(null)} size="sm">
+                  Close
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant="outline" onClick={() => { handleDelete(selectedDiary); }} size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                  Delete
+                </Button>
+              </motion.div>
+            </div>
+          ) : undefined
+        }
+      >
         {selectedDiary && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-3 sm:p-4"
-            onClick={() => setSelectedDiary(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg"
-            >
-              <GlassCard className="p-6 bg-white max-h-[90vh] overflow-y-auto">
-                <div className="flex items-start justify-between mb-4 gap-3">
-                  <div className="flex items-start gap-2 min-w-0 flex-1">
-                    <span className="text-2xl flex-shrink-0">{typeIcons[selectedDiary.type]}</span>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-gray-900">
-                        {selectedDiary.title}
-                      </h3>
-                      <div className="text-sm text-gray-500">
-                        {selectedDiary.studentId?.firstName} {selectedDiary.studentId?.lastName} • {new Date(selectedDiary.date).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setSelectedDiary(null)}
-                    className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
-                  >
-                    ✕
-                  </motion.button>
-                </div>
+          <>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-2xl">{typeIcons[selectedDiary.type]}</span>
+            </div>
 
                 <div className="space-y-4">
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -603,25 +576,10 @@ export default function TeacherDiaryPage() {
                       <p className="text-sm text-gray-700">{selectedDiary.parentComment}</p>
                     </div>
                   )}
-
-                  <div className="flex justify-end gap-2 pt-4">
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button variant="outline" onClick={() => setSelectedDiary(null)} size="sm">
-                        Close
-                      </Button>
-                    </motion.div>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button variant="outline" onClick={() => { handleDelete(selectedDiary); }} size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                        Delete
-                      </Button>
-                    </motion.div>
-                  </div>
                 </div>
-              </GlassCard>
-            </motion.div>
-          </motion.div>
+          </>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </div>
   );
 }

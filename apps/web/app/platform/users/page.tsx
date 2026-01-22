@@ -8,7 +8,7 @@ import { Button } from '@repo/ui/button';
 import { useAuth } from '../../../contexts/auth-context';
 import { hasPermission } from '../../../lib/permissions';
 import { userService } from '../../../lib/services/user.service';
-import { GlassCard, AnimatedStatCard, Icon3D } from '../../../components/ui';
+import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet, SheetSection, SheetField, SheetDetailRow } from '../../../components/ui';
 
 type UserRole = 'super_admin' | 'sales' | 'support' | 'finance' | 'tenant_admin' | 'teacher' | 'parent' | 'student';
 
@@ -151,7 +151,7 @@ export default function UsersPage() {
       sales: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Sales' },
       support: { bg: 'bg-green-100', text: 'text-green-700', label: 'Support' },
       finance: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Finance' },
-      tenant_admin: { bg: 'bg-indigo-100', text: 'text-indigo-700', label: 'School Admin' },
+      tenant_admin: { bg: 'bg-primary-100', text: 'text-primary-dark', label: 'School Admin' },
     };
     const badge = badges[role] || { bg: 'bg-gray-100', text: 'text-gray-700', label: role };
     return (
@@ -226,7 +226,7 @@ export default function UsersPage() {
         className="flex items-center justify-between"
       >
         <div className="flex items-center gap-4">
-          <Icon3D gradient="from-violet-500 to-purple-500">
+          <Icon3D bgColor="bg-violet-500">
             <Users className="w-8 h-8" />
           </Icon3D>
           <div>
@@ -281,25 +281,25 @@ export default function UsersPage() {
           title="Total Users"
           value={stats.total.toString()}
           icon={<Users className="w-5 h-5 text-white" />}
-          gradient="from-violet-500 to-purple-500"
+          iconBgColor="bg-violet-500"
         />
         <AnimatedStatCard
           title="Sales Team"
           value={stats.sales.toString()}
           icon={<Users className="w-5 h-5 text-white" />}
-          gradient="from-blue-500 to-cyan-500"
+          iconBgColor="bg-sky-500"
         />
         <AnimatedStatCard
           title="Support Team"
           value={stats.support.toString()}
           icon={<Users className="w-5 h-5 text-white" />}
-          gradient="from-green-500 to-emerald-500"
+          iconBgColor="bg-green-500"
         />
         <AnimatedStatCard
           title="Finance Team"
           value={stats.finance.toString()}
           icon={<Users className="w-5 h-5 text-white" />}
-          gradient="from-orange-500 to-red-500"
+          iconBgColor="bg-orange-500"
         />
       </motion.div>
 
@@ -476,275 +476,205 @@ export default function UsersPage() {
         </GlassCard>
       </motion.div>
 
-      {/* Add User Slide-in Panel */}
-      <AnimatePresence>
-        {showAddPanel && (
-          <div className="fixed inset-0 z-50 flex justify-end">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setShowAddPanel(false)}
-            />
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative bg-white w-full max-w-md h-full overflow-y-auto shadow-2xl border-l border-gray-200"
-            >
-              <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-200 flex items-center justify-between z-10">
-                <h3 className="text-lg font-semibold text-gray-900">Add New User</h3>
-                <motion.button
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setShowAddPanel(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </motion.button>
-              </div>
-              <form onSubmit={handleCreateUser} className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      First Name *
-                    </label>
-                    <motion.input
-                      whileFocus={{ scale: 1.02 }}
-                      type="text"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Last Name
-                    </label>
-                    <motion.input
-                      whileFocus={{ scale: 1.02 }}
-                      type="text"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email *
-                  </label>
-                  <motion.input
-                    whileFocus={{ scale: 1.02 }}
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Password *
-                  </label>
-                  <motion.input
-                    whileFocus={{ scale: 1.02 }}
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
-                    required
-                    minLength={6}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
-                  </label>
-                  <motion.input
-                    whileFocus={{ scale: 1.02 }}
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Role *
-                  </label>
-                  <motion.select
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
-                  >
-                    <option value="support">Support</option>
-                    <option value="sales">Sales</option>
-                    <option value="finance">Finance</option>
-                    <option value="super_admin">Super Admin</option>
-                  </motion.select>
-                </div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-lg p-4 mt-4"
-                >
-                  <p className="text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-violet-600" />
-                    Role Permissions
-                  </p>
-                  <ul className="space-y-1">
-                    {getRolePermissions(formData.role).map((permission, index) => (
-                      <motion.li
-                        key={index}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="flex items-start gap-2 text-sm text-gray-600"
-                      >
-                        <svg className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        {permission}
-                      </motion.li>
-                    ))}
-                  </ul>
-                </motion.div>
-
-                <div className="flex justify-end gap-3 pt-4">
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button type="button" variant="outline" onClick={() => setShowAddPanel(false)}>
-                      Cancel
-                    </Button>
-                  </motion.div>
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button type="submit" disabled={submitting}>
-                      {submitting ? 'Creating...' : 'Create User'}
-                    </Button>
-                  </motion.div>
-                </div>
-              </form>
+      {/* Add User SlideSheet */}
+      <SlideSheet
+        isOpen={showAddPanel}
+        onClose={() => setShowAddPanel(false)}
+        title="Add New User"
+        subtitle="Create a new platform staff member"
+        size="md"
+        footer={
+          <div className="flex justify-end gap-3">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button type="button" variant="outline" onClick={() => setShowAddPanel(false)}>
+                Cancel
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button onClick={handleCreateUser} disabled={submitting}>
+                {submitting ? 'Creating...' : 'Create User'}
+              </Button>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        }
+      >
+        <form onSubmit={handleCreateUser} className="space-y-4">
+          <SheetSection>
+            <div className="grid grid-cols-2 gap-4">
+              <SheetField label="First Name" required>
+                <motion.input
+                  whileFocus={{ scale: 1.02 }}
+                  type="text"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                  required
+                />
+              </SheetField>
+              <SheetField label="Last Name">
+                <motion.input
+                  whileFocus={{ scale: 1.02 }}
+                  type="text"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                />
+              </SheetField>
+            </div>
 
-      {/* Permissions Slide-in Panel */}
-      <AnimatePresence>
-        {showPermissionsPanel && selectedUser && (
-          <div className="fixed inset-0 z-50 flex justify-end">
+            <SheetField label="Email" required>
+              <motion.input
+                whileFocus={{ scale: 1.02 }}
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                required
+              />
+            </SheetField>
+
+            <SheetField label="Password" required>
+              <motion.input
+                whileFocus={{ scale: 1.02 }}
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                required
+                minLength={6}
+              />
+            </SheetField>
+
+            <SheetField label="Phone">
+              <motion.input
+                whileFocus={{ scale: 1.02 }}
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+              />
+            </SheetField>
+
+            <SheetField label="Role" required>
+              <motion.select
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+              >
+                <option value="support">Support</option>
+                <option value="sales">Sales</option>
+                <option value="finance">Finance</option>
+                <option value="super_admin">Super Admin</option>
+              </motion.select>
+            </SheetField>
+          </SheetSection>
+
+          <SheetSection title="Role Permissions">
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
-              onClick={() => { setShowPermissionsPanel(false); setSelectedUser(null); }}
-            />
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative bg-white w-full max-w-md h-full overflow-y-auto shadow-2xl border-l border-gray-200"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-purple-50 rounded-lg p-4"
             >
-              <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-200 flex items-center justify-between z-10">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Permissions: {selectedUser.firstName} {selectedUser.lastName}
-                </h3>
-                <motion.button
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => {
-                    setShowPermissionsPanel(false);
-                    setSelectedUser(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </motion.button>
-              </div>
-              <div className="p-6">
-                <div className="mb-6">
-                  <p className="text-sm text-gray-500 mb-2">Current Role</p>
-                  {getRoleBadge(selectedUser.role)}
-                </div>
-
-                <div className="mb-6">
-                  <p className="text-sm text-gray-500 mb-2">User Details</p>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-gray-50 rounded-lg p-4 space-y-2"
+              <p className="text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-violet-600" />
+                Permissions for {formData.role}
+              </p>
+              <ul className="space-y-1">
+                {getRolePermissions(formData.role).map((permission, index) => (
+                  <motion.li
+                    key={index}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="flex items-start gap-2 text-sm text-gray-600"
                   >
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Email:</span>
-                      <span className="text-sm text-gray-900">{selectedUser.email}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Joined:</span>
-                      <span className="text-sm text-gray-900">{formatDate(selectedUser.createdAt)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Status:</span>
-                      <span className={`text-sm ${selectedUser.isActive ? 'text-green-600' : 'text-gray-500'}`}>
-                        {selectedUser.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                  </motion.div>
-                </div>
-
-                <div>
-                  <p className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-violet-600" />
-                    Granted Permissions
-                  </p>
-                  <ul className="space-y-2">
-                    {getRolePermissions(selectedUser.role).map((permission, index) => (
-                      <motion.li
-                        key={index}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="flex items-start gap-2 text-sm text-gray-700"
-                      >
-                        <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        {permission}
-                      </motion.li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="mt-8 pt-4 border-t border-gray-200">
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        setShowPermissionsPanel(false);
-                        setSelectedUser(null);
-                      }}
-                    >
-                      Close
-                    </Button>
-                  </motion.div>
-                </div>
-              </div>
+                    <svg className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    {permission}
+                  </motion.li>
+                ))}
+              </ul>
             </motion.div>
-          </div>
+          </SheetSection>
+        </form>
+      </SlideSheet>
+
+      {/* Permissions SlideSheet */}
+      <SlideSheet
+        isOpen={showPermissionsPanel && selectedUser !== null}
+        onClose={() => {
+          setShowPermissionsPanel(false);
+          setSelectedUser(null);
+        }}
+        title={selectedUser ? `Permissions: ${selectedUser.firstName} ${selectedUser.lastName}` : ''}
+        subtitle="View user role and permissions"
+        size="md"
+        footer={
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setShowPermissionsPanel(false);
+                setSelectedUser(null);
+              }}
+            >
+              Close
+            </Button>
+          </motion.div>
+        }
+      >
+        {selectedUser && (
+          <>
+            <SheetSection title="Current Role">
+              {getRoleBadge(selectedUser.role)}
+            </SheetSection>
+
+            <SheetSection title="User Details">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gray-50 rounded-lg p-4 space-y-2"
+              >
+                <SheetDetailRow label="Email" value={selectedUser.email} />
+                <SheetDetailRow label="Joined" value={formatDate(selectedUser.createdAt)} />
+                <div className="flex justify-between py-2">
+                  <span className="text-sm text-gray-600">Status</span>
+                  <span className={`text-sm font-medium ${selectedUser.isActive ? 'text-green-600' : 'text-gray-500'}`}>
+                    {selectedUser.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </motion.div>
+            </SheetSection>
+
+            <SheetSection title="Granted Permissions">
+              <p className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-violet-600" />
+                Permissions
+              </p>
+              <ul className="space-y-2">
+                {getRolePermissions(selectedUser.role).map((permission, index) => (
+                  <motion.li
+                    key={index}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="flex items-start gap-2 text-sm text-gray-700"
+                  >
+                    <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    {permission}
+                  </motion.li>
+                ))}
+              </ul>
+            </SheetSection>
+          </>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </div>
   );
 }

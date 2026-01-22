@@ -7,17 +7,19 @@ export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
 } as const;
 
-// Role Constants
+// Role Constants - Must match backend UserRole enum
 export const ROLES = {
+  // Platform roles
   SUPER_ADMIN: 'super_admin',
   SALES: 'sales',
   SUPPORT: 'support',
   FINANCE: 'finance',
-  SCHOOL_ADMIN: 'school_admin',
-  TENANT_ADMIN: 'tenant_admin', // Backend uses tenant_admin
+  // School roles
+  TENANT_ADMIN: 'tenant_admin',
   TEACHER: 'teacher',
   PARENT: 'parent',
   STUDENT: 'student',
+  ACCOUNTANT: 'accountant',
 } as const;
 
 // Route Paths
@@ -55,13 +57,15 @@ export const ROUTES = {
 
 // Role to Dashboard Mapping
 export const ROLE_DASHBOARDS = {
+  // Platform roles
   [ROLES.SUPER_ADMIN]: ROUTES.PLATFORM_DASHBOARD,
   [ROLES.SALES]: ROUTES.PLATFORM_DASHBOARD,
   [ROLES.SUPPORT]: ROUTES.PLATFORM_DASHBOARD,
   [ROLES.FINANCE]: ROUTES.PLATFORM_DASHBOARD,
-  [ROLES.SCHOOL_ADMIN]: ROUTES.SCHOOL_DASHBOARD,
-  [ROLES.TENANT_ADMIN]: ROUTES.SCHOOL_DASHBOARD, // tenant_admin is same as school_admin
+  // School roles
+  [ROLES.TENANT_ADMIN]: ROUTES.SCHOOL_DASHBOARD,
   [ROLES.TEACHER]: ROUTES.TEACHER_DASHBOARD,
+  [ROLES.ACCOUNTANT]: ROUTES.SCHOOL_DASHBOARD,
   [ROLES.PARENT]: ROUTES.PARENT_DASHBOARD,
   [ROLES.STUDENT]: ROUTES.PARENT_DASHBOARD, // Students use parent dashboard
 } as const;

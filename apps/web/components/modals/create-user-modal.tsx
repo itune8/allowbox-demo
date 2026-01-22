@@ -304,7 +304,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit }: CreateUserModalPr
                   className="mb-6"
                 >
                   <div className="flex items-center gap-2 mb-4">
-                    <Icon3D gradient="from-violet-500 to-purple-500" size="sm">
+                    <Icon3D gradient="from-violet-500 to-violet-600" size="sm">
                       <Shield className="w-4 h-4" />
                     </Icon3D>
                     <h3 className="font-semibold text-gray-900">Role Selection</h3>
@@ -337,7 +337,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit }: CreateUserModalPr
                   className="mb-6"
                 >
                   <div className="flex items-center gap-2 mb-4">
-                    <Icon3D gradient="from-blue-500 to-cyan-500" size="sm">
+                    <Icon3D gradient="from-sky-500 to-sky-600" size="sm">
                       <User className="w-4 h-4" />
                     </Icon3D>
                     <h3 className="font-semibold text-gray-900">Personal Information</h3>
@@ -381,7 +381,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit }: CreateUserModalPr
                   className="mb-6"
                 >
                   <div className="flex items-center gap-2 mb-4">
-                    <Icon3D gradient="from-emerald-500 to-teal-500" size="sm">
+                    <Icon3D gradient="from-emerald-500 to-emerald-600" size="sm">
                       <Mail className="w-4 h-4" />
                     </Icon3D>
                     <h3 className="font-semibold text-gray-900">Account Credentials</h3>
@@ -485,7 +485,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit }: CreateUserModalPr
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="px-6 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white shadow-lg shadow-violet-500/25"
+                      className="px-6 bg-violet-500 hover:from-violet-600 hover:to-purple-600 text-white shadow-lg shadow-violet-500/25"
                     >
                       {loading ? (
                         <span className="flex items-center gap-2">

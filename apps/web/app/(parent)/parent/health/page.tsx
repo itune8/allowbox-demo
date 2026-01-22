@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
-import { GlassCard, Icon3D } from '../../../../components/ui';
+import { GlassCard, Icon3D, SlideSheet, SheetSection, SheetDetailRow } from '../../../../components/ui';
 import {
   HeartPulse,
   Activity,
@@ -120,7 +120,7 @@ export default function ParentHealthPage() {
         className="space-y-6"
       >
         <div className="flex items-center gap-4">
-          <Icon3D gradient="from-red-500 to-rose-500" size="lg">
+          <Icon3D bgColor="bg-red-500" size="lg">
             <HeartPulse className="w-6 h-6" />
           </Icon3D>
           <div>
@@ -157,7 +157,7 @@ export default function ParentHealthPage() {
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-4 min-w-0">
-          <Icon3D gradient="from-red-500 to-rose-500" size="lg">
+          <Icon3D bgColor="bg-red-500" size="lg">
             <HeartPulse className="w-6 h-6" />
           </Icon3D>
           <div className="min-w-0">
@@ -195,7 +195,7 @@ export default function ParentHealthPage() {
             <div className="flex items-center gap-3 sm:gap-4">
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center text-white font-semibold text-base sm:text-lg flex-shrink-0 shadow-md"
+                className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-red-500 flex items-center justify-center text-white font-semibold text-base sm:text-lg flex-shrink-0 shadow-md"
               >
                 {selectedChild.firstName?.[0]}
               </motion.div>
@@ -260,7 +260,7 @@ export default function ParentHealthPage() {
                   <div className="flex items-center gap-3">
                     <motion.div
                       whileHover={{ scale: 1.1 }}
-                      className="w-10 h-10 bg-gradient-to-br from-red-400 to-rose-500 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md"
+                      className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md"
                     >
                       {record.studentId?.firstName?.[0]}{record.studentId?.lastName?.[0]}
                     </motion.div>
@@ -312,57 +312,25 @@ export default function ParentHealthPage() {
         </div>
       )}
 
-      {/* Health Record Detail Modal */}
-      <AnimatePresence>
+      {/* Health Record Detail Sheet */}
+      <SlideSheet
+        isOpen={!!selectedRecord}
+        onClose={() => setSelectedRecord(null)}
+        title={selectedRecord ? `${selectedRecord.studentId?.firstName} ${selectedRecord.studentId?.lastName}` : ''}
+        subtitle="Health Record Details"
+        size="lg"
+        footer={
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setSelectedRecord(null)}>
+              Close
+            </Button>
+          </div>
+        }
+      >
         {selectedRecord && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-              onClick={() => setSelectedRecord(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6"
-            >
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    className="w-12 h-12 bg-gradient-to-br from-red-400 to-rose-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg"
-                  >
-                    {selectedRecord.studentId?.firstName?.[0]}{selectedRecord.studentId?.lastName?.[0]}
-                  </motion.div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {selectedRecord.studentId?.firstName} {selectedRecord.studentId?.lastName}
-                    </h3>
-                    <p className="text-sm text-gray-500">Health Record Details</p>
-                  </div>
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setSelectedRecord(null)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </motion.button>
-              </div>
-
-            <div className="space-y-6">
-              {/* Basic Info */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4"
-              >
+          <div className="space-y-6">
+            <SheetSection title="Basic Information" icon={<HeartPulse className="w-4 h-4" />}>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
                   <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
                     <HeartPulse className="w-3.5 h-3.5 text-red-500" />
@@ -391,28 +359,18 @@ export default function ParentHealthPage() {
                   </div>
                   <div className="font-medium text-xs sm:text-sm truncate">{selectedRecord.primaryPhysician || 'Not set'}</div>
                 </div>
-              </motion.div>
+              </div>
+            </SheetSection>
 
-              {/* Allergies */}
-              {selectedRecord.allergies.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15 }}
-                >
-                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-gray-800">
-                    <AlertTriangle className="w-4 h-4 text-orange-500" />
-                    Allergies
-                  </h4>
-                  <div className="space-y-2">
-                    {selectedRecord.allergies.map((allergy, idx) => (
-                      <motion.div
-                        key={idx}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 + idx * 0.05 }}
-                        className="bg-orange-50 border border-orange-100 rounded-lg p-3"
-                      >
+            {/* Allergies */}
+            {selectedRecord.allergies.length > 0 && (
+              <SheetSection title="Allergies" icon={<AlertTriangle className="w-4 h-4" />}>
+                <div className="space-y-2">
+                  {selectedRecord.allergies.map((allergy, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-orange-50 border border-orange-100 rounded-lg p-3"
+                    >
                         <div className="flex items-center gap-2">
                           <span className="text-red-600 font-medium">{allergy.name}</span>
                           <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">
@@ -423,32 +381,21 @@ export default function ParentHealthPage() {
                           )}
                         </div>
                         {allergy.notes && <p className="text-sm text-gray-600 mt-1">{allergy.notes}</p>}
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
-                </motion.div>
-              )}
+              </SheetSection>
+            )}
 
-              {/* Medical Conditions */}
-              {selectedRecord.medicalConditions.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-gray-800">
-                    <Activity className="w-4 h-4 text-red-500" />
-                    Medical Conditions
-                  </h4>
-                  <div className="space-y-2">
-                    {selectedRecord.medicalConditions.map((condition, idx) => (
-                      <motion.div
-                        key={idx}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.25 + idx * 0.05 }}
-                        className="bg-red-50 border border-red-100 rounded-lg p-3"
-                      >
+            {/* Medical Conditions */}
+            {selectedRecord.medicalConditions.length > 0 && (
+              <SheetSection title="Medical Conditions" icon={<Activity className="w-4 h-4" />}>
+                <div className="space-y-2">
+                  {selectedRecord.medicalConditions.map((condition, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-red-50 border border-red-100 rounded-lg p-3"
+                    >
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-red-800">{condition.name}</span>
                           {condition.isOngoing && (
@@ -463,32 +410,21 @@ export default function ParentHealthPage() {
                         {condition.treatment && (
                           <p className="text-xs text-red-600 mt-1">Treatment: {condition.treatment}</p>
                         )}
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
-                </motion.div>
-              )}
+              </SheetSection>
+            )}
 
-              {/* Emergency Contacts */}
-              {selectedRecord.emergencyContacts.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 }}
-                >
-                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-gray-800">
-                    <Phone className="w-4 h-4 text-emerald-500" />
-                    Emergency Contacts
-                  </h4>
-                  <div className="space-y-2">
-                    {selectedRecord.emergencyContacts.map((contact, idx) => (
-                      <motion.div
-                        key={idx}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 + idx * 0.05 }}
-                        className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 flex items-center justify-between"
-                      >
+            {/* Emergency Contacts */}
+            {selectedRecord.emergencyContacts.length > 0 && (
+              <SheetSection title="Emergency Contacts" icon={<Phone className="w-4 h-4" />}>
+                <div className="space-y-2">
+                  {selectedRecord.emergencyContacts.map((contact, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 flex items-center justify-between"
+                    >
                         <div>
                           <span className="font-medium text-emerald-800">{contact.name}</span>
                           <span className="text-emerald-600 ml-2">({contact.relationship})</span>
@@ -500,16 +436,15 @@ export default function ParentHealthPage() {
                         {contact.alternatePhone && (
                           <p className="text-sm text-gray-500 mt-1">Alt: {contact.alternatePhone}</p>
                         )}
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
-                </motion.div>
-              )}
+              </SheetSection>
+            )}
 
-              {/* Vaccinations */}
-              {selectedRecord.vaccinations.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Vaccinations</h4>
+            {/* Vaccinations */}
+            {selectedRecord.vaccinations.length > 0 && (
+              <SheetSection title="Vaccinations">
                   <div className="space-y-2">
                     {selectedRecord.vaccinations.map((vaccine, idx) => (
                       <div key={idx} className="bg-green-50 border border-green-200 rounded-lg p-3">
@@ -535,54 +470,37 @@ export default function ParentHealthPage() {
                             Next due: {new Date(vaccine.nextDueDate).toLocaleDateString()}
                           </p>
                         )}
-                      </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              )}
+              </SheetSection>
+            )}
 
-              {/* Special Instructions */}
-              {selectedRecord.specialInstructions && (
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Special Instructions</h4>
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                    <p className="text-sm text-gray-700">{selectedRecord.specialInstructions}</p>
-                  </div>
+            {/* Special Instructions */}
+            {selectedRecord.specialInstructions && (
+              <SheetSection title="Special Instructions">
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                  <p className="text-sm text-gray-700">{selectedRecord.specialInstructions}</p>
                 </div>
-              )}
+              </SheetSection>
+            )}
 
-              {/* Insurance Info */}
-              {(selectedRecord.insuranceProvider || selectedRecord.insurancePolicyNumber) && (
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Insurance Information</h4>
-                  <div className="bg-gray-50 rounded-lg p-3 text-sm">
-                    {selectedRecord.insuranceProvider && (
-                      <p><span className="text-gray-500">Provider:</span> {selectedRecord.insuranceProvider}</p>
-                    )}
-                    {selectedRecord.insurancePolicyNumber && (
-                      <p><span className="text-gray-500">Policy #:</span> {selectedRecord.insurancePolicyNumber}</p>
-                    )}
-                  </div>
+            {/* Insurance Info */}
+            {(selectedRecord.insuranceProvider || selectedRecord.insurancePolicyNumber) && (
+              <SheetSection title="Insurance Information">
+                <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                  {selectedRecord.insuranceProvider && (
+                    <p><span className="text-gray-500">Provider:</span> {selectedRecord.insuranceProvider}</p>
+                  )}
+                  {selectedRecord.insurancePolicyNumber && (
+                    <p><span className="text-gray-500">Policy #:</span> {selectedRecord.insurancePolicyNumber}</p>
+                  )}
                 </div>
-              )}
-            </div>
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.35 }}
-                className="flex justify-end mt-6 pt-4 border-t border-gray-200"
-              >
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button variant="outline" onClick={() => setSelectedRecord(null)}>
-                    Close
-                  </Button>
-                </motion.div>
-              </motion.div>
-            </motion.div>
+              </SheetSection>
+            )}
           </div>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </motion.section>
   );
 }

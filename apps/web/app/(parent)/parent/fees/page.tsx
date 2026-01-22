@@ -160,7 +160,7 @@ export default function FeesPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Icon3D gradient="from-yellow-500 to-amber-500" size="lg">
+          <Icon3D bgColor="bg-yellow-500" size="lg">
             <Wallet className="w-6 h-6" />
           </Icon3D>
           <div>
@@ -208,7 +208,7 @@ export default function FeesPage() {
       {/* Payment Trend Chart */}
       <GlassCard>
         <div className="flex items-center gap-3 mb-6">
-          <Icon3D gradient="from-yellow-500 to-amber-500" size="sm">
+          <Icon3D bgColor="bg-yellow-500" size="sm">
             <TrendingUp className="w-4 h-4" />
           </Icon3D>
           <h3 className="text-lg font-semibold text-gray-900">
@@ -225,7 +225,7 @@ export default function FeesPage() {
               transition={{ delay: i * 0.1 }}
             >
               <motion.div
-                className="w-full bg-gradient-to-t from-yellow-500 to-amber-400 rounded-t transition-all hover:from-yellow-600 hover:to-amber-500"
+                className="w-full bg-gray-50 rounded-t transition-all hover:from-yellow-600 hover:to-amber-500"
                 initial={{ height: 0 }}
                 animate={{
                   height: `${monthlyValues[i] ? (monthlyValues[i]! / maxMonthly) * 100 : 0}%`,
@@ -247,7 +247,7 @@ export default function FeesPage() {
       <GlassCard>
         <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
           <div className="flex items-center gap-3">
-            <Icon3D gradient="from-yellow-500 to-amber-500" size="sm">
+            <Icon3D bgColor="bg-yellow-500" size="sm">
               <Receipt className="w-4 h-4" />
             </Icon3D>
             <h3 className="text-lg font-semibold text-gray-900">Fee Invoices</h3>
@@ -317,7 +317,7 @@ export default function FeesPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100/80">
+              <thead className="bg-gray-50">
                 <tr className="text-left">
                   <th className="py-4 px-4 font-semibold text-gray-700">Invoice #</th>
                   <th className="py-4 px-4 font-semibold text-gray-700">Child</th>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet } from '@/components/ui';
 import {
   messageService,
   Message,
@@ -128,7 +128,7 @@ export default function TeacherMessagesPage() {
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            className="w-12 h-12 border-4 border-gray-200 border-t-indigo-600 rounded-full mx-auto"
+            className="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full mx-auto"
           />
           <div className="text-gray-500">Loading messages...</div>
         </div>
@@ -146,7 +146,7 @@ export default function TeacherMessagesPage() {
       >
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
           Messages
-          <Icon3D gradient={gradients.blue} size="sm">
+          <Icon3D bgColor="bg-blue-500" size="sm">
             <Mail className="w-3.5 h-3.5" />
           </Icon3D>
         </h1>
@@ -192,7 +192,7 @@ export default function TeacherMessagesPage() {
         <AnimatedStatCard
           title="Sent Messages"
           value={sentMessages.length}
-          icon={<Send className="w-5 h-5 text-indigo-600" />}
+          icon={<Send className="w-5 h-5 text-primary" />}
           iconBgColor="bg-indigo-50"
           delay={1}
         />
@@ -319,31 +319,23 @@ export default function TeacherMessagesPage() {
       </motion.div>
 
       {/* Compose Message Modal */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4"
-          >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setShowForm(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white rounded-2xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6"
-            >
-            <h3 className="text-lg font-semibold mb-4 text-gray-900">
-              Send Message to Parents
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
+      <SlideSheet
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        title="Send Message to Parents"
+        size="lg"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={submitting} form="message-form">
+              {submitting ? 'Sending...' : 'Send Message'}
+            </Button>
+          </div>
+        }
+      >
+        <form id="message-form" onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-700 mb-1">
                   Select Class *
@@ -409,56 +401,29 @@ export default function TeacherMessagesPage() {
                   required
                 />
               </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? 'Sending...' : 'Send Message'}
-                </Button>
-              </div>
             </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </SlideSheet>
 
       {/* View Message Modal */}
-      <AnimatePresence>
+      <SlideSheet
+        isOpen={!!selectedMessage}
+        onClose={() => setSelectedMessage(null)}
+        title={selectedMessage?.subject || ''}
+        subtitle={selectedMessage ? new Date(selectedMessage.createdAt).toLocaleString() : ''}
+        size="md"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setSelectedMessage(null)}>
+              Close
+            </Button>
+          </div>
+        }
+      >
         {selectedMessage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4"
-          >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setSelectedMessage(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white rounded-2xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6"
-            >
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {selectedMessage.subject}
-                </h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={`text-xs px-2 py-0.5 rounded ${priorityColors[selectedMessage.priority]}`}>
-                    {selectedMessage.priority}
-                  </span>
-                </div>
-              </div>
-              <span className="text-sm text-gray-500">
-                {new Date(selectedMessage.createdAt).toLocaleString()}
+          <>
+            <div className="flex items-center gap-2 mb-4">
+              <span className={`text-xs px-2 py-0.5 rounded ${priorityColors[selectedMessage.priority]}`}>
+                {selectedMessage.priority}
               </span>
             </div>
 
@@ -487,16 +452,9 @@ export default function TeacherMessagesPage() {
                 </div>
               )}
             </div>
-
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-              <Button variant="outline" onClick={() => setSelectedMessage(null)}>
-                Close
-              </Button>
-            </div>
-            </motion.div>
-          </motion.div>
+          </>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </div>
   );
 }

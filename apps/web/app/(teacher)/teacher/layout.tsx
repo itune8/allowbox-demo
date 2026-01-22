@@ -31,32 +31,32 @@ const IconWrapper = ({ children }: { children: ReactNode }) => (
 
 const sidebarMenu: SidebarMenuItem[] = [
   // Overview
-  { key: 'dashboard', label: 'Dashboard', icon: <Icon3D gradient="from-indigo-500 to-purple-600"><LayoutDashboard className="w-4 h-4" /></Icon3D> },
+  { key: 'dashboard', label: 'Dashboard', icon: <Icon3D bgColor="bg-primary"><LayoutDashboard className="w-4 h-4" /></Icon3D> },
 
   // Schedule Section
   { key: 'section-schedule', label: 'Schedule', isSection: true },
-  { key: 'timetable', label: 'Timetable', icon: <Icon3D gradient="from-violet-500 to-purple-500"><Clock className="w-4 h-4" /></Icon3D> },
-  { key: 'attendance', label: 'Attendance', icon: <Icon3D gradient="from-blue-500 to-cyan-500"><CheckCircle className="w-4 h-4" /></Icon3D> },
+  { key: 'timetable', label: 'Timetable', icon: <Icon3D bgColor="bg-violet-500"><Clock className="w-4 h-4" /></Icon3D> },
+  { key: 'attendance', label: 'Attendance', icon: <Icon3D bgColor="bg-sky-500"><CheckCircle className="w-4 h-4" /></Icon3D> },
 
   // Teaching Section
   { key: 'section-teaching', label: 'Teaching', isSection: true },
-  { key: 'grades', label: 'Grades & Results', icon: <Icon3D gradient="from-amber-500 to-orange-500"><BarChart3 className="w-4 h-4" /></Icon3D> },
-  { key: 'homework', label: 'Homework', icon: <Icon3D gradient="from-rose-500 to-pink-500"><FileText className="w-4 h-4" /></Icon3D> },
-  { key: 'diary', label: 'Daily Diary', icon: <Icon3D gradient="from-sky-500 to-blue-500"><BookMarked className="w-4 h-4" /></Icon3D> },
-  { key: 'lesson-plans', label: 'Lesson Plans', icon: <Icon3D gradient="from-purple-500 to-violet-500"><BookOpen className="w-4 h-4" /></Icon3D> },
+  { key: 'grades', label: 'Grades & Results', icon: <Icon3D bgColor="bg-amber-500"><BarChart3 className="w-4 h-4" /></Icon3D> },
+  { key: 'homework', label: 'Homework', icon: <Icon3D bgColor="bg-pink-500"><FileText className="w-4 h-4" /></Icon3D> },
+  { key: 'diary', label: 'Daily Diary', icon: <Icon3D bgColor="bg-cyan-500"><BookMarked className="w-4 h-4" /></Icon3D> },
+  { key: 'lesson-plans', label: 'Lesson Plans', icon: <Icon3D bgColor="bg-purple-500"><BookOpen className="w-4 h-4" /></Icon3D> },
 
   // Personal Section
   { key: 'section-personal', label: 'Personal', isSection: true },
-  { key: 'leave-requests', label: 'Leave Requests', icon: <Icon3D gradient="from-green-500 to-emerald-500"><Leaf className="w-4 h-4" /></Icon3D> },
+  { key: 'leave-requests', label: 'Leave Requests', icon: <Icon3D bgColor="bg-green-500"><Leaf className="w-4 h-4" /></Icon3D> },
 
   // Communication Section
   { key: 'section-comms', label: 'Communication', isSection: true },
-  { key: 'messages', label: 'Messages', icon: <Icon3D gradient="from-blue-500 to-indigo-500"><MessageSquare className="w-4 h-4" /></Icon3D> },
-  { key: 'events', label: 'School Events', icon: <Icon3D gradient="from-fuchsia-500 to-pink-500"><Calendar className="w-4 h-4" /></Icon3D> },
+  { key: 'messages', label: 'Messages', icon: <Icon3D bgColor="bg-blue-500"><MessageSquare className="w-4 h-4" /></Icon3D> },
+  { key: 'events', label: 'School Events', icon: <Icon3D bgColor="bg-fuchsia-500"><Calendar className="w-4 h-4" /></Icon3D> },
 
   // Reports Section
   { key: 'section-reports', label: 'Reports', isSection: true },
-  { key: 'reports', label: 'Reports', icon: <Icon3D gradient="from-purple-500 to-violet-500"><Star className="w-4 h-4" /></Icon3D> },
+  { key: 'reports', label: 'Reports', icon: <Icon3D bgColor="bg-purple-500"><Star className="w-4 h-4" /></Icon3D> },
 ];
 
 // Bottom navigation items for mobile - most important features
@@ -181,7 +181,7 @@ export default function TeacherLayout({
               </button>
 
               {/* Quick Actions */}
-              <button className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
+              <button className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-lg transition-colors">
                 + New Assignment
               </button>
             </div>

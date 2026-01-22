@@ -127,7 +127,7 @@ export default function ActivityPage() {
         transition={{ duration: 0.5 }}
         className="flex items-center gap-4"
       >
-        <Icon3D gradient="from-sky-500 to-blue-500" size="lg">
+        <Icon3D bgColor="bg-cyan-500" size="lg">
           <Activity className="w-6 h-6" />
         </Icon3D>
         <div>
@@ -147,28 +147,28 @@ export default function ActivityPage() {
           title="Total Activities"
           value={stats.totalActivities}
           icon={<Activity className="w-5 h-5" />}
-          gradient="from-sky-500 to-blue-500"
+          iconBgColor="bg-cyan-500"
           delay={0}
         />
         <AnimatedStatCard
           title="Today's Activities"
           value={stats.todayActivities}
           icon={<Clock className="w-5 h-5" />}
-          gradient="from-blue-500 to-indigo-500"
+          iconBgColor="bg-blue-500"
           delay={1}
         />
         <AnimatedStatCard
           title="Active Users"
           value={stats.activeUsers}
-          icon={<User className="w-5 h-5" />}
-          gradient="from-indigo-500 to-purple-500"
+          icon={<User className="w-5 h-5 text-primary" />}
+          iconBgColor="bg-primary-50"
           delay={2}
         />
         <AnimatedStatCard
           title="Critical Events"
           value={stats.criticalEvents}
           icon={<Target className="w-5 h-5" />}
-          gradient="from-purple-500 to-violet-500"
+          iconBgColor="bg-purple-500"
           delay={3}
         />
       </motion.div>
@@ -190,7 +190,7 @@ export default function ActivityPage() {
             type="submit"
             whileHover={{ scale: 1.02, y: -1 }}
             whileTap={{ scale: 0.98 }}
-            className="px-6 h-10 bg-gradient-to-r from-sky-500 to-blue-500 text-white rounded-lg text-sm font-medium shadow-lg shadow-sky-500/30 hover:shadow-xl hover:shadow-sky-500/40 transition-all"
+            className="px-6 h-10 bg-cyan-500 text-white rounded-lg text-sm font-medium shadow-lg shadow-sky-500/30 hover:shadow-xl hover:shadow-sky-500/40 transition-all"
           >
             Search
           </motion.button>

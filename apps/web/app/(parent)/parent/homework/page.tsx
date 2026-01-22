@@ -138,7 +138,7 @@ export default function ParentHomeworkPage() {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3"
         >
-          <Icon3D gradient="from-rose-500 to-pink-500">
+          <Icon3D bgColor="bg-pink-500">
             <BookOpen className="w-5 h-5" />
           </Icon3D>
           <div>
@@ -186,7 +186,7 @@ export default function ParentHomeworkPage() {
         className="flex items-center justify-between gap-3"
       >
         <div className="min-w-0 flex items-center gap-3">
-          <Icon3D gradient="from-rose-500 to-pink-500">
+          <Icon3D bgColor="bg-pink-500">
             <BookOpen className="w-5 h-5" />
           </Icon3D>
           <div>
@@ -222,7 +222,7 @@ export default function ParentHomeworkPage() {
         >
           <GlassCard className="p-3 sm:p-4">
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-white font-semibold text-base sm:text-lg flex-shrink-0">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-pink-500 flex items-center justify-center text-white font-semibold text-base sm:text-lg flex-shrink-0">
                 {selectedChild.firstName?.[0]}
               </div>
               <div className="min-w-0">
@@ -250,21 +250,21 @@ export default function ParentHomeworkPage() {
             title="Pending"
             value={pendingHomework}
             icon={<Clock className="w-5 h-5 text-white" />}
-            gradient="from-blue-500 to-cyan-500"
+            iconBgColor="bg-sky-500"
             delay={0}
           />
           <AnimatedStatCard
             title="Overdue"
             value={overdueHomework}
             icon={<AlertCircle className="w-5 h-5 text-white" />}
-            gradient="from-red-500 to-orange-500"
+            iconBgColor="bg-red-500"
             delay={0.1}
           />
           <AnimatedStatCard
             title="Completed"
             value={completedHomework}
             icon={<CheckCircle2 className="w-5 h-5 text-white" />}
-            gradient="from-green-500 to-emerald-500"
+            iconBgColor="bg-green-500"
             delay={0.2}
           />
         </motion.div>

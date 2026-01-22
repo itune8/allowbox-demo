@@ -8,6 +8,7 @@ import { schoolService, type School } from '../../../lib/services/superadmin/sch
 import { GlassCard } from '../../../components/ui/glass-card';
 import { AnimatedStatCard } from '../../../components/ui/animated-stat-card';
 import { Icon3D } from '../../../components/ui/icon-3d';
+import { SlideSheet, SheetSection, SheetField, SheetDetailRow } from '@/components/ui';
 
 interface PlatformInvoice {
   id: string;
@@ -184,7 +185,7 @@ export default function PlatformInvoicesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-white to-gray-50 space-y-6">
+    <div className="min-h-screen bg-gray-50 space-y-6">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -192,7 +193,7 @@ export default function PlatformInvoicesPage() {
         className="flex items-center justify-between"
       >
         <div className="flex items-start gap-4">
-          <Icon3D gradient="from-amber-500 to-orange-500" size="lg">
+          <Icon3D bgColor="bg-amber-500" size="lg">
             <Receipt className="w-6 h-6" />
           </Icon3D>
           <div>
@@ -231,7 +232,7 @@ export default function PlatformInvoicesPage() {
           title="Total Invoices"
           value={stats.total}
           icon={<FileText className="w-6 h-6" />}
-          gradient="from-amber-500 to-orange-500"
+          iconBgColor="bg-amber-500"
           delay={0}
         />
 
@@ -239,7 +240,7 @@ export default function PlatformInvoicesPage() {
           title="Collected"
           value={formatCurrency(stats.collectedAmount)}
           icon={<CheckCircle className="w-6 h-6" />}
-          gradient="from-orange-500 to-red-500"
+          iconBgColor="bg-orange-500"
           trend={{ value: `${stats.paid} invoices`, isPositive: true }}
           delay={1}
         />
@@ -248,7 +249,7 @@ export default function PlatformInvoicesPage() {
           title="Pending"
           value={stats.pending}
           icon={<Clock className="w-6 h-6" />}
-          gradient="from-yellow-500 to-amber-500"
+          iconBgColor="bg-yellow-500"
           delay={2}
         />
 
@@ -256,7 +257,7 @@ export default function PlatformInvoicesPage() {
           title="Overdue"
           value={stats.overdue}
           icon={<XCircle className="w-6 h-6" />}
-          gradient="from-red-500 to-rose-500"
+          iconBgColor="bg-red-500"
           delay={3}
         />
       </motion.div>
@@ -306,7 +307,7 @@ export default function PlatformInvoicesPage() {
       <GlassCard className="bg-white">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gradient-to-r from-amber-50/50 to-orange-50/50 border-b border-gray-100">
+            <thead className="bg-amber-50 border-b border-gray-100">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Invoice #
@@ -416,134 +417,77 @@ export default function PlatformInvoicesPage() {
         )}
       </GlassCard>
 
-      {/* Invoice Detail Slide-in Panel */}
-      <AnimatePresence>
-        {showDetailPanel && selectedInvoice && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex justify-end"
-          >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
-              onClick={() => { setShowDetailPanel(false); setSelectedInvoice(null); }}
-            />
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative bg-white w-full max-w-lg h-full overflow-y-auto shadow-xl border-l border-gray-200"
-            >
-              <div className="sticky top-0 bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <Icon3D gradient="from-amber-500 to-orange-500" size="sm">
-                      <Receipt className="w-3.5 h-3.5" />
-                    </Icon3D>
-                    Invoice {selectedInvoice.invoiceNumber}
-                  </h3>
-                  <p className="text-sm text-gray-500">{selectedInvoice.schoolName}</p>
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => { setShowDetailPanel(false); setSelectedInvoice(null); }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </motion.button>
+      {/* Invoice Detail SlideSheet */}
+      <SlideSheet
+        isOpen={showDetailPanel && selectedInvoice !== null}
+        onClose={() => { setShowDetailPanel(false); setSelectedInvoice(null); }}
+        title={selectedInvoice ? `Invoice ${selectedInvoice.invoiceNumber}` : ''}
+        subtitle={selectedInvoice?.schoolName}
+        size="md"
+        footer={
+          <div className="space-y-3">
+            {selectedInvoice?.status !== 'paid' && (
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button className="w-full bg-amber-500 hover:bg-amber-600">
+                  Record Payment
+                </Button>
+              </motion.div>
+            )}
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                <Download className="w-4 h-4" />
+                Download PDF
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => { setShowDetailPanel(false); setSelectedInvoice(null); }}
+              >
+                Close
+              </Button>
+            </motion.div>
+          </div>
+        }
+      >
+        {selectedInvoice && (
+          <>
+            <SheetSection>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-gray-600">Status</span>
+                {getStatusBadge(selectedInvoice.status)}
               </div>
 
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="p-6 space-y-6"
+                whileHover={{ scale: 1.02 }}
+                className="bg-amber-50 rounded-lg p-4 border border-amber-100"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Status</span>
-                  {getStatusBadge(selectedInvoice.status)}
-                </div>
-
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-100"
-                >
-                  <p className="text-sm text-gray-500 mb-1">Amount Due</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {formatCurrency(selectedInvoice.amount)}
-                  </p>
-                </motion.div>
-
-                <div className="space-y-4">
-                  <div className="flex justify-between py-2 border-b border-gray-200">
-                    <span className="text-sm text-gray-600">Invoice Number</span>
-                    <span className="text-sm font-medium text-gray-900">{selectedInvoice.invoiceNumber}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-200">
-                    <span className="text-sm text-gray-600">School</span>
-                    <span className="text-sm font-medium text-gray-900">{selectedInvoice.schoolName}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-200">
-                    <span className="text-sm text-gray-600">Plan</span>
-                    <span className="text-sm font-medium text-gray-900 capitalize">{selectedInvoice.plan}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-200">
-                    <span className="text-sm text-gray-600">Students</span>
-                    <span className="text-sm font-medium text-gray-900">{selectedInvoice.studentCount}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-200">
-                    <span className="text-sm text-gray-600">Issue Date</span>
-                    <span className="text-sm font-medium text-gray-900">{formatDate(selectedInvoice.issueDate)}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-200">
-                    <span className="text-sm text-gray-600">Due Date</span>
-                    <span className="text-sm font-medium text-gray-900">{formatDate(selectedInvoice.dueDate)}</span>
-                  </div>
-                  {selectedInvoice.paidDate && (
-                    <div className="flex justify-between py-2 border-b border-gray-200">
-                      <span className="text-sm text-gray-600">Paid Date</span>
-                      <span className="text-sm font-medium text-green-600">{formatDate(selectedInvoice.paidDate)}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="pt-4 space-y-3">
-                  {selectedInvoice.status !== 'paid' && (
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Button className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600">
-                        Record Payment
-                      </Button>
-                    </motion.div>
-                  )}
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button variant="outline" className="w-full flex items-center justify-center gap-2">
-                      <Download className="w-4 h-4" />
-                      Download PDF
-                    </Button>
-                  </motion.div>
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => { setShowDetailPanel(false); setSelectedInvoice(null); }}
-                    >
-                      Close
-                    </Button>
-                  </motion.div>
-                </div>
+                <p className="text-sm text-gray-500 mb-1">Amount Due</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {formatCurrency(selectedInvoice.amount)}
+                </p>
               </motion.div>
-            </motion.div>
-          </motion.div>
+            </SheetSection>
+
+            <SheetSection title="Invoice Details">
+              <SheetDetailRow label="Invoice Number" value={selectedInvoice.invoiceNumber} />
+              <SheetDetailRow label="School" value={selectedInvoice.schoolName} />
+              <SheetDetailRow label="Plan" value={selectedInvoice.plan} valueClassName="capitalize" />
+              <SheetDetailRow label="Students" value={selectedInvoice.studentCount.toString()} />
+              <SheetDetailRow label="Issue Date" value={formatDate(selectedInvoice.issueDate)} />
+              <SheetDetailRow label="Due Date" value={formatDate(selectedInvoice.dueDate)} />
+              {selectedInvoice.paidDate && (
+                <SheetDetailRow
+                  label="Paid Date"
+                  value={formatDate(selectedInvoice.paidDate)}
+                  valueClassName="text-green-600"
+                />
+              )}
+            </SheetSection>
+          </>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </div>
   );
 }

@@ -5,7 +5,8 @@ import { ReactNode } from 'react';
 
 interface Icon3DProps {
   children: ReactNode;
-  gradient: string;
+  bgColor: string;
+  textColor?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
@@ -24,36 +25,42 @@ const iconSizes = {
   xl: 'w-8 h-8',
 };
 
-export function Icon3D({ children, gradient, size = 'md', className = '' }: Icon3DProps) {
+export function Icon3D({
+  children,
+  bgColor,
+  textColor = 'text-white',
+  size = 'md',
+  className = ''
+}: Icon3DProps) {
   return (
     <motion.div
       whileHover={{ scale: 1.1, y: -2 }}
       whileTap={{ scale: 0.95 }}
-      className={`relative ${sizeClasses[size]} rounded-xl bg-gradient-to-br ${gradient} shadow-lg ${className}`}
-      style={{ boxShadow: `0 4px 14px 0 rgba(99, 102, 241, 0.3)` }}
+      className={`relative ${sizeClasses[size]} rounded-xl ${bgColor} shadow-md hover:shadow-lg transition-shadow ${className}`}
     >
-      <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/20 to-transparent" />
-      <div className="relative text-white flex items-center justify-center">{children}</div>
+      <div className="absolute inset-0 rounded-xl bg-white/10" />
+      <div className={`relative ${textColor} flex items-center justify-center`}>{children}</div>
     </motion.div>
   );
 }
 
-// Common gradient presets
-export const gradients = {
-  indigo: 'from-indigo-500 to-purple-600',
-  blue: 'from-blue-500 to-cyan-500',
-  emerald: 'from-emerald-500 to-teal-500',
-  violet: 'from-violet-500 to-purple-500',
-  amber: 'from-amber-500 to-orange-500',
-  rose: 'from-rose-500 to-pink-500',
-  sky: 'from-sky-500 to-blue-500',
-  yellow: 'from-yellow-500 to-amber-500',
-  red: 'from-red-500 to-rose-500',
-  slate: 'from-slate-500 to-gray-600',
-  cyan: 'from-cyan-500 to-teal-500',
-  green: 'from-green-500 to-emerald-500',
-  fuchsia: 'from-fuchsia-500 to-pink-500',
-  purple: 'from-purple-500 to-violet-500',
-  gray: 'from-gray-500 to-slate-600',
-  orange: 'from-orange-500 to-red-500',
+// Common solid color presets for sections
+export const sectionColors = {
+  dashboard: { bg: 'bg-indigo-600', text: 'text-white', light: 'bg-indigo-50' },
+  students: { bg: 'bg-sky-500', text: 'text-white', light: 'bg-sky-50' },
+  staff: { bg: 'bg-emerald-500', text: 'text-white', light: 'bg-emerald-50' },
+  classes: { bg: 'bg-violet-500', text: 'text-white', light: 'bg-violet-50' },
+  grades: { bg: 'bg-amber-500', text: 'text-white', light: 'bg-amber-50' },
+  homework: { bg: 'bg-pink-500', text: 'text-white', light: 'bg-pink-50' },
+  diary: { bg: 'bg-cyan-500', text: 'text-white', light: 'bg-cyan-50' },
+  fees: { bg: 'bg-yellow-500', text: 'text-white', light: 'bg-yellow-50' },
+  health: { bg: 'bg-red-500', text: 'text-white', light: 'bg-red-50' },
+  transport: { bg: 'bg-slate-500', text: 'text-white', light: 'bg-slate-50' },
+  inventory: { bg: 'bg-teal-500', text: 'text-white', light: 'bg-teal-50' },
+  leave: { bg: 'bg-green-500', text: 'text-white', light: 'bg-green-50' },
+  events: { bg: 'bg-fuchsia-500', text: 'text-white', light: 'bg-fuchsia-50' },
+  messages: { bg: 'bg-blue-500', text: 'text-white', light: 'bg-blue-50' },
+  reports: { bg: 'bg-purple-500', text: 'text-white', light: 'bg-purple-50' },
+  settings: { bg: 'bg-gray-500', text: 'text-white', light: 'bg-gray-50' },
+  support: { bg: 'bg-orange-500', text: 'text-white', light: 'bg-orange-50' },
 };

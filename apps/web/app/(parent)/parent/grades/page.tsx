@@ -10,8 +10,8 @@ import {
   ReportCard,
 } from '../../../../lib/services/grades.service';
 import { userService, User } from '../../../../lib/services/user.service';
-import { GlassCard, AnimatedStatCard, Icon3D } from '../../../../components/ui';
-import { GraduationCap, Trophy, Target, Award, X } from 'lucide-react';
+import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet, SheetSection, SheetDetailRow } from '../../../../components/ui';
+import { GraduationCap, Trophy, Target, Award } from 'lucide-react';
 
 interface Child extends User {
   classId?: { _id: string; name: string; grade?: string };
@@ -128,7 +128,7 @@ export default function ParentGradesPage() {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3"
         >
-          <Icon3D gradient="from-amber-500 to-orange-500">
+          <Icon3D bgColor="bg-amber-500">
             <GraduationCap className="w-5 h-5" />
           </Icon3D>
           <div>
@@ -157,7 +157,7 @@ export default function ParentGradesPage() {
         className="flex items-center justify-between gap-3"
       >
         <div className="min-w-0 flex items-center gap-3">
-          <Icon3D gradient="from-amber-500 to-orange-500">
+          <Icon3D bgColor="bg-amber-500">
             <GraduationCap className="w-5 h-5" />
           </Icon3D>
           <div>
@@ -193,7 +193,7 @@ export default function ParentGradesPage() {
         >
           <GlassCard className="p-3 sm:p-4">
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-semibold text-base sm:text-lg flex-shrink-0">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-amber-500 flex items-center justify-center text-white font-semibold text-base sm:text-lg flex-shrink-0">
                 {selectedChild.firstName?.[0]}
               </div>
               <div className="min-w-0">
@@ -365,47 +365,26 @@ export default function ParentGradesPage() {
         </>
       )}
 
-      {/* Report Card Detail Modal */}
-      <AnimatePresence>
+      {/* Report Card Detail Sheet */}
+      <SlideSheet
+        isOpen={!!selectedReport}
+        onClose={() => setSelectedReport(null)}
+        title="Report Card"
+        subtitle={selectedReport ? `${selectedReport.term} - ${selectedReport.academicYear}` : ''}
+        size="lg"
+        footer={
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setSelectedReport(null)}>
+              Close
+            </Button>
+          </div>
+        }
+      >
         {selectedReport && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setSelectedReport(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4 sm:p-6"
-            >
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-100 rounded-xl">
-                    <Award className="w-6 h-6 text-amber-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Report Card
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {selectedReport.term} - {selectedReport.academicYear}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSelectedReport(null)}
-                  className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Student Info */}
-              <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 mb-6 border border-amber-100">
+          <div className="space-y-6">
+            {/* Student Info */}
+            <SheetSection title="Student Information" icon={<Award className="w-4 h-4" />}>
+              <div className="bg-amber-50 rounded-lg p-4 border border-amber-100">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <div className="text-gray-500 text-xs">Student</div>
@@ -423,16 +402,16 @@ export default function ParentGradesPage() {
                   </div>
                   <div>
                     <div className="text-gray-500 text-xs">Percentage</div>
-                    <div className="text-2xl font-bold bg-gradient-to-br from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                    <div className="text-2xl font-bold text-amber-600">
                       {selectedReport.percentage?.toFixed(1)}%
                     </div>
                   </div>
                 </div>
               </div>
+            </SheetSection>
 
             {/* Subject Grades */}
-            <div className="mb-6">
-              <h4 className="font-medium text-gray-900 mb-3">Subject-wise Grades</h4>
+            <SheetSection title="Subject-wise Grades">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50">
@@ -467,57 +446,56 @@ export default function ParentGradesPage() {
                   </tfoot>
                 </table>
               </div>
-            </div>
+            </SheetSection>
 
             {/* Additional Info */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              {selectedReport.rank && (
-                <div className="bg-yellow-50 rounded-lg p-3">
-                  <div className="text-xs text-gray-500">Class Rank</div>
-                  <div className="font-bold text-yellow-600">#{selectedReport.rank}</div>
+            {(selectedReport.rank || selectedReport.attendance !== undefined || selectedReport.conduct) && (
+              <SheetSection title="Additional Information">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {selectedReport.rank && (
+                    <div className="bg-yellow-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-500">Class Rank</div>
+                      <div className="font-bold text-yellow-600">#{selectedReport.rank}</div>
+                    </div>
+                  )}
+                  {selectedReport.attendance !== undefined && (
+                    <div className="bg-blue-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-500">Attendance</div>
+                      <div className="font-bold text-blue-600">{selectedReport.attendance}%</div>
+                    </div>
+                  )}
+                  {selectedReport.conduct && (
+                    <div className="bg-green-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-500">Conduct</div>
+                      <div className="font-bold text-green-600">{selectedReport.conduct}</div>
+                    </div>
+                  )}
                 </div>
-              )}
-              {selectedReport.attendance !== undefined && (
-                <div className="bg-blue-50 rounded-lg p-3">
-                  <div className="text-xs text-gray-500">Attendance</div>
-                  <div className="font-bold text-blue-600">{selectedReport.attendance}%</div>
-                </div>
-              )}
-              {selectedReport.conduct && (
-                <div className="bg-green-50 rounded-lg p-3">
-                  <div className="text-xs text-gray-500">Conduct</div>
-                  <div className="font-bold text-green-600">{selectedReport.conduct}</div>
-                </div>
-              )}
-            </div>
+              </SheetSection>
+            )}
 
             {/* Remarks */}
             {(selectedReport.teacherRemarks || selectedReport.principalRemarks) && (
-              <div className="space-y-3 mb-6">
-                {selectedReport.teacherRemarks && (
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-xs text-gray-500 mb-1">Teacher's Remarks</div>
-                    <p className="text-sm">{selectedReport.teacherRemarks}</p>
-                  </div>
-                )}
-                {selectedReport.principalRemarks && (
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-xs text-gray-500 mb-1">Principal's Remarks</div>
-                    <p className="text-sm">{selectedReport.principalRemarks}</p>
-                  </div>
-                )}
-              </div>
+              <SheetSection title="Remarks">
+                <div className="space-y-3">
+                  {selectedReport.teacherRemarks && (
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-500 mb-1">Teacher's Remarks</div>
+                      <p className="text-sm">{selectedReport.teacherRemarks}</p>
+                    </div>
+                  )}
+                  {selectedReport.principalRemarks && (
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-500 mb-1">Principal's Remarks</div>
+                      <p className="text-sm">{selectedReport.principalRemarks}</p>
+                    </div>
+                  )}
+                </div>
+              </SheetSection>
             )}
-
-              <div className="flex justify-end pt-4 border-t border-gray-200">
-                <Button variant="outline" onClick={() => setSelectedReport(null)}>
-                  Close
-                </Button>
-              </div>
-            </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </div>
   );
 }

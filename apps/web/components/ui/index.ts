@@ -6,4 +6,5 @@ export { AnimatedModal } from './animated-modal';
 export { ActionCard } from './action-card';
 export { EventCard } from './event-card';
 export { ActivityItem } from './activity-item';
-export { Icon3D, gradients } from './icon-3d';
+export { Icon3D, sectionColors } from './icon-3d';
+export { SlideSheet, SheetSection, SheetField, SheetDetailRow } from './slide-sheet';

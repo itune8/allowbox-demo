@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet } from '@/components/ui';
 import { BookOpen, Loader, Award, TrendingUp, BarChart3 } from 'lucide-react';
 import {
   gradesService,
@@ -192,7 +192,7 @@ export default function TeacherGradesPage() {
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
             Grades
-            <Icon3D gradient={gradients.amber} size="sm">
+            <Icon3D bgColor="bg-amber-500" size="sm">
               <Award className="w-3.5 h-3.5" />
             </Icon3D>
           </h1>
@@ -371,35 +371,39 @@ export default function TeacherGradesPage() {
       )}
 
       {/* Add Grade Modal */}
-      <AnimatePresence>
-        {showAddModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl border border-gray-100"
+      <SlideSheet
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Add Grade"
+        size="lg"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setShowAddModal(false)}
             >
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="p-6 border-b border-gray-200 bg-gradient-to-r from-amber-50 to-orange-50"
-              >
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Icon3D gradient={gradients.amber} size="sm">
-                    <Award className="w-4 h-4" />
-                  </Icon3D>
-                  Add Grade
-                </h3>
-              </motion.div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              Cancel
+            </Button>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Button type="submit" disabled={submitting} form="grade-form">
+                {submitting ? (
+                  <>
+                    <Loader className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Grade'
+                )}
+              </Button>
+            </motion.div>
+          </div>
+        }
+      >
+        <form id="grade-form" onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-700 mb-1">
@@ -532,40 +536,8 @@ export default function TeacherGradesPage() {
                   placeholder="Optional feedback for the student"
                 />
               </div>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="flex justify-end gap-3 pt-4"
-              >
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                >
-                  Cancel
-                </Button>
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? (
-                      <>
-                        <Loader className="w-4 h-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      'Save Grade'
-                    )}
-                  </Button>
-                </motion.div>
-              </motion.div>
             </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </SlideSheet>
     </div>
   );
 }

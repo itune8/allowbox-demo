@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ROLES } from '@repo/config';
 import { getCurrentSchoolId, getEntities, type ClassItem } from '../../../lib/data-store';
-import { AnimatedStatCard, GlassCard, Icon3D, gradients } from '@/components/ui';
+import { AnimatedStatCard, GlassCard, Icon3D } from '@/components/ui';
 import {
   Users,
   Calendar,
@@ -88,7 +88,7 @@ export default function TeacherDashboardPage() {
       >
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
           Dashboard Overview
-          <Icon3D gradient={gradients.indigo} size="sm">
+          <Icon3D bgColor="bg-primary" size="sm">
             <Users className="w-3.5 h-3.5" />
           </Icon3D>
         </h1>
@@ -108,7 +108,7 @@ export default function TeacherDashboardPage() {
         <AnimatedStatCard
           title="My Students"
           value={studentsInSelectedClass.length}
-          icon={<Users className="w-5 h-5 text-indigo-600" />}
+          icon={<Users className="w-5 h-5 text-primary" />}
           iconBgColor="bg-indigo-50"
           delay={0}
         />
@@ -137,7 +137,7 @@ export default function TeacherDashboardPage() {
         <GlassCard className="p-4 sm:p-6 bg-white/90" hover={false}>
           <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
             Quick Actions
-            <Icon3D gradient={gradients.blue} size="sm">
+            <Icon3D bgColor="bg-blue-500" size="sm">
               <TrendingUp className="w-3.5 h-3.5" />
             </Icon3D>
           </h3>
@@ -148,7 +148,7 @@ export default function TeacherDashboardPage() {
               onClick={() => router.push('/teacher/homework')}
               className="flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all group touch-manipulation"
             >
-              <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-indigo-600 mb-1 sm:mb-2" />
+              <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-primary mb-1 sm:mb-2" />
               <span className="text-xs sm:text-sm font-medium text-gray-700 text-center leading-tight">Homework</span>
             </motion.button>
 
@@ -197,7 +197,7 @@ export default function TeacherDashboardPage() {
             <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
                 Today's Schedule
-                <Icon3D gradient={gradients.emerald} size="sm">
+                <Icon3D bgColor="bg-emerald-500" size="sm">
                   <Calendar className="w-3.5 h-3.5" />
                 </Icon3D>
               </h3>
@@ -252,7 +252,7 @@ export default function TeacherDashboardPage() {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => router.push('/teacher/attendance')}
-                        className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors touch-manipulation font-medium"
+                        className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors touch-manipulation font-medium"
                       >
                         <span className="hidden sm:inline">Take </span>Attendance
                       </motion.button>
@@ -272,7 +272,7 @@ export default function TeacherDashboardPage() {
           <GlassCard className="p-4 sm:p-6 bg-white/90" hover={false}>
             <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
               Recent Activity
-              <Icon3D gradient={gradients.amber} size="sm">
+              <Icon3D bgColor="bg-amber-500" size="sm">
                 <TrendingUp className="w-3.5 h-3.5" />
               </Icon3D>
             </h3>
@@ -291,7 +291,7 @@ export default function TeacherDashboardPage() {
                     transition={{ delay: index * 0.1 }}
                     className="flex items-start gap-2 sm:gap-3"
                   >
-                    <div className="w-8 h-8 rounded-md bg-gradient-to-br from-gray-100 to-gray-50 grid place-items-center text-gray-600 flex-shrink-0 mt-0.5">
+                    <div className="w-8 h-8 rounded-md bg-gray-100 grid place-items-center text-gray-600 flex-shrink-0 mt-0.5">
                       <IconComponent className="w-4 h-4" />
                     </div>
                     <div className="min-w-0 flex-1">

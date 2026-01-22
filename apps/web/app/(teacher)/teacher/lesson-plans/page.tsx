@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D } from '@/components/ui';
+import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet } from '@/components/ui';
 import { BookOpen, Clock, CheckCircle, AlertCircle, Eye, Trash2 } from 'lucide-react';
 import {
   lessonPlanService,
@@ -190,7 +190,7 @@ export default function LessonPlansPage() {
         className="flex items-center justify-between gap-3"
       >
         <div className="flex items-center gap-4">
-          <Icon3D gradient="from-purple-500 to-violet-500" size="lg">
+          <Icon3D bgColor="bg-purple-500" size="lg">
             <BookOpen className="w-6 h-6" />
           </Icon3D>
           <div className="min-w-0">
@@ -229,7 +229,7 @@ export default function LessonPlansPage() {
             title="Total"
             value={stats.total}
             icon={<BookOpen className="w-5 h-5 text-white" />}
-            gradient="from-purple-500 to-violet-500"
+            iconBgColor="bg-purple-500"
             delay={0}
           />
         </motion.div>
@@ -255,7 +255,7 @@ export default function LessonPlansPage() {
             title="Scheduled"
             value={stats.scheduled}
             icon={<Clock className="w-5 h-5 text-white" />}
-            gradient="from-blue-500 to-cyan-500"
+            iconBgColor="bg-sky-500"
             delay={2}
           />
         </motion.div>
@@ -269,7 +269,7 @@ export default function LessonPlansPage() {
             title="In Progress"
             value={stats.inProgress}
             icon={<Clock className="w-5 h-5 text-white" />}
-            gradient="from-amber-500 to-orange-500"
+            iconBgColor="bg-amber-500"
             delay={3}
           />
         </motion.div>
@@ -283,7 +283,7 @@ export default function LessonPlansPage() {
             title="Completed"
             value={stats.completed}
             icon={<CheckCircle className="w-5 h-5 text-white" />}
-            gradient="from-emerald-500 to-teal-500"
+            iconBgColor="bg-emerald-500"
             delay={4}
           />
         </motion.div>
@@ -436,25 +436,23 @@ export default function LessonPlansPage() {
       </AnimatePresence>
 
       {/* Create Form Modal */}
-      <AnimatePresence>
-        {showForm && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setShowForm(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900">
-              Create Lesson Plan
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
+      <SlideSheet
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        title="Create Lesson Plan"
+        size="lg"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={submitting} form="lesson-plan-form">
+              {submitting ? 'Creating...' : 'Create Lesson Plan'}
+            </Button>
+          </div>
+        }
+      >
+        <form id="lesson-plan-form" onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-700 mb-1">
@@ -617,41 +615,58 @@ export default function LessonPlansPage() {
                   placeholder="Private notes for yourself..."
                 />
               </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? 'Creating...' : 'Create Lesson Plan'}
-                </Button>
-              </div>
             </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </SlideSheet>
 
       {/* View Detail Modal */}
-      <AnimatePresence>
+      <SlideSheet
+        isOpen={!!selectedPlan}
+        onClose={() => setSelectedPlan(null)}
+        title={selectedPlan?.title || ''}
+        size="md"
+        footer={
+          selectedPlan ? (
+            <div className="flex justify-between gap-3 w-full">
+              <Button
+                variant="outline"
+                onClick={() => handleDelete(selectedPlan.id || selectedPlan._id)}
+                className="text-red-600 hover:bg-red-50"
+              >
+                Delete
+              </Button>
+              <div className="flex gap-2">
+                {selectedPlan.status !== LessonPlanStatus.COMPLETED && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const nextStatus =
+                        selectedPlan.status === LessonPlanStatus.DRAFT
+                          ? LessonPlanStatus.SCHEDULED
+                          : selectedPlan.status === LessonPlanStatus.SCHEDULED
+                          ? LessonPlanStatus.IN_PROGRESS
+                          : LessonPlanStatus.COMPLETED;
+                      handleStatusChange(selectedPlan.id || selectedPlan._id, nextStatus);
+                      setSelectedPlan(null);
+                    }}
+                  >
+                    {selectedPlan.status === LessonPlanStatus.DRAFT
+                      ? 'Schedule'
+                      : selectedPlan.status === LessonPlanStatus.SCHEDULED
+                      ? 'Start Lesson'
+                      : 'Mark Complete'}
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => setSelectedPlan(null)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          ) : undefined
+        }
+      >
         {selectedPlan && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setSelectedPlan(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-            <div className="flex items-start justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {selectedPlan.title}
-              </h3>
+          <>
+            <div className="flex items-center gap-2 mb-4">
               <span className={`text-xs px-2 py-1 rounded ${statusColors[selectedPlan.status]}`}>
                 {selectedPlan.status.replace('_', ' ')}
               </span>
@@ -726,46 +741,9 @@ export default function LessonPlansPage() {
                 </div>
               )}
             </div>
-
-            <div className="flex justify-between gap-3 mt-6 pt-4 border-t border-gray-200">
-              <Button
-                variant="outline"
-                onClick={() => handleDelete(selectedPlan.id || selectedPlan._id)}
-                className="text-red-600 hover:bg-red-50"
-              >
-                Delete
-              </Button>
-              <div className="flex gap-2">
-                {selectedPlan.status !== LessonPlanStatus.COMPLETED && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      const nextStatus =
-                        selectedPlan.status === LessonPlanStatus.DRAFT
-                          ? LessonPlanStatus.SCHEDULED
-                          : selectedPlan.status === LessonPlanStatus.SCHEDULED
-                          ? LessonPlanStatus.IN_PROGRESS
-                          : LessonPlanStatus.COMPLETED;
-                      handleStatusChange(selectedPlan.id || selectedPlan._id, nextStatus);
-                      setSelectedPlan(null);
-                    }}
-                  >
-                    {selectedPlan.status === LessonPlanStatus.DRAFT
-                      ? 'Schedule'
-                      : selectedPlan.status === LessonPlanStatus.SCHEDULED
-                      ? 'Start Lesson'
-                      : 'Mark Complete'}
-                  </Button>
-                )}
-                <Button variant="outline" onClick={() => setSelectedPlan(null)}>
-                  Close
-                </Button>
-              </div>
-            </div>
-            </motion.div>
-          </div>
+          </>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </div>
   );
 }

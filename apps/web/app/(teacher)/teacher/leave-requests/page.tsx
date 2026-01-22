@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D, gradients } from '@/components/ui';
+import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet } from '@/components/ui';
 import {
   leaveRequestService,
   LeaveRequest,
@@ -141,7 +141,7 @@ export default function TeacherLeaveRequestsPage() {
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
               Leave Requests
-              <Icon3D gradient={gradients.emerald} size="sm">
+              <Icon3D bgColor="bg-emerald-500" size="sm">
                 <Leaf className="w-3.5 h-3.5" />
               </Icon3D>
             </h1>
@@ -184,10 +184,10 @@ export default function TeacherLeaveRequestsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <GlassCard className="p-4 sm:p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-emerald-100" hover={false}>
+          <GlassCard className="p-4 sm:p-6 bg-gray-50 border-emerald-100" hover={false}>
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
               Leave Summary (This Year)
-              <Icon3D gradient={gradients.emerald} size="sm">
+              <Icon3D bgColor="bg-emerald-500" size="sm">
                 <Calendar className="w-3.5 h-3.5" />
               </Icon3D>
             </h3>
@@ -230,7 +230,7 @@ export default function TeacherLeaveRequestsPage() {
         transition={{ duration: 0.5, delay: 0.2 }}
       >
         <GlassCard className="p-0 bg-white/90" hover={false}>
-          <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-green-50/50 to-emerald-50/50">
+          <div className="p-4 border-b border-gray-200 bg-gray-50">
             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               My Leave Requests
@@ -311,32 +311,23 @@ export default function TeacherLeaveRequestsPage() {
       </motion.div>
 
       {/* Apply Leave Modal */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4"
-          >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setShowForm(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.2 }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6"
-            >
-            <h3 className="text-lg font-semibold mb-4 text-gray-900">
-              Apply for Leave
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
+      <SlideSheet
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        title="Apply for Leave"
+        size="md"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={submitting} form="leave-form">
+              {submitting ? 'Submitting...' : 'Submit Request'}
+            </Button>
+          </div>
+        }
+      >
+        <form id="leave-form" onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-700 mb-1">
                   Leave Type *
@@ -436,48 +427,40 @@ export default function TeacherLeaveRequestsPage() {
                   placeholder="Phone number or alternate contact"
                 />
               </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? 'Submitting...' : 'Submit Request'}
-                </Button>
-              </div>
             </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </SlideSheet>
 
       {/* View Detail Modal */}
-      <AnimatePresence>
+      <SlideSheet
+        isOpen={!!selectedRequest}
+        onClose={() => setSelectedRequest(null)}
+        title={selectedRequest ? leaveTypeLabels[selectedRequest.leaveType] : ''}
+        size="md"
+        footer={
+          selectedRequest ? (
+            <div className="flex justify-end gap-3">
+              {selectedRequest.status === LeaveStatus.PENDING && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    handleCancel(selectedRequest._id);
+                    setSelectedRequest(null);
+                  }}
+                  className="text-red-600"
+                >
+                  Cancel Request
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => setSelectedRequest(null)}>
+                Close
+              </Button>
+            </div>
+          ) : undefined
+        }
+      >
         {selectedRequest && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4"
-          >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setSelectedRequest(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.2 }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6"
-            >
-            <div className="flex items-start justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {leaveTypeLabels[selectedRequest.leaveType]}
-              </h3>
+          <>
+            <div className="flex items-center gap-2 mb-4">
               <span className={`text-xs px-2 py-1 rounded ${statusColors[selectedRequest.status]}`}>
                 {selectedRequest.status}
               </span>
@@ -537,28 +520,9 @@ export default function TeacherLeaveRequestsPage() {
                 </div>
               )}
             </div>
-
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-              {selectedRequest.status === LeaveStatus.PENDING && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    handleCancel(selectedRequest._id);
-                    setSelectedRequest(null);
-                  }}
-                  className="text-red-600"
-                >
-                  Cancel Request
-                </Button>
-              )}
-              <Button variant="outline" onClick={() => setSelectedRequest(null)}>
-                Close
-              </Button>
-            </div>
-            </motion.div>
-          </motion.div>
+          </>
         )}
-      </AnimatePresence>
+      </SlideSheet>
     </motion.div>
   );
 }

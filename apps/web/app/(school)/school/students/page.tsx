@@ -1,13 +1,9 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@repo/ui/button';
 import { userService, type User } from '../../../../lib/services/user.service';
-import { CreateStudentModal, type StudentFormData } from '../../../../components/modals/create-student-modal';
-import { LinkParentModal } from '../../../../components/modals/link-parent-modal';
-import { Portal } from '../../../../components/portal';
-import { GlassCard, AnimatedStatCard } from '../../../../components/ui';
+import { classService, type Class } from '../../../../lib/services/class.service';
+import { SlideSheet, SheetSection, SheetField, SheetDetailRow } from '../../../../components/ui/slide-sheet';
 import {
   Users,
   Search,
@@ -20,43 +16,133 @@ import {
   Unlock,
   GraduationCap,
   X,
+  Loader2,
+  Download,
+  CheckCircle,
+  AlertCircle,
+  User as UserIcon,
+  Mail,
+  Phone,
+  Calendar,
+  MapPin,
+  Droplet,
+  BookOpen,
+  Save,
 } from 'lucide-react';
 
-// 3D Icon wrapper component
-const Icon3D = ({ children, gradient, size = 'md' }: { children: React.ReactNode; gradient: string; size?: 'sm' | 'md' | 'lg' }) => {
-  const sizeClasses = {
-    sm: 'p-1.5',
-    md: 'p-2',
-    lg: 'p-3',
+// Professional Stat Card
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  variant = 'default',
+}: {
+  title: string;
+  value: number;
+  icon: React.ElementType;
+  variant?: 'default' | 'success' | 'danger' | 'warning';
+}) {
+  const variantStyles = {
+    default: 'bg-slate-100 text-slate-600',
+    success: 'bg-emerald-100 text-emerald-600',
+    danger: 'bg-red-100 text-red-600',
+    warning: 'bg-amber-100 text-amber-600',
   };
+
   return (
-    <motion.div
-      whileHover={{ scale: 1.1, y: -2 }}
-      whileTap={{ scale: 0.95 }}
-      className={`relative ${sizeClasses[size]} rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}
-      style={{ boxShadow: `0 4px 14px 0 rgba(99, 102, 241, 0.3)` }}
-    >
-      <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/20 to-transparent" />
-      <div className="relative text-white">{children}</div>
-    </motion.div>
+    <div className="bg-white rounded-xl border border-slate-200 p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-slate-500">{title}</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-900">{value}</p>
+        </div>
+        <div className={`p-2.5 rounded-lg ${variantStyles[variant]}`}>
+          <Icon className="w-5 h-5" />
+        </div>
+      </div>
+    </div>
   );
+}
+
+// Professional Status Badge
+function StatusBadge({ status }: { status: 'active' | 'blocked' | 'pending' }) {
+  const styles = {
+    active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    blocked: 'bg-red-50 text-red-700 border-red-200',
+    pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  };
+
+  const labels = {
+    active: 'Active',
+    blocked: 'Blocked',
+    pending: 'Pending',
+  };
+
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${styles[status]}`}>
+      {labels[status]}
+    </span>
+  );
+}
+
+// Student Form Data
+interface StudentFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  dateOfBirth: string;
+  gender: string;
+  bloodGroup: string;
+  address: string;
+  phoneNumber: string;
+  parentEmail: string;
+  parentPhone: string;
+  studentId: string;
+  classId: string;
+  section: string;
+}
+
+const initialFormData: StudentFormData = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  dateOfBirth: '',
+  gender: '',
+  bloodGroup: '',
+  address: '',
+  phoneNumber: '',
+  parentEmail: '',
+  parentPhone: '',
+  studentId: '',
+  classId: '',
+  section: '',
 };
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<User[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [studentSearch, setStudentSearch] = useState('');
   const [studentQuery, setStudentQuery] = useState('');
-  const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
-  const [showStudentModal, setShowStudentModal] = useState<User | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'blocked'>('all');
+  const [banner, setBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Sheet states
+  const [showDetailsSheet, setShowDetailsSheet] = useState<User | null>(null);
+  const [showFormSheet, setShowFormSheet] = useState(false);
+  const [showLinkSheet, setShowLinkSheet] = useState<User | null>(null);
   const [editingStudent, setEditingStudent] = useState<User | null>(null);
-  const [banner, setBanner] = useState<string | null>(null);
-  const [linkParentModalOpen, setLinkParentModalOpen] = useState(false);
-  const [studentToLink, setStudentToLink] = useState<User | null>(null);
+
+  // Form state
+  const [formData, setFormData] = useState<StudentFormData>(initialFormData);
+  const [formLoading, setFormLoading] = useState(false);
+  const [linkEmail, setLinkEmail] = useState('');
+  const [linkLoading, setLinkLoading] = useState(false);
 
   useEffect(() => {
     fetchStudents();
+    fetchClasses();
   }, []);
 
   const fetchStudents = async () => {
@@ -74,24 +160,35 @@ export default function StudentsPage() {
     }
   };
 
-  const filteredStudents = useMemo(() => {
-    const q = studentQuery.trim().toLowerCase();
-    if (!q) return students;
-    return students.filter((s) => {
-      const fullName = `${s.firstName} ${s.lastName}`.toLowerCase();
-      const className = s.classId?.toString() || '';
-      const section = s.section || '';
-      const studentId = s.studentId || '';
-      return (
-        fullName.includes(q) ||
-        className.includes(q) ||
-        section.includes(q) ||
-        studentId.toLowerCase().includes(q)
-      );
-    });
-  }, [students, studentQuery]);
+  const fetchClasses = async () => {
+    try {
+      const data = await classService.getClasses();
+      setClasses(data);
+    } catch (err) {
+      console.error('Failed to fetch classes:', err);
+    }
+  };
 
-  // Stats
+  const filteredStudents = useMemo(() => {
+    let result = students;
+    if (statusFilter === 'active') {
+      result = result.filter(s => !s.isBlocked);
+    } else if (statusFilter === 'blocked') {
+      result = result.filter(s => s.isBlocked);
+    }
+    const q = studentQuery.trim().toLowerCase();
+    if (q) {
+      result = result.filter((s) => {
+        const fullName = `${s.firstName} ${s.lastName}`.toLowerCase();
+        const className = s.classId?.toString() || '';
+        const section = s.section || '';
+        const studentId = s.studentId || '';
+        return fullName.includes(q) || className.includes(q) || section.includes(q) || studentId.toLowerCase().includes(q);
+      });
+    }
+    return result;
+  }, [students, studentQuery, statusFilter]);
+
   const stats = useMemo(() => {
     const total = students.length;
     const active = students.filter(s => !s.isBlocked).length;
@@ -100,77 +197,13 @@ export default function StudentsPage() {
     return { total, active, blocked, withClass };
   }, [students]);
 
-  const handleCreateStudent = async (studentData: StudentFormData) => {
-    try {
-      if (editingStudent) {
-        await userService.updateUser(editingStudent.id, {
-          firstName: studentData.firstName,
-          lastName: studentData.lastName,
-          dateOfBirth: studentData.dateOfBirth,
-          gender: studentData.gender,
-          bloodGroup: studentData.bloodGroup,
-          address: studentData.address,
-          phoneNumber: studentData.phoneNumber,
-          parentEmail: studentData.parentEmail,
-          parentPhone: studentData.parentPhone,
-          studentId: studentData.studentId,
-          classId: studentData.classId,
-          section: studentData.section,
-        });
-        setBanner('Student updated successfully!');
-      } else {
-        await userService.createUser({
-          email: studentData.email || `${studentData.firstName.toLowerCase()}.${studentData.lastName.toLowerCase()}@school.com`,
-          password: 'student123',
-          firstName: studentData.firstName,
-          lastName: studentData.lastName,
-          role: 'student',
-          dateOfBirth: studentData.dateOfBirth,
-          gender: studentData.gender,
-          bloodGroup: studentData.bloodGroup,
-          address: studentData.address,
-          phoneNumber: studentData.phoneNumber,
-          parentEmail: studentData.parentEmail,
-          parentPhone: studentData.parentPhone,
-          studentId: studentData.studentId,
-          classId: studentData.classId,
-          section: studentData.section,
-        });
-        setBanner('Student created successfully!');
-      }
-      setTimeout(() => setBanner(null), 3000);
-      setIsStudentModalOpen(false);
-      setEditingStudent(null);
-      await fetchStudents();
-    } catch (error) {
-      console.error('Failed to save student:', error);
-      throw error;
-    }
-  };
-
-  const handleEditStudent = (student: User, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingStudent(student);
-    setIsStudentModalOpen(true);
-  };
-
-  const handleDeleteStudent = async (studentId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this student?')) return;
-
-    try {
-      await userService.deleteUser(studentId);
-      setStudents(prev => prev.filter(s => s.id !== studentId));
-      setBanner('Student deleted successfully');
-      setTimeout(() => setBanner(null), 3000);
-    } catch (err) {
-      console.error('Failed to delete student:', err);
-      alert('Failed to delete student. Please try again.');
-    }
+  const showBanner = (type: 'success' | 'error', message: string) => {
+    setBanner({ type, message });
+    setTimeout(() => setBanner(null), 4000);
   };
 
   const getAge = (dateOfBirth?: Date | string) => {
-    if (!dateOfBirth) return 'N/A';
+    if (!dateOfBirth) return '—';
     const dob = new Date(dateOfBirth);
     const today = new Date();
     let age = today.getFullYear() - dob.getFullYear();
@@ -181,518 +214,666 @@ export default function StudentsPage() {
     return age;
   };
 
-  const handleLinkParent = (student: User, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setStudentToLink(student);
-    setLinkParentModalOpen(true);
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
   };
 
-  const handleLinkSuccess = async () => {
-    setBanner('Parent linked successfully!');
-    setTimeout(() => setBanner(null), 3000);
-    await fetchStudents();
+  // Open form sheet for creating/editing
+  const openFormSheet = (student?: User) => {
+    if (student) {
+      setEditingStudent(student);
+      setFormData({
+        firstName: student.firstName || '',
+        lastName: student.lastName || '',
+        email: student.email || '',
+        dateOfBirth: student.dateOfBirth ? (typeof student.dateOfBirth === 'string' ? student.dateOfBirth : new Date(student.dateOfBirth).toISOString().split('T')[0] || '') : '',
+        gender: student.gender || '',
+        bloodGroup: student.bloodGroup || '',
+        address: student.address || '',
+        phoneNumber: student.phoneNumber || '',
+        parentEmail: student.parentEmail || '',
+        parentPhone: student.parentPhone || '',
+        studentId: student.studentId || '',
+        classId: typeof student.classId === 'string' ? student.classId : student.classId?.id || '',
+        section: student.section || '',
+      });
+    } else {
+      setEditingStudent(null);
+      setFormData(initialFormData);
+    }
+    setShowFormSheet(true);
+    setShowDetailsSheet(null);
+  };
+
+  const closeFormSheet = () => {
+    setShowFormSheet(false);
+    setEditingStudent(null);
+    setFormData(initialFormData);
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormLoading(true);
+    try {
+      if (editingStudent) {
+        await userService.updateUser(editingStudent.id, {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          dateOfBirth: formData.dateOfBirth,
+          gender: formData.gender,
+          bloodGroup: formData.bloodGroup,
+          address: formData.address,
+          phoneNumber: formData.phoneNumber,
+          parentEmail: formData.parentEmail,
+          parentPhone: formData.parentPhone,
+          studentId: formData.studentId,
+          classId: formData.classId,
+          section: formData.section,
+        });
+        showBanner('success', 'Student updated successfully');
+      } else {
+        await userService.createUser({
+          email: formData.email || `${formData.firstName.toLowerCase()}.${formData.lastName.toLowerCase()}@school.com`,
+          password: 'student123',
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          role: 'student',
+          dateOfBirth: formData.dateOfBirth,
+          gender: formData.gender,
+          bloodGroup: formData.bloodGroup,
+          address: formData.address,
+          phoneNumber: formData.phoneNumber,
+          parentEmail: formData.parentEmail,
+          parentPhone: formData.parentPhone,
+          studentId: formData.studentId,
+          classId: formData.classId,
+          section: formData.section,
+        });
+        showBanner('success', 'Student created successfully');
+      }
+      closeFormSheet();
+      await fetchStudents();
+    } catch (err) {
+      console.error('Failed to save student:', err);
+      showBanner('error', 'Failed to save student. Please try again.');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleDeleteStudent = async (studentId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this student? This action cannot be undone.')) return;
+    try {
+      await userService.deleteUser(studentId);
+      setStudents(prev => prev.filter(s => s.id !== studentId));
+      showBanner('success', 'Student deleted successfully');
+      setShowDetailsSheet(null);
+    } catch (err) {
+      console.error('Failed to delete student:', err);
+      showBanner('error', 'Failed to delete student. Please try again.');
+    }
   };
 
   const handleBlockUser = async (student: User, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm(`Are you sure you want to block ${student.firstName} ${student.lastName}?`)) return;
-
     try {
       await userService.blockUser(student.id);
-      setBanner(`Student blocked successfully`);
-      setTimeout(() => setBanner(null), 3000);
+      showBanner('success', 'Student blocked successfully');
       await fetchStudents();
     } catch (err: any) {
       console.error('Failed to block student:', err);
-      alert(err.response?.data?.message || 'Failed to block student.');
+      showBanner('error', err.response?.data?.message || 'Failed to block student');
     }
   };
 
   const handleUnblockUser = async (student: User, e: React.MouseEvent) => {
     e.stopPropagation();
-
     try {
       await userService.unblockUser(student.id);
-      setBanner(`Student unblocked successfully`);
-      setTimeout(() => setBanner(null), 3000);
+      showBanner('success', 'Student unblocked successfully');
       await fetchStudents();
     } catch (err: any) {
       console.error('Failed to unblock student:', err);
-      alert('Failed to unblock student.');
+      showBanner('error', 'Failed to unblock student');
+    }
+  };
+
+  const handleLinkParent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!showLinkSheet || !linkEmail.trim()) return;
+    setLinkLoading(true);
+    try {
+      await userService.linkParent(showLinkSheet.id || showLinkSheet._id || '', linkEmail.trim());
+      showBanner('success', 'Parent linked successfully');
+      setShowLinkSheet(null);
+      setLinkEmail('');
+      await fetchStudents();
+    } catch (err: any) {
+      console.error('Failed to link parent:', err);
+      showBanner('error', err.response?.data?.message || 'Failed to link parent');
+    } finally {
+      setLinkLoading(false);
     }
   };
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="space-y-6"
-    >
+    <div className="space-y-6">
       {/* Banner */}
-      <AnimatePresence>
-        {banner && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="glass-strong rounded-xl border border-green-200 px-4 py-3 flex items-center gap-3"
-          >
-            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <span className="text-green-800 font-medium">{banner}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {banner && (
+        <div className={`rounded-lg border px-4 py-3 flex items-center gap-3 ${
+          banner.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          {banner.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-600" /> : <AlertCircle className="w-5 h-5 text-red-600" />}
+          <span className="text-sm font-medium">{banner.message}</span>
+          <button onClick={() => setBanner(null)} className="ml-auto p-1 hover:bg-white/50 rounded">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Error */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="glass-strong rounded-xl border border-red-200 px-4 py-3 text-red-700"
-          >
-            {error}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">{error}</div>
+      )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Icon3D gradient="from-blue-500 to-cyan-500" size="lg">
-            <Users className="w-6 h-6" />
-          </Icon3D>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Students</h1>
-            <p className="text-sm text-gray-500">Manage your student records</p>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Students</h1>
+          <p className="mt-1 text-sm text-slate-500">Manage and view all student records</p>
         </div>
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Button onClick={() => setIsStudentModalOpen(true)} className="shadow-lg shadow-indigo-500/25">
-            <UserPlus className="w-4 h-4 mr-2" />
+        <div className="flex items-center gap-3">
+          <button className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+            <Download className="w-4 h-4" />
+            Export
+          </button>
+          <button
+            onClick={() => openFormSheet()}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
+          >
+            <UserPlus className="w-4 h-4" />
             Add Student
-          </Button>
-        </motion.div>
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <AnimatedStatCard
-          title="Total Students"
-          value={stats.total}
-          icon={<Users className="w-5 h-5" />}
-          gradient="from-blue-500 to-cyan-500"
-          delay={0}
-        />
-        <AnimatedStatCard
-          title="Active"
-          value={stats.active}
-          icon={<GraduationCap className="w-5 h-5" />}
-          gradient="from-emerald-500 to-teal-500"
-          delay={0.1}
-        />
-        <AnimatedStatCard
-          title="Blocked"
-          value={stats.blocked}
-          icon={<Lock className="w-5 h-5" />}
-          gradient="from-red-500 to-rose-500"
-          delay={0.2}
-        />
-        <AnimatedStatCard
-          title="Enrolled"
-          value={stats.withClass}
-          icon={<GraduationCap className="w-5 h-5" />}
-          gradient="from-violet-500 to-purple-500"
-          delay={0.3}
-        />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard title="Total Students" value={stats.total} icon={Users} />
+        <StatCard title="Active" value={stats.active} icon={GraduationCap} variant="success" />
+        <StatCard title="Blocked" value={stats.blocked} icon={Lock} variant="danger" />
+        <StatCard title="Enrolled" value={stats.withClass} icon={GraduationCap} variant="default" />
       </div>
 
-      {/* Search */}
-      <GlassCard hover={false} className="p-4">
-        <form
-          className="flex flex-col md:flex-row gap-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setStudentQuery(studentSearch);
-          }}
-        >
+      {/* Search and Filters */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <div className="flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               placeholder="Search by name, ID, class or section..."
-              className="w-full h-11 pl-10 pr-10 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-300 bg-white/80 backdrop-blur-sm transition-all"
+              className="w-full h-10 pl-9 pr-9 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               value={studentSearch}
               onChange={(e) => setStudentSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && setStudentQuery(studentSearch)}
             />
             {studentSearch && (
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                onClick={() => {
-                  setStudentSearch('');
-                  setStudentQuery('');
-                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                onClick={() => { setStudentSearch(''); setStudentQuery(''); }}
               >
                 <X className="w-4 h-4" />
               </button>
             )}
           </div>
           <div className="flex gap-2">
-            <Button type="submit" variant="outline">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="blocked">Blocked</option>
+            </select>
+            <button
+              onClick={() => setStudentQuery(studentSearch)}
+              className="h-10 px-4 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors"
+            >
               Search
-            </Button>
+            </button>
           </div>
-        </form>
-      </GlassCard>
+        </div>
+      </div>
 
       {/* Students Table */}
-      <GlassCard hover={false} className="overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm hidden md:table">
-            <thead className="bg-gradient-to-r from-gray-50 to-gray-100/80">
-              <tr>
-                <th className="px-4 py-4 text-left font-semibold text-gray-700">Student ID</th>
-                <th className="px-4 py-4 text-left font-semibold text-gray-700">Name</th>
-                <th className="px-4 py-4 text-left font-semibold text-gray-700">Class/Section</th>
-                <th className="px-4 py-4 text-left font-semibold text-gray-700">Age</th>
-                <th className="px-4 py-4 text-left font-semibold text-gray-700">Contact</th>
-                <th className="px-4 py-4 text-right font-semibold text-gray-700">Actions</th>
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Student</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">ID</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Class</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Age</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Contact</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-16 text-center">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                      className="inline-block w-10 h-10 border-3 border-indigo-500 border-t-transparent rounded-full"
-                    />
-                    <p className="mt-4 text-gray-500">Loading students...</p>
+                  <td colSpan={7} className="px-4 py-16 text-center">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto" />
+                    <p className="mt-3 text-sm text-slate-500">Loading students...</p>
                   </td>
                 </tr>
               ) : filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-16">
-                    <div className="flex flex-col items-center justify-center text-gray-500 space-y-4">
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: 'spring', stiffness: 200 }}
-                        className="text-6xl"
-                      >
-                        <GraduationCap className="w-16 h-16 text-gray-300" />
-                      </motion.div>
-                      <p>{students.length === 0 ? 'No students added yet.' : 'No students found.'}</p>
-                      <Button onClick={() => setIsStudentModalOpen(true)}>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Add Student
-                      </Button>
+                  <td colSpan={7} className="px-4 py-16">
+                    <div className="flex flex-col items-center justify-center text-slate-500">
+                      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                        <GraduationCap className="w-8 h-8 text-slate-400" />
+                      </div>
+                      <p className="text-sm font-medium">{students.length === 0 ? 'No students added yet' : 'No students found'}</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        {students.length === 0 ? 'Add your first student to get started' : 'Try adjusting your search or filters'}
+                      </p>
+                      {students.length === 0 && (
+                        <button onClick={() => openFormSheet()} className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors">
+                          <UserPlus className="w-4 h-4" />
+                          Add Student
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
               ) : (
-                filteredStudents.map((student, index) => (
-                  <motion.tr
-                    key={student.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.03 }}
-                    whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.8)' }}
-                    className="cursor-pointer group transition-all"
-                    onClick={() => setShowStudentModal(student)}
-                  >
-                    <td className="px-4 py-4 text-gray-600 font-mono text-xs">
-                      {student.studentId || 'N/A'}
-                    </td>
-                    <td className="px-4 py-4">
+                filteredStudents.map((student) => (
+                  <tr key={student.id} className="hover:bg-slate-50 cursor-pointer transition-colors" onClick={() => setShowDetailsSheet(student)}>
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold shadow-lg shadow-indigo-500/20">
-                          {student.firstName?.charAt(0)}
+                        <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 text-sm font-medium">
+                          {getInitials(student.firstName, student.lastName)}
                         </div>
-                        <span className="text-gray-900 font-medium group-hover:text-indigo-600 transition-colors">
-                          {student.firstName} {student.lastName}
-                        </span>
+                        <span className="font-medium text-slate-900">{student.firstName} {student.lastName}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-gray-700">
+                    <td className="px-4 py-3 text-slate-600 font-mono text-xs">{student.studentId || '—'}</td>
+                    <td className="px-4 py-3">
                       {student.classId ? (
-                        <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-medium">
-                          Class {(student.classId as any)?.grade || 'N/A'}
-                          {student.section && ` - ${student.section}`}
-                        </span>
+                        <span className="text-slate-700">Class {(student.classId as any)?.grade || '—'}{student.section && ` • ${student.section}`}</span>
                       ) : (
-                        <span className="text-gray-400 text-xs">Not assigned</span>
+                        <span className="text-slate-400">Not assigned</span>
                       )}
                     </td>
-                    <td className="px-4 py-4 text-gray-700">
-                      {getAge(student.dateOfBirth)}
-                    </td>
-                    <td className="px-4 py-4 text-gray-600 text-xs">
-                      {student.email || student.phoneNumber || 'N/A'}
-                    </td>
-                    <td className="px-4 py-4 text-right">
-                      <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {student.isBlocked ? (
-                          <>
-                            <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-lg font-medium mr-2">
-                              Blocked
-                            </span>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              title="Unblock User"
-                              className="p-2 rounded-lg hover:bg-green-100 text-gray-400 hover:text-green-600 transition-all"
-                              onClick={(e) => handleUnblockUser(student, e)}
-                            >
-                              <Unlock className="w-4 h-4" />
-                            </motion.button>
-                          </>
-                        ) : (
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            title="Block User"
-                            className="p-2 rounded-lg hover:bg-orange-100 text-gray-400 hover:text-orange-600 transition-all"
-                            onClick={(e) => handleBlockUser(student, e)}
-                          >
-                            <Lock className="w-4 h-4" />
-                          </motion.button>
-                        )}
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          title="View Details"
-                          className="p-2 rounded-lg hover:bg-indigo-100 text-gray-400 hover:text-indigo-600 transition-all"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowStudentModal(student);
-                          }}
-                        >
+                    <td className="px-4 py-3 text-slate-600">{getAge(student.dateOfBirth)}</td>
+                    <td className="px-4 py-3"><StatusBadge status={student.isBlocked ? 'blocked' : 'active'} /></td>
+                    <td className="px-4 py-3 text-slate-600 text-xs">{student.email || student.phoneNumber || '—'}</td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <button title="View" className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors" onClick={(e) => { e.stopPropagation(); setShowDetailsSheet(student); }}>
                           <Eye className="w-4 h-4" />
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          title="Link Parent"
-                          className="p-2 rounded-lg hover:bg-green-100 text-gray-400 hover:text-green-600 transition-all"
-                          onClick={(e) => handleLinkParent(student, e)}
-                        >
+                        </button>
+                        <button title="Link Parent" className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors" onClick={(e) => { e.stopPropagation(); setShowLinkSheet(student); }}>
                           <Link2 className="w-4 h-4" />
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          title="Edit"
-                          className="p-2 rounded-lg hover:bg-blue-100 text-gray-400 hover:text-blue-600 transition-all"
-                          onClick={(e) => handleEditStudent(student, e)}
-                        >
+                        </button>
+                        <button title="Edit" className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors" onClick={(e) => { e.stopPropagation(); openFormSheet(student); }}>
                           <Edit className="w-4 h-4" />
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          title="Delete"
-                          className="p-2 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition-all"
-                          onClick={(e) => handleDeleteStudent(student.id, e)}
-                        >
+                        </button>
+                        {student.isBlocked ? (
+                          <button title="Unblock" className="p-1.5 rounded-lg hover:bg-emerald-100 text-slate-400 hover:text-emerald-600 transition-colors" onClick={(e) => handleUnblockUser(student, e)}>
+                            <Unlock className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <button title="Block" className="p-1.5 rounded-lg hover:bg-amber-100 text-slate-400 hover:text-amber-600 transition-colors" onClick={(e) => handleBlockUser(student, e)}>
+                            <Lock className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button title="Delete" className="p-1.5 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors" onClick={(e) => handleDeleteStudent(student.id, e)}>
                           <Trash2 className="w-4 h-4" />
-                        </motion.button>
+                        </button>
                       </div>
                     </td>
-                  </motion.tr>
+                  </tr>
                 ))
               )}
             </tbody>
           </table>
-
-          {/* Mobile cards */}
-          <div className="md:hidden p-4 space-y-3">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="w-10 h-10 border-3 border-indigo-500 border-t-transparent rounded-full"
-                />
-                <p className="mt-4 text-gray-500">Loading students...</p>
-              </div>
-            ) : filteredStudents.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-gray-500 space-y-4 py-12">
-                <GraduationCap className="w-16 h-16 text-gray-300" />
-                <p>{students.length === 0 ? 'No students added yet.' : 'No students found.'}</p>
-                <Button onClick={() => setIsStudentModalOpen(true)}>Add Student</Button>
-              </div>
-            ) : (
-              filteredStudents.map((student, index) => (
-                <motion.div
-                  key={student.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ y: -2 }}
-                  className="glass rounded-xl p-4 cursor-pointer"
-                  onClick={() => setShowStudentModal(student)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold shadow-lg">
-                        {student.firstName?.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-gray-900">
-                          {student.firstName} {student.lastName}
-                        </div>
-                        <div className="text-xs text-gray-500 font-mono">{student.studentId}</div>
-                      </div>
-                    </div>
-                    {student.isBlocked && (
-                      <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-lg">
-                        Blocked
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-700">
-                    {student.classId ? (
-                      <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs">
-                        Class {(student.classId as any)?.grade || 'N/A'}
-                        {student.section && ` - ${student.section}`}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-xs">Not assigned</span>
-                    )}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-2">Age: {getAge(student.dateOfBirth)}</div>
-                </motion.div>
-              ))
-            )}
-          </div>
         </div>
-      </GlassCard>
 
-      {/* Student details modal */}
-      <AnimatePresence>
-        {showStudentModal && (
-          <Portal>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-start justify-center overflow-y-auto pt-20 pb-20"
-              onClick={() => setShowStudentModal(null)}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                className="relative glass-strong rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-indigo-500/30">
-                    {showStudentModal.firstName?.charAt(0)}
+        {/* Mobile Cards */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <p className="mt-3 text-sm text-slate-500">Loading students...</p>
+            </div>
+          ) : filteredStudents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-slate-500 py-16 px-4">
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                <GraduationCap className="w-8 h-8 text-slate-400" />
+              </div>
+              <p className="text-sm font-medium">{students.length === 0 ? 'No students added yet' : 'No students found'}</p>
+              {students.length === 0 && (
+                <button onClick={() => openFormSheet()} className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg">
+                  <UserPlus className="w-4 h-4" />
+                  Add Student
+                </button>
+              )}
+            </div>
+          ) : (
+            filteredStudents.map((student) => (
+              <div key={student.id} className="p-4 hover:bg-slate-50 cursor-pointer" onClick={() => setShowDetailsSheet(student)}>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 text-sm font-medium">
+                      {getInitials(student.firstName, student.lastName)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-900">{student.firstName} {student.lastName}</p>
+                      <p className="text-xs text-slate-500 font-mono">{student.studentId || 'No ID'}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {showStudentModal.firstName} {showStudentModal.lastName}
-                    </h3>
-                    <p className="text-sm text-gray-500 font-mono">{showStudentModal.studentId || 'No ID'}</p>
-                  </div>
+                  <StatusBadge status={student.isBlocked ? 'blocked' : 'active'} />
                 </div>
+                <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
+                  <span>{student.classId ? <>Class {(student.classId as any)?.grade || '—'}{student.section && ` • ${student.section}`}</> : 'Not assigned'}</span>
+                  <span>Age: {getAge(student.dateOfBirth)}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
 
-                <div className="space-y-3 text-sm">
-                  {[
-                    { label: 'Email', value: showStudentModal.email || 'N/A' },
-                    { label: 'Class/Section', value: showStudentModal.classId ? `Class ${(showStudentModal.classId as any)?.grade || 'N/A'} ${showStudentModal.section ? `- ${showStudentModal.section}` : ''}` : 'Not assigned' },
-                    { label: 'Age', value: getAge(showStudentModal.dateOfBirth) },
-                    { label: 'Gender', value: showStudentModal.gender || 'N/A' },
-                    { label: 'Blood Group', value: showStudentModal.bloodGroup || 'N/A' },
-                    { label: 'Address', value: showStudentModal.address || 'N/A' },
-                    { label: 'Parent Email', value: showStudentModal.parentEmail || 'N/A' },
-                    { label: 'Parent Phone', value: showStudentModal.parentPhone || 'N/A' },
-                  ].map((item, index) => (
-                    <motion.div
-                      key={item.label}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="flex items-center justify-between py-2.5 border-b border-gray-100 last:border-0"
-                    >
-                      <span className="text-gray-500">{item.label}</span>
-                      <span className="font-medium text-gray-900 text-right max-w-[60%] capitalize">
-                        {item.value}
-                      </span>
-                    </motion.div>
-                  ))}
-                </div>
-
-                <div className="mt-6 flex gap-3">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => {
-                      setStudentToLink(showStudentModal);
-                      setLinkParentModalOpen(true);
-                    }}
-                  >
-                    <Link2 className="w-4 h-4 mr-2" />
-                    Link Parent
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowStudentModal(null)}>
-                    Close
-                  </Button>
-                </div>
-              </motion.div>
-            </motion.div>
-          </Portal>
+        {filteredStudents.length > 0 && (
+          <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 text-sm text-slate-600">
+            Showing {filteredStudents.length} of {students.length} students
+          </div>
         )}
-      </AnimatePresence>
+      </div>
 
-      {/* Create/Edit student modal */}
-      <CreateStudentModal
-        isOpen={isStudentModalOpen}
-        onClose={() => {
-          setIsStudentModalOpen(false);
-          setEditingStudent(null);
-        }}
-        onSubmit={handleCreateStudent}
-        initialData={editingStudent ? {
-          firstName: editingStudent.firstName,
-          lastName: editingStudent.lastName,
-          email: editingStudent.email,
-          dateOfBirth: editingStudent.dateOfBirth ? (typeof editingStudent.dateOfBirth === 'string' ? editingStudent.dateOfBirth : (new Date(editingStudent.dateOfBirth).toISOString().split('T')[0] ?? '')) : '',
-          gender: editingStudent.gender,
-          bloodGroup: editingStudent.bloodGroup,
-          address: editingStudent.address,
-          phoneNumber: editingStudent.phoneNumber,
-          parentEmail: editingStudent.parentEmail,
-          parentPhone: editingStudent.parentPhone,
-          studentId: editingStudent.studentId,
-          classId: typeof editingStudent.classId === 'string' ? editingStudent.classId : editingStudent.classId?.id,
-          section: editingStudent.section,
-        } : undefined}
-      />
+      {/* Student Details Sheet */}
+      <SlideSheet
+        isOpen={!!showDetailsSheet}
+        onClose={() => setShowDetailsSheet(null)}
+        title="Student Details"
+        subtitle={showDetailsSheet ? `${showDetailsSheet.firstName} ${showDetailsSheet.lastName}` : ''}
+        size="md"
+        footer={showDetailsSheet && (
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowLinkSheet(showDetailsSheet)}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              <Link2 className="w-4 h-4" />
+              Link Parent
+            </button>
+            <button
+              onClick={() => openFormSheet(showDetailsSheet)}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
+            >
+              <Edit className="w-4 h-4" />
+              Edit
+            </button>
+          </div>
+        )}
+      >
+        {showDetailsSheet && (
+          <div className="space-y-6">
+            {/* Profile Header */}
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 text-xl font-medium">
+                {getInitials(showDetailsSheet.firstName, showDetailsSheet.lastName)}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-semibold text-slate-900">
+                  {showDetailsSheet.firstName} {showDetailsSheet.lastName}
+                </h3>
+                <p className="text-sm text-slate-500 font-mono">{showDetailsSheet.studentId || 'No ID'}</p>
+              </div>
+              <StatusBadge status={showDetailsSheet.isBlocked ? 'blocked' : 'active'} />
+            </div>
 
-      {/* Link parent modal */}
-      {studentToLink && (
-        <LinkParentModal
-          isOpen={linkParentModalOpen}
-          onClose={() => {
-            setLinkParentModalOpen(false);
-            setStudentToLink(null);
-          }}
-          studentId={studentToLink.id || studentToLink._id || ''}
-          studentName={`${studentToLink.firstName} ${studentToLink.lastName}`}
-          onSuccess={handleLinkSuccess}
-        />
-      )}
-    </motion.section>
+            {/* Details */}
+            <SheetSection title="Personal Information" icon={<UserIcon className="w-4 h-4 text-slate-500" />}>
+              <SheetDetailRow label="Email" value={showDetailsSheet.email} />
+              <SheetDetailRow label="Phone" value={showDetailsSheet.phoneNumber} />
+              <SheetDetailRow label="Date of Birth" value={showDetailsSheet.dateOfBirth ? new Date(showDetailsSheet.dateOfBirth).toLocaleDateString() : '—'} />
+              <SheetDetailRow label="Age" value={getAge(showDetailsSheet.dateOfBirth)} />
+              <SheetDetailRow label="Gender" value={showDetailsSheet.gender} />
+              <SheetDetailRow label="Blood Group" value={showDetailsSheet.bloodGroup} />
+              <SheetDetailRow label="Address" value={showDetailsSheet.address} />
+            </SheetSection>
+
+            <SheetSection title="Academic Information" icon={<BookOpen className="w-4 h-4 text-slate-500" />}>
+              <SheetDetailRow label="Class" value={showDetailsSheet.classId ? `Class ${(showDetailsSheet.classId as any)?.grade || '—'}` : 'Not assigned'} />
+              <SheetDetailRow label="Section" value={showDetailsSheet.section} />
+            </SheetSection>
+
+            <SheetSection title="Parent/Guardian" icon={<Users className="w-4 h-4 text-slate-500" />}>
+              <SheetDetailRow label="Parent Email" value={showDetailsSheet.parentEmail} />
+              <SheetDetailRow label="Parent Phone" value={showDetailsSheet.parentPhone} />
+            </SheetSection>
+          </div>
+        )}
+      </SlideSheet>
+
+      {/* Create/Edit Student Sheet */}
+      <SlideSheet
+        isOpen={showFormSheet}
+        onClose={closeFormSheet}
+        title={editingStudent ? 'Edit Student' : 'Add New Student'}
+        subtitle={editingStudent ? `Update ${editingStudent.firstName}'s information` : 'Fill in the student details'}
+        size="lg"
+        footer={
+          <div className="flex gap-3">
+            <button
+              onClick={closeFormSheet}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleFormSubmit}
+              disabled={formLoading}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+            >
+              {formLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {editingStudent ? 'Update Student' : 'Create Student'}
+            </button>
+          </div>
+        }
+      >
+        <form onSubmit={handleFormSubmit} className="space-y-6">
+          <SheetSection title="Personal Information" icon={<UserIcon className="w-4 h-4 text-slate-500" />}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SheetField label="First Name" required>
+                <input
+                  type="text"
+                  required
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </SheetField>
+              <SheetField label="Last Name" required>
+                <input
+                  type="text"
+                  required
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </SheetField>
+            </div>
+            {!editingStudent && (
+              <SheetField label="Email">
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="Auto-generated if left empty"
+                  className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </SheetField>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SheetField label="Date of Birth">
+                <input
+                  type="date"
+                  value={formData.dateOfBirth}
+                  onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                  className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </SheetField>
+              <SheetField label="Gender">
+                <select
+                  value={formData.gender}
+                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                >
+                  <option value="">Select Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </SheetField>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SheetField label="Blood Group">
+                <select
+                  value={formData.bloodGroup}
+                  onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
+                  className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                >
+                  <option value="">Select Blood Group</option>
+                  {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bg => <option key={bg} value={bg}>{bg}</option>)}
+                </select>
+              </SheetField>
+              <SheetField label="Phone Number">
+                <input
+                  type="tel"
+                  value={formData.phoneNumber}
+                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </SheetField>
+            </div>
+            <SheetField label="Address">
+              <textarea
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                rows={2}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+              />
+            </SheetField>
+          </SheetSection>
+
+          <SheetSection title="Academic Information" icon={<BookOpen className="w-4 h-4 text-slate-500" />}>
+            <SheetField label="Student ID">
+              <input
+                type="text"
+                value={formData.studentId}
+                onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
+            </SheetField>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SheetField label="Class">
+                <select
+                  value={formData.classId}
+                  onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
+                  className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                >
+                  <option value="">Select Class</option>
+                  {classes.map(cls => <option key={cls._id} value={cls._id}>{cls.name} (Grade {cls.grade})</option>)}
+                </select>
+              </SheetField>
+              <SheetField label="Section">
+                <input
+                  type="text"
+                  value={formData.section}
+                  onChange={(e) => setFormData({ ...formData, section: e.target.value })}
+                  placeholder="e.g., A, B, C"
+                  className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </SheetField>
+            </div>
+          </SheetSection>
+
+          <SheetSection title="Parent/Guardian Information" icon={<Users className="w-4 h-4 text-slate-500" />}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SheetField label="Parent Email">
+                <input
+                  type="email"
+                  value={formData.parentEmail}
+                  onChange={(e) => setFormData({ ...formData, parentEmail: e.target.value })}
+                  className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </SheetField>
+              <SheetField label="Parent Phone">
+                <input
+                  type="tel"
+                  value={formData.parentPhone}
+                  onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })}
+                  className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </SheetField>
+            </div>
+          </SheetSection>
+        </form>
+      </SlideSheet>
+
+      {/* Link Parent Sheet */}
+      <SlideSheet
+        isOpen={!!showLinkSheet}
+        onClose={() => { setShowLinkSheet(null); setLinkEmail(''); }}
+        title="Link Parent Account"
+        subtitle={showLinkSheet ? `Link a parent to ${showLinkSheet.firstName} ${showLinkSheet.lastName}` : ''}
+        size="sm"
+        footer={
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setShowLinkSheet(null); setLinkEmail(''); }}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleLinkParent}
+              disabled={linkLoading || !linkEmail.trim()}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+            >
+              {linkLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+              Link Parent
+            </button>
+          </div>
+        }
+      >
+        <form onSubmit={handleLinkParent} className="space-y-4">
+          <div className="p-4 bg-slate-50 rounded-lg">
+            <p className="text-sm text-slate-600">
+              Enter the parent's email address. If they have an existing account, their account will be linked to this student.
+              If not, they will receive an invitation to create an account.
+            </p>
+          </div>
+          <SheetField label="Parent Email" required>
+            <input
+              type="email"
+              required
+              value={linkEmail}
+              onChange={(e) => setLinkEmail(e.target.value)}
+              placeholder="parent@example.com"
+              className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+          </SheetField>
+        </form>
+      </SlideSheet>
+    </div>
   );
 }

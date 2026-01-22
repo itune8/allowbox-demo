@@ -189,7 +189,7 @@ export default function StudentProfilePage() {
               animate={{ scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
               whileHover={{ scale: 1.05 }}
-              className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-white font-bold grid place-items-center text-lg sm:text-2xl flex-shrink-0 shadow-lg"
+              className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-sky-500 text-white font-bold grid place-items-center text-lg sm:text-2xl flex-shrink-0 shadow-lg"
             >
               {student.firstName?.[0]}{student.lastName?.[0]}
             </motion.div>
@@ -245,7 +245,7 @@ export default function StudentProfilePage() {
             >
               <GlassCard className="p-4 sm:p-6 bg-white/90">
                 <div className="flex items-center gap-3 mb-3 sm:mb-4">
-                  <Icon3D gradient="from-blue-500 to-cyan-500" size="md">
+                  <Icon3D bgColor="bg-sky-500" size="md">
                     <UserIcon className="w-4 h-4" />
                   </Icon3D>
                   <h2 className="text-base sm:text-lg font-semibold text-gray-900">
@@ -335,7 +335,7 @@ export default function StudentProfilePage() {
             <GlassCard className="p-4 sm:p-6 bg-white/90">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
                 <div className="flex items-center gap-3">
-                  <Icon3D gradient="from-blue-500 to-cyan-500" size="md">
+                  <Icon3D bgColor="bg-sky-500" size="md">
                     <Calendar className="w-4 h-4" />
                   </Icon3D>
                   <h2 className="text-base sm:text-lg font-semibold text-gray-900">
@@ -407,7 +407,7 @@ export default function StudentProfilePage() {
           >
             <GlassCard className="p-4 sm:p-6 bg-white/90">
               <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                <Icon3D gradient="from-blue-500 to-cyan-500" size="md">
+                <Icon3D bgColor="bg-sky-500" size="md">
                   <BookOpen className="w-4 h-4" />
                 </Icon3D>
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">Enrolled Subjects</h2>
@@ -448,7 +448,7 @@ export default function StudentProfilePage() {
           >
             <GlassCard className="p-6 bg-white/90 overflow-x-auto">
               <div className="flex items-center gap-3 mb-6">
-                <Icon3D gradient="from-blue-500 to-cyan-500" size="md">
+                <Icon3D bgColor="bg-sky-500" size="md">
                   <Clock className="w-4 h-4" />
                 </Icon3D>
                 <h2 className="text-lg font-semibold text-gray-900">Weekly Timetable</h2>
@@ -511,7 +511,7 @@ export default function StudentProfilePage() {
             <GlassCard className="p-4 sm:p-6 bg-white/90">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
                 <div className="flex items-center gap-3">
-                  <Icon3D gradient="from-blue-500 to-cyan-500" size="md">
+                  <Icon3D bgColor="bg-sky-500" size="md">
                     <DollarSign className="w-4 h-4" />
                   </Icon3D>
                   <h2 className="text-base sm:text-lg font-semibold text-gray-900">Fee Invoices</h2>

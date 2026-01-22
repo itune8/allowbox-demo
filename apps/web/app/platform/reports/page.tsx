@@ -137,7 +137,7 @@ export default function ReportsPage() {
         className="flex items-center justify-between"
       >
         <div className="flex items-center gap-4">
-          <Icon3D gradient="from-purple-500 to-pink-500">
+          <Icon3D bgColor="bg-purple-500">
             <BarChart3 className="w-5 h-5" />
           </Icon3D>
           <div>
@@ -225,30 +225,30 @@ export default function ReportsPage() {
         <AnimatedStatCard
           title="Total Schools"
           value={metrics?.totalSchools || 0}
-          icon={<SchoolIcon className="w-5 h-5 text-white" />}
+          icon={<SchoolIcon className="w-5 h-5 text-primary" />}
+          iconBgColor="bg-primary-50"
           trend={metrics?.growthRate ? { value: `${metrics.growthRate}%`, isPositive: metrics.growthRate > 0 } : undefined}
-          gradient="from-purple-500 to-pink-500"
         />
 
         <AnimatedStatCard
           title="Total Students"
           value={metrics?.totalStudents.toLocaleString() || '0'}
-          icon={<Users className="w-5 h-5 text-white" />}
-          gradient="from-purple-500 to-pink-500"
+          icon={<Users className="w-5 h-5 text-purple-600" />}
+          iconBgColor="bg-purple-50"
         />
 
         <AnimatedStatCard
           title="Growth Rate"
           value={`+${metrics?.growthRate}%`}
           icon={<TrendingUp className="w-5 h-5 text-white" />}
-          gradient="from-green-500 to-emerald-500"
+          iconBgColor="bg-green-500"
         />
 
         <AnimatedStatCard
           title="Churn Rate"
           value={`${metrics?.churnRate}%`}
           icon={<TrendingDown className="w-5 h-5 text-white" />}
-          gradient="from-red-500 to-rose-500"
+          iconBgColor="bg-red-500"
         />
       </motion.div>
 
@@ -261,7 +261,7 @@ export default function ReportsPage() {
         <GlassCard className="bg-white">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              <Icon3D gradient="from-purple-500 to-pink-500">
+              <Icon3D bgColor="bg-purple-500">
                 <Award className="w-4 h-4" />
               </Icon3D>
               <div>
@@ -293,7 +293,7 @@ export default function ReportsPage() {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: index * 0.1 }}
-                      className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full"
+                      className="flex items-center justify-center w-10 h-10 bg-purple-500 rounded-full"
                     >
                       <span className="text-lg font-bold text-white">
                         {index + 1}
@@ -315,7 +315,7 @@ export default function ReportsPage() {
                         initial={{ width: 0 }}
                         animate={{ width: `${school.engagement}%` }}
                         transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
-                        className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full"
+                        className="bg-green-500 h-2 rounded-full"
                       />
                     </div>
                   </div>
@@ -335,7 +335,7 @@ export default function ReportsPage() {
         <GlassCard className="bg-white">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              <Icon3D gradient="from-orange-500 to-red-500">
+              <Icon3D bgColor="bg-orange-500">
                 <AlertTriangle className="w-4 h-4" />
               </Icon3D>
               <div>
@@ -387,7 +387,7 @@ export default function ReportsPage() {
                         initial={{ width: 0 }}
                         animate={{ width: `${school.engagement}%` }}
                         transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
-                        className="bg-gradient-to-r from-red-500 to-rose-500 h-2 rounded-full"
+                        className="bg-red-500 h-2 rounded-full"
                       />
                     </div>
                   </div>
@@ -406,7 +406,7 @@ export default function ReportsPage() {
       >
         <GlassCard className="bg-white p-6">
           <div className="flex items-center gap-3 mb-4">
-            <Icon3D gradient="from-purple-500 to-pink-500">
+            <Icon3D bgColor="bg-purple-500">
               <PieChart className="w-4 h-4" />
             </Icon3D>
             <h3 className="text-lg font-semibold text-gray-900">
@@ -422,11 +422,11 @@ export default function ReportsPage() {
             {['free', 'basic', 'premium', 'enterprise'].map((plan, index) => {
               const planSchools = schools.filter(s => s.subscriptionPlan === plan);
               const revenue = planSchools.reduce((sum, s) => sum + (s.mrr || 0), 0);
-              const gradients = [
-                'from-gray-500 to-gray-600',
-                'from-blue-500 to-cyan-500',
-                'from-purple-500 to-pink-500',
-                'from-orange-500 to-red-500',
+              const bgColors = [
+                'bg-gray-500',
+                'bg-blue-500',
+                'bg-purple-500',
+                'bg-orange-500',
               ];
               return (
                 <motion.div
@@ -435,7 +435,7 @@ export default function ReportsPage() {
                   whileHover={{ scale: 1.05, y: -5 }}
                   className="border border-gray-200 rounded-lg p-4 bg-white hover:shadow-lg transition-all"
                 >
-                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${gradients[index]} mb-3`} />
+                  <div className={`w-8 h-8 rounded-lg ${bgColors[index]} mb-3`} />
                   <p className="text-sm text-gray-600 capitalize">{plan}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-2">
                     {formatCurrency(revenue)}
