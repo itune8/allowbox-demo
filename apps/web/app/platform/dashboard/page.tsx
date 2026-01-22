@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AnimatedStatCard } from '@/components/ui';
 import {
   Building2,
   Users,
@@ -11,10 +9,7 @@ import {
   DollarSign,
   Plus,
   AlertCircle,
-  Clock,
-  Info,
   CheckCircle2,
-  Loader2
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/auth-context';
 import { hasPermission } from '../../../lib/permissions';
@@ -162,301 +157,242 @@ export default function DashboardPage() {
   const getAlertIcon = (type: Alert['type']) => {
     switch (type) {
       case 'unpaid':
-        return (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        );
+        return <DollarSign className="w-5 h-5" />;
       case 'expiring_trial':
-        return (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        );
+        return <AlertCircle className="w-5 h-5" />;
       case 'inactive':
-        return (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        );
+        return <Building2 className="w-5 h-5" />;
     }
   };
 
-  const getSeverityColor = (severity: Alert['severity']) => {
+  const getSeverityStyles = (severity: Alert['severity']) => {
     switch (severity) {
       case 'high':
-        return 'bg-red-100 text-red-700 border-red-200';
+        return 'border-l-red-500 bg-red-50/50';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+        return 'border-l-amber-500 bg-amber-50/50';
       case 'low':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
+        return 'border-l-blue-500 bg-blue-50/50';
+    }
+  };
+
+  const getSeverityBadge = (severity: Alert['severity']) => {
+    switch (severity) {
+      case 'high':
+        return 'bg-red-100 text-red-700';
+      case 'medium':
+        return 'bg-amber-100 text-amber-700';
+      case 'low':
+        return 'bg-blue-100 text-blue-700';
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] bg-white">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          >
-            <Loader2 className="h-12 w-12 text-primary" />
-          </motion.div>
-        </motion.div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6"
-    >
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
-      >
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Dashboard</h2>
-          <p className="text-gray-600 mt-1">Overview of your platform metrics and alerts</p>
+          <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
+          <p className="text-slate-500 mt-1">Overview of your platform metrics and alerts</p>
         </div>
         {canCreateSchools && (
-          <motion.button
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
+          <button
             onClick={() => router.push('/platform/schools')}
-            className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 font-semibold"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             Add School
-          </motion.button>
+          </button>
         )}
-      </motion.div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <AnimatedStatCard
-          title="Total Schools"
-          value={metrics?.totalSchools || 0}
-          icon={<Building2 className="w-6 h-6 text-primary" />}
-          iconBgColor="bg-primary-50"
-          trend={{
-            value: `${metrics?.activeSchools} active`,
-            isPositive: true
-          }}
-          delay={0}
-        />
-
-        <AnimatedStatCard
-          title="Total Students"
-          value={metrics?.totalStudents.toLocaleString() || '0'}
-          icon={<Users className="w-6 h-6 text-emerald-600" />}
-          iconBgColor="bg-emerald-50"
-          trend={{
-            value: `${metrics?.totalTeachers.toLocaleString()} teachers`,
-            isPositive: true
-          }}
-          delay={1}
-        />
-
-        <AnimatedStatCard
-          title="Monthly Revenue (MRR)"
-          value={formatCurrency(metrics?.mrr || 0)}
-          icon={<TrendingUp className="w-6 h-6 text-blue-600" />}
-          iconBgColor="bg-blue-50"
-          trend={{
-            value: `ARR: ${formatCurrency(metrics?.arr || 0)}`,
-            isPositive: true
-          }}
-          delay={2}
-        />
-
-        <AnimatedStatCard
-          title="Total Revenue"
-          value={formatCurrency(metrics?.totalRevenue || 0)}
-          icon={<DollarSign className="w-6 h-6 text-purple-600" />}
-          iconBgColor="bg-purple-50"
-          trend={{
-            value: 'All time',
-            isPositive: true
-          }}
-          delay={3}
-        />
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-200">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-blue-50">
+              <Building2 className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Total Schools</p>
+              <p className="text-2xl font-semibold text-slate-900">{metrics?.totalSchools || 0}</p>
+              <p className="text-xs text-emerald-600 mt-0.5">{metrics?.activeSchools} active</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-emerald-50">
+              <Users className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Total Students</p>
+              <p className="text-2xl font-semibold text-slate-900">{metrics?.totalStudents.toLocaleString() || '0'}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{metrics?.totalTeachers.toLocaleString()} teachers</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-purple-50">
+              <TrendingUp className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Monthly Revenue</p>
+              <p className="text-2xl font-semibold text-slate-900">{formatCurrency(metrics?.mrr || 0)}</p>
+              <p className="text-xs text-slate-500 mt-0.5">ARR: {formatCurrency(metrics?.arr || 0)}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-amber-50">
+              <DollarSign className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Total Revenue</p>
+              <p className="text-2xl font-semibold text-slate-900">{formatCurrency(metrics?.totalRevenue || 0)}</p>
+              <p className="text-xs text-slate-500 mt-0.5">All time</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Alerts */}
+      <div className="bg-white rounded-xl border border-slate-200">
+        <div className="px-5 py-4 border-b border-slate-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-red-50">
+              <div className="p-2 rounded-lg bg-red-50">
                 <AlertCircle className="w-5 h-5 text-red-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">Alerts & Notifications</h3>
+              <h2 className="text-lg font-semibold text-slate-900">Alerts & Notifications</h2>
             </div>
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.5, type: 'spring' }}
-              className="text-sm text-gray-500"
-            >
+            <span className="text-sm text-slate-500">
               {alerts.length} alert{alerts.length !== 1 ? 's' : ''}
-            </motion.span>
+            </span>
           </div>
         </div>
 
-        <div className="divide-y divide-gray-200">
-          <AnimatePresence mode="popLayout">
-            {alerts.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="px-6 py-8 text-center"
+        <div className="divide-y divide-slate-100">
+          {alerts.length === 0 ? (
+            <div className="px-5 py-10 text-center">
+              <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-400" />
+              <p className="mt-3 text-slate-500">No alerts at this time</p>
+            </div>
+          ) : (
+            alerts.slice(0, 10).map((alert) => (
+              <div
+                key={alert.id}
+                className={`px-5 py-4 flex items-start gap-4 border-l-4 cursor-pointer hover:bg-slate-50 transition-colors ${getSeverityStyles(alert.severity)}`}
+                onClick={() => router.push('/platform/schools')}
               >
-                <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-400" />
-                <p className="mt-2 text-gray-500">No alerts at this time</p>
-              </motion.div>
-            ) : (
-              alerts.slice(0, 10).map((alert, index) => (
-                <motion.div
-                  key={alert.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.5)', x: 4 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`px-6 py-4 flex items-start gap-4 transition-colors cursor-pointer border-l-4 ${getSeverityColor(alert.severity)}`}
-                  onClick={() => router.push('/platform/schools')}
-                >
-                  <motion.div
-                    className="flex-shrink-0 mt-0.5"
-                    whileHover={{ scale: 1.2, rotate: 10 }}
-                  >
-                    {getAlertIcon(alert.type)}
-                  </motion.div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{alert.schoolName}</p>
-                    <p className="text-sm text-gray-600 mt-1">{alert.message}</p>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: index * 0.05 + 0.2 }}
-                      className={`text-xs px-2 py-1 rounded font-medium ${
-                        alert.severity === 'high' ? 'bg-red-100 text-red-700' :
-                        alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}
-                    >
-                      {alert.severity}
-                    </motion.span>
-                  </div>
-                </motion.div>
-              ))
-            )}
-          </AnimatePresence>
+                <div className="flex-shrink-0 mt-0.5 text-slate-500">
+                  {getAlertIcon(alert.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-slate-900">{alert.schoolName}</p>
+                  <p className="text-sm text-slate-600 mt-0.5">{alert.message}</p>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-md font-medium ${getSeverityBadge(alert.severity)}`}>
+                  {alert.severity}
+                </span>
+              </div>
+            ))
+          )}
         </div>
 
         {alerts.length > 10 && (
-          <div className="px-6 py-4 border-t border-gray-200 text-center">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="text-sm text-primary hover:text-primary-dark font-medium"
-            >
+          <div className="px-5 py-3 border-t border-slate-200 text-center">
+            <button className="text-sm text-primary font-medium hover:underline">
               View all {alerts.length} alerts
-            </motion.button>
+            </button>
           </div>
         )}
       </div>
 
+      {/* Distribution Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-xl bg-purple-50">
+        {/* Subscription Distribution */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="p-2 rounded-lg bg-purple-50">
               <TrendingUp className="w-5 h-5 text-purple-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Subscription Distribution</h3>
+            <h3 className="font-semibold text-slate-900">Subscription Distribution</h3>
           </div>
-          <div className="space-y-3">
-            {['free', 'basic', 'premium', 'enterprise'].map((plan, index) => {
+          <div className="space-y-4">
+            {['free', 'basic', 'premium', 'enterprise'].map((plan) => {
               const count = schools.filter(s => s.subscriptionPlan === plan).length;
               const percentage = schools.length > 0 ? (count / schools.length) * 100 : 0;
+              const colors: Record<string, string> = {
+                free: 'bg-slate-400',
+                basic: 'bg-blue-500',
+                premium: 'bg-purple-500',
+                enterprise: 'bg-amber-500',
+              };
               return (
-                <motion.div
-                  key={plan}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 + 0.5 }}
-                >
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-gray-700 capitalize font-medium">{plan}</span>
-                    <span className="text-gray-600">{count} schools ({percentage.toFixed(0)}%)</span>
+                <div key={plan}>
+                  <div className="flex items-center justify-between text-sm mb-1.5">
+                    <span className="font-medium text-slate-700 capitalize">{plan}</span>
+                    <span className="text-slate-500">{count} schools ({percentage.toFixed(0)}%)</span>
                   </div>
-                  <motion.div
-                    className="w-full bg-gray-200 rounded-full h-2 overflow-hidden"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${percentage}%` }}
-                      transition={{ delay: index * 0.05, duration: 0.8, ease: 'easeOut' }}
-                      className={`h-2 rounded-full ${plan === 'free' ? 'bg-gray-400' : plan === 'basic' ? 'bg-blue-500' : plan === 'premium' ? 'bg-purple-500' : 'bg-primary'}`}
+                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-500 ${colors[plan]}`}
+                      style={{ width: `${percentage}%` }}
                     />
-                  </motion.div>
-                </motion.div>
+                  </div>
+                </div>
               );
             })}
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-xl bg-emerald-50">
+        {/* Status Overview */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="p-2 rounded-lg bg-emerald-50">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Status Overview</h3>
+            <h3 className="font-semibold text-slate-900">Status Overview</h3>
           </div>
-          <div className="space-y-3">
-            {['trial', 'active', 'suspended', 'cancelled'].map((status, index) => {
+          <div className="space-y-4">
+            {['trial', 'active', 'suspended', 'cancelled'].map((status) => {
               const count = schools.filter(s => s.subscriptionStatus === status).length;
               const percentage = schools.length > 0 ? (count / schools.length) * 100 : 0;
+              const colors: Record<string, string> = {
+                trial: 'bg-blue-500',
+                active: 'bg-emerald-500',
+                suspended: 'bg-amber-500',
+                cancelled: 'bg-red-500',
+              };
               return (
-                <motion.div
-                  key={status}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-gray-700 capitalize font-medium">{status}</span>
-                    <span className="text-gray-600">{count} schools ({percentage.toFixed(0)}%)</span>
+                <div key={status}>
+                  <div className="flex items-center justify-between text-sm mb-1.5">
+                    <span className="font-medium text-slate-700 capitalize">{status}</span>
+                    <span className="text-slate-500">{count} schools ({percentage.toFixed(0)}%)</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${percentage}%` }}
-                      transition={{ duration: 1, delay: index * 0.05, ease: 'easeOut' }}
-                      className={`h-2 rounded-full ${status === 'trial' ? 'bg-blue-500' : status === 'active' ? 'bg-green-500' : status === 'suspended' ? 'bg-yellow-500' : 'bg-red-500'}`}
+                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-500 ${colors[status]}`}
+                      style={{ width: `${percentage}%` }}
                     />
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

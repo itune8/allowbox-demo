@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@repo/ui/button';
 import {
   announcementService,
@@ -10,32 +9,8 @@ import {
   type AnnouncementTarget,
   type AnnouncementPriority,
 } from '../../../lib/services/announcement.service';
-import { GlassCard, Icon3D, SlideSheet, SheetSection, SheetField } from '@/components/ui';
-import {
-  Megaphone,
-  Bell,
-  Plus,
-  Trash2,
-  Users,
-  Clock,
-  Eye,
-  Send,
-} from 'lucide-react';
-
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
-};
+import { SlideSheet, SheetSection, SheetField } from '../../../components/ui';
+import { Megaphone, Bell, Plus, Trash2, Users, Clock, Eye, Send } from 'lucide-react';
 
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -96,22 +71,22 @@ export default function AnnouncementsPage() {
   };
 
   const getTargetBadge = (target: AnnouncementTarget) => {
-    const badges: Record<AnnouncementTarget, string> = {
-      ALL: 'bg-purple-100 text-purple-700',
-      ACTIVE: 'bg-green-100 text-green-700',
-      TRIAL: 'bg-blue-100 text-blue-700',
-      SUSPENDED: 'bg-red-100 text-red-700',
-      SPECIFIC: 'bg-gray-100 text-gray-700',
+    const badges: Record<AnnouncementTarget, { bg: string; text: string }> = {
+      ALL: { bg: 'bg-purple-50', text: 'text-purple-700' },
+      ACTIVE: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
+      TRIAL: { bg: 'bg-blue-50', text: 'text-blue-700' },
+      SUSPENDED: { bg: 'bg-red-50', text: 'text-red-700' },
+      SPECIFIC: { bg: 'bg-slate-100', text: 'text-slate-700' },
     };
     return badges[target] || badges.ALL;
   };
 
   const getPriorityBadge = (priority: AnnouncementPriority) => {
-    const badges: Record<AnnouncementPriority, string> = {
-      LOW: 'bg-gray-100 text-gray-600',
-      NORMAL: 'bg-blue-100 text-blue-600',
-      HIGH: 'bg-orange-100 text-orange-600',
-      URGENT: 'bg-red-100 text-red-600',
+    const badges: Record<AnnouncementPriority, { bg: string; text: string }> = {
+      LOW: { bg: 'bg-slate-100', text: 'text-slate-600' },
+      NORMAL: { bg: 'bg-blue-50', text: 'text-blue-600' },
+      HIGH: { bg: 'bg-amber-50', text: 'text-amber-600' },
+      URGENT: { bg: 'bg-red-50', text: 'text-red-600' },
     };
     return badges[priority] || badges.NORMAL;
   };
@@ -128,7 +103,11 @@ export default function AnnouncementsPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   };
 
   const getCreatedByName = (announcement: Announcement) => {
@@ -139,160 +118,94 @@ export default function AnnouncementsPage() {
     return 'System';
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <section className="space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
-      >
-        <div className="flex items-center gap-4">
-          <Icon3D bgColor="bg-pink-500">
-            <Megaphone className="w-5 h-5" />
-          </Icon3D>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Announcements</h2>
-            <p className="text-gray-600 mt-1">
-              Send messages and notifications to schools
-            </p>
-          </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Announcements</h1>
+          <p className="text-slate-500 mt-1">Send messages and notifications to schools</p>
         </div>
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            New Announcement
-          </Button>
-        </motion.div>
-      </motion.div>
+        <Button onClick={() => setShowModal(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          New Announcement
+        </Button>
+      </div>
 
       {/* Error Message */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mb-4 bg-red-50 text-red-700 px-4 py-3 rounded-lg"
-          >
-            {error}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Loading State */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-10 space-y-3">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            className="rounded-full h-8 w-8 border-4 border-rose-200 border-t-rose-500"
-          />
-          <div className="text-gray-500">Loading announcements...</div>
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          {error}
         </div>
-      ) : announcements.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center py-10"
-        >
-          <GlassCard className="bg-white p-8">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring' }}
-            >
-              <Icon3D bgColor="bg-pink-500">
-                <Bell className="w-8 h-8" />
-              </Icon3D>
-            </motion.div>
-            <p className="text-gray-500 mt-4">
-              No announcements yet. Create one to notify schools.
-            </p>
-          </GlassCard>
-        </motion.div>
+      )}
+
+      {/* Announcements List */}
+      {announcements.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+          <Bell className="w-12 h-12 mx-auto text-slate-300" />
+          <p className="text-slate-500 mt-4">No announcements yet. Create one to notify schools.</p>
+        </div>
       ) : (
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="space-y-4"
-        >
-          {announcements.map((announcement, index) => (
-            <motion.div
+        <div className="space-y-4">
+          {announcements.map((announcement) => (
+            <div
               key={announcement.id || announcement._id}
-              variants={item}
-              whileHover={{ scale: 1.01, y: -2 }}
-              layout
+              className="bg-white rounded-xl border border-slate-200 p-5"
             >
-              <GlassCard className="bg-white p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2 flex-wrap">
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="w-8 h-8 rounded-lg bg-pink-500 flex items-center justify-center"
-                      >
-                        <Bell className="w-4 h-4 text-white" />
-                      </motion.div>
-                      <h3 className="font-semibold text-gray-900">
-                        {announcement.title}
-                      </h3>
-                      <motion.span
-                        whileHover={{ scale: 1.1 }}
-                        className={`text-xs px-2 py-0.5 rounded font-medium ${getTargetBadge(announcement.target)}`}
-                      >
-                        {getTargetLabel(announcement.target)}
-                      </motion.span>
-                      <motion.span
-                        whileHover={{ scale: 1.1 }}
-                        className={`text-xs px-2 py-0.5 rounded font-medium ${getPriorityBadge(announcement.priority)}`}
-                      >
-                        {announcement.priority}
-                      </motion.span>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Bell className="w-4 h-4 text-primary" />
                     </div>
-                    <p className="text-gray-600 text-sm mb-3">
-                      {announcement.message}
-                    </p>
-                    <div className="flex items-center gap-4 text-xs text-gray-400">
-                      <div className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        <span>Sent by {getCreatedByName(announcement)}</span>
-                      </div>
-                      <span>•</span>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{formatDate(announcement.createdAt)}</span>
-                      </div>
-                      {announcement.readCount > 0 && (
-                        <>
-                          <span>•</span>
-                          <div className="flex items-center gap-1">
-                            <Eye className="w-3 h-3" />
-                            <span>{announcement.readCount} read</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                    <h3 className="font-medium text-slate-900">{announcement.title}</h3>
+                    <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${getTargetBadge(announcement.target).bg} ${getTargetBadge(announcement.target).text}`}>
+                      {getTargetLabel(announcement.target)}
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${getPriorityBadge(announcement.priority).bg} ${getPriorityBadge(announcement.priority).text}`}>
+                      {announcement.priority}
+                    </span>
                   </div>
-                  <motion.button
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => handleDelete(announcement.id || announcement._id)}
-                    className="text-gray-400 hover:text-red-500 p-1 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </motion.button>
+                  <p className="text-slate-600 text-sm mb-3">{announcement.message}</p>
+                  <div className="flex items-center gap-4 text-xs text-slate-400">
+                    <div className="flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      <span>Sent by {getCreatedByName(announcement)}</span>
+                    </div>
+                    <span>•</span>
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      <span>{formatDate(announcement.createdAt)}</span>
+                    </div>
+                    {announcement.readCount > 0 && (
+                      <>
+                        <span>•</span>
+                        <div className="flex items-center gap-1">
+                          <Eye className="w-3 h-3" />
+                          <span>{announcement.readCount} read</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </GlassCard>
-            </motion.div>
+                <button
+                  onClick={() => handleDelete(announcement.id || announcement._id)}
+                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       )}
 
       {/* Create Announcement SlideSheet */}
@@ -304,38 +217,26 @@ export default function AnnouncementsPage() {
         size="md"
         footer={
           <div className="flex justify-end gap-3">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => setShowModal(false)}
-              >
-                Cancel
-              </Button>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button onClick={handleSubmit} disabled={submitting}>
-                {submitting ? (
-                  <div className="flex items-center gap-2">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                      className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
-                    />
-                    Sending...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Send className="w-4 h-4" />
-                    Send Announcement
-                  </div>
-                )}
-              </Button>
-            </motion.div>
+            <Button variant="outline" type="button" onClick={() => setShowModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={submitting}>
+              {submitting ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Sending...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Send className="w-4 h-4" />
+                  Send Announcement
+                </span>
+              )}
+            </Button>
           </div>
         }
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <SheetSection>
             <SheetField label="Title" required>
               <input
@@ -343,7 +244,7 @@ export default function AnnouncementsPage() {
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 required
-                className="w-full h-10 border border-gray-200 rounded-lg px-3 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full h-10 border border-slate-200 rounded-lg px-3 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 placeholder="Announcement title"
               />
             </SheetField>
@@ -354,7 +255,7 @@ export default function AnnouncementsPage() {
                 onChange={(e) => setForm({ ...form, message: e.target.value })}
                 required
                 rows={4}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 placeholder="Write your announcement message..."
               />
             </SheetField>
@@ -365,10 +266,8 @@ export default function AnnouncementsPage() {
               <SheetField label="Send To" required>
                 <select
                   value={form.target}
-                  onChange={(e) =>
-                    setForm({ ...form, target: e.target.value as AnnouncementTarget })
-                  }
-                  className="w-full h-10 border border-gray-200 rounded-lg px-3 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  onChange={(e) => setForm({ ...form, target: e.target.value as AnnouncementTarget })}
+                  className="w-full h-10 border border-slate-200 rounded-lg px-3 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 >
                   <option value="ALL">All Schools</option>
                   <option value="ACTIVE">Active Schools Only</option>
@@ -380,13 +279,8 @@ export default function AnnouncementsPage() {
               <SheetField label="Priority" required>
                 <select
                   value={form.priority}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      priority: e.target.value as AnnouncementPriority,
-                    })
-                  }
-                  className="w-full h-10 border border-gray-200 rounded-lg px-3 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  onChange={(e) => setForm({ ...form, priority: e.target.value as AnnouncementPriority })}
+                  className="w-full h-10 border border-slate-200 rounded-lg px-3 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 >
                   <option value="LOW">Low</option>
                   <option value="NORMAL">Normal</option>
@@ -398,6 +292,6 @@ export default function AnnouncementsPage() {
           </SheetSection>
         </form>
       </SlideSheet>
-    </section>
+    </div>
   );
 }

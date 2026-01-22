@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Portal } from '../portal';
+import { useState, useEffect } from 'react';
+import { SlideSheet, SheetSection, SheetField } from '../ui/slide-sheet';
+import { Button } from '@repo/ui/button';
 import { schoolService, type School } from '../../lib/services/superadmin/school.service';
+import { Building2, User, CreditCard, AlertCircle } from 'lucide-react';
 
 interface CreateSchoolModalProps {
   isOpen: boolean;
@@ -15,20 +17,60 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    schoolName: editingSchool?.schoolName || '',
-    tenantId: editingSchool?.tenantId || '',
-    domain: editingSchool?.domain || '',
-    adminEmail: editingSchool?.adminId?.email || '',
-    adminName: editingSchool?.adminId ? `${editingSchool.adminId.firstName} ${editingSchool.adminId.lastName}` : '',
+    schoolName: '',
+    tenantId: '',
+    domain: '',
+    adminEmail: '',
+    adminName: '',
     adminPhone: '',
-    contactEmail: editingSchool?.contactEmail || '',
-    contactPhone: editingSchool?.contactPhone || '',
-    address: editingSchool?.address || '',
-    subscriptionPlan: editingSchool?.subscriptionPlan || 'basic',
-    subscriptionStatus: editingSchool?.subscriptionStatus || 'trial',
-    studentCount: editingSchool?.studentCount?.toString() || '0',
-    teacherCount: editingSchool?.teacherCount?.toString() || '0',
+    contactEmail: '',
+    contactPhone: '',
+    address: '',
+    subscriptionPlan: 'basic',
+    subscriptionStatus: 'trial',
+    studentCount: '0',
+    teacherCount: '0',
   });
+
+  // Reset form when modal opens with editing school data
+  useEffect(() => {
+    if (isOpen) {
+      if (editingSchool) {
+        setFormData({
+          schoolName: editingSchool.schoolName || '',
+          tenantId: editingSchool.tenantId || '',
+          domain: editingSchool.domain || '',
+          adminEmail: editingSchool.adminId?.email || '',
+          adminName: editingSchool.adminId ? `${editingSchool.adminId.firstName} ${editingSchool.adminId.lastName}` : '',
+          adminPhone: '',
+          contactEmail: editingSchool.contactEmail || '',
+          contactPhone: editingSchool.contactPhone || '',
+          address: editingSchool.address || '',
+          subscriptionPlan: editingSchool.subscriptionPlan || 'basic',
+          subscriptionStatus: editingSchool.subscriptionStatus || 'trial',
+          studentCount: editingSchool.studentCount?.toString() || '0',
+          teacherCount: editingSchool.teacherCount?.toString() || '0',
+        });
+      } else {
+        setFormData({
+          schoolName: '',
+          tenantId: '',
+          domain: '',
+          adminEmail: '',
+          adminName: '',
+          adminPhone: '',
+          contactEmail: '',
+          contactPhone: '',
+          address: '',
+          subscriptionPlan: 'basic',
+          subscriptionStatus: 'trial',
+          studentCount: '0',
+          teacherCount: '0',
+        });
+      }
+      setError(null);
+    }
+  }, [isOpen, editingSchool]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -57,9 +99,8 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
         onClose();
       } else {
         // Create new school - include admin fields for automatic user creation
-        const createPayload = {
+        const createPayload: any = {
           schoolName: formData.schoolName,
-          tenantId: formData.tenantId,
           domain: formData.domain,
           contactEmail: formData.contactEmail || formData.adminEmail,
           contactPhone: formData.contactPhone || formData.adminPhone,
@@ -71,6 +112,10 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
           adminName: formData.adminName,
           adminPhone: formData.adminPhone,
         };
+        // Only include tenantId if provided (otherwise backend auto-generates)
+        if (formData.tenantId.trim()) {
+          createPayload.tenantId = formData.tenantId.trim();
+        }
         const result = await schoolService.createSchool(createPayload);
 
         // Show admin credentials if created
@@ -90,262 +135,217 @@ export function CreateSchoolModal({ isOpen, onClose, onSuccess, editingSchool }:
     }
   };
 
-  if (!isOpen) return null;
+  const inputClassName = "w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+  const selectClassName = "w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors";
 
   return (
-    <Portal>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[9999] overflow-y-auto pt-20 pb-20" onClick={onClose}>
-        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 animate-zoom-in" onClick={(e) => e.stopPropagation()}>
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center z-10 rounded-t-lg">
-            <h2 className="text-xl font-bold text-gray-900">
-              {editingSchool ? 'Edit School' : 'Add New School'}
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-              type="button"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+    <SlideSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={editingSchool ? 'Edit School' : 'Add New School'}
+      subtitle={editingSchool ? 'Update school information' : 'Create a new school account'}
+      size="lg"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? 'Saving...' : editingSchool ? 'Update School' : 'Create School'}
+          </Button>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800">{error}</p>
           </div>
+        )}
 
-          <form onSubmit={handleSubmit} className="p-6">
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
+        {/* School Information */}
+        <SheetSection title="School Information" icon={<Building2 className="w-4 h-4 text-slate-500" />}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <SheetField label="School Name" required>
+              <input
+                type="text"
+                name="schoolName"
+                value={formData.schoolName}
+                onChange={handleChange}
+                required
+                placeholder="Enter school name"
+                className={inputClassName}
+              />
+            </SheetField>
+
+            {editingSchool ? (
+              <SheetField label="Tenant ID">
+                <input
+                  type="text"
+                  name="tenantId"
+                  value={formData.tenantId}
+                  disabled
+                  className={`${inputClassName} bg-slate-50`}
+                />
+              </SheetField>
+            ) : (
+              <SheetField label="Tenant ID">
+                <input
+                  type="text"
+                  name="tenantId"
+                  value={formData.tenantId}
+                  onChange={handleChange}
+                  placeholder="Auto-generated if empty"
+                  className={inputClassName}
+                />
+                <p className="text-xs text-slate-500 mt-1">Leave empty to auto-generate</p>
+              </SheetField>
             )}
 
-            <div className="space-y-6">
-              {/* School Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">School Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="schoolName" className="block text-sm font-medium text-gray-700 mb-1">
-                      School Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="schoolName"
-                      name="schoolName"
-                      value={formData.schoolName}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
-                    />
-                  </div>
+            <SheetField label="Domain" required>
+              <input
+                type="text"
+                name="domain"
+                value={formData.domain}
+                onChange={handleChange}
+                required
+                placeholder="school.allowbox.app"
+                className={inputClassName}
+              />
+            </SheetField>
 
-                  <div>
-                    <label htmlFor="tenantId" className="block text-sm font-medium text-gray-700 mb-1">
-                      Tenant ID <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="tenantId"
-                      name="tenantId"
-                      value={formData.tenantId}
-                      onChange={handleChange}
-                      required
-                      disabled={!!editingSchool}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                  </div>
+            <SheetField label="Address">
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                placeholder="School address"
+                className={inputClassName}
+              />
+            </SheetField>
+          </div>
+        </SheetSection>
 
-                  <div>
-                    <label htmlFor="domain" className="block text-sm font-medium text-gray-700 mb-1">
-                      Domain <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="domain"
-                      name="domain"
-                      value={formData.domain}
-                      onChange={handleChange}
-                      required
-                      placeholder="school.allowbox.app"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
-                    />
-                  </div>
+        {/* Admin Information */}
+        <SheetSection title="Admin Information" icon={<User className="w-4 h-4 text-slate-500" />}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <SheetField label="Admin Name" required>
+              <input
+                type="text"
+                name="adminName"
+                value={formData.adminName}
+                onChange={handleChange}
+                required
+                placeholder="Full name"
+                className={inputClassName}
+              />
+            </SheetField>
 
-                  <div>
-                    <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                      Address
-                    </label>
-                    <input
-                      type="text"
-                      id="address"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
-                    />
-                  </div>
-                </div>
-              </div>
+            <SheetField label="Admin Email" required>
+              <input
+                type="email"
+                name="adminEmail"
+                value={formData.adminEmail}
+                onChange={handleChange}
+                required
+                placeholder="admin@school.com"
+                className={inputClassName}
+              />
+            </SheetField>
 
-              {/* Admin Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Admin Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="adminName" className="block text-sm font-medium text-gray-700 mb-1">
-                      Admin Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="adminName"
-                      name="adminName"
-                      value={formData.adminName}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
-                    />
-                  </div>
+            <SheetField label="Admin Phone">
+              <input
+                type="tel"
+                name="adminPhone"
+                value={formData.adminPhone}
+                onChange={handleChange}
+                placeholder="+1 (555) 000-0000"
+                className={inputClassName}
+              />
+            </SheetField>
 
-                  <div>
-                    <label htmlFor="adminEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                      Admin Email <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      id="adminEmail"
-                      name="adminEmail"
-                      value={formData.adminEmail}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
-                    />
-                  </div>
+            <SheetField label="Contact Email">
+              <input
+                type="email"
+                name="contactEmail"
+                value={formData.contactEmail}
+                onChange={handleChange}
+                placeholder="contact@school.com"
+                className={inputClassName}
+              />
+            </SheetField>
+          </div>
+        </SheetSection>
 
-                  <div>
-                    <label htmlFor="adminPhone" className="block text-sm font-medium text-gray-700 mb-1">
-                      Admin Phone
-                    </label>
-                    <input
-                      type="tel"
-                      id="adminPhone"
-                      name="adminPhone"
-                      value={formData.adminPhone}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                      Contact Email
-                    </label>
-                    <input
-                      type="email"
-                      id="contactEmail"
-                      name="contactEmail"
-                      value={formData.contactEmail}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Subscription & Stats */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Subscription & Stats</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="subscriptionPlan" className="block text-sm font-medium text-gray-700 mb-1">
-                      Subscription Plan <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="subscriptionPlan"
-                      name="subscriptionPlan"
-                      value={formData.subscriptionPlan}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
-                    >
-                      <option value="free">Free</option>
-                      <option value="basic">Basic</option>
-                      <option value="premium">Premium</option>
-                      <option value="enterprise">Enterprise</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="subscriptionStatus" className="block text-sm font-medium text-gray-700 mb-1">
-                      Status <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="subscriptionStatus"
-                      name="subscriptionStatus"
-                      value={formData.subscriptionStatus}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
-                    >
-                      <option value="trial">Trial</option>
-                      <option value="active">Active</option>
-                      <option value="suspended">Suspended</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="studentCount" className="block text-sm font-medium text-gray-700 mb-1">
-                      Student Count
-                    </label>
-                    <input
-                      type="number"
-                      id="studentCount"
-                      name="studentCount"
-                      value={formData.studentCount}
-                      onChange={handleChange}
-                      min="0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="teacherCount" className="block text-sm font-medium text-gray-700 mb-1">
-                      Teacher Count
-                    </label>
-                    <input
-                      type="number"
-                      id="teacherCount"
-                      name="teacherCount"
-                      value={formData.teacherCount}
-                      onChange={handleChange}
-                      min="0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                disabled={loading}
+        {/* Subscription & Stats */}
+        <SheetSection title="Subscription & Stats" icon={<CreditCard className="w-4 h-4 text-slate-500" />}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <SheetField label="Subscription Plan" required>
+              <select
+                name="subscriptionPlan"
+                value={formData.subscriptionPlan}
+                onChange={handleChange}
+                required
+                className={selectClassName}
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={loading}
+                <option value="free">Free</option>
+                <option value="basic">Basic</option>
+                <option value="premium">Premium</option>
+                <option value="enterprise">Enterprise</option>
+              </select>
+            </SheetField>
+
+            <SheetField label="Status" required>
+              <select
+                name="subscriptionStatus"
+                value={formData.subscriptionStatus}
+                onChange={handleChange}
+                required
+                className={selectClassName}
               >
-                {loading ? 'Saving...' : editingSchool ? 'Update School' : 'Create School'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </Portal>
+                <option value="trial">Trial</option>
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </SheetField>
+
+            <SheetField label="Student Count">
+              <input
+                type="number"
+                name="studentCount"
+                value={formData.studentCount}
+                onChange={handleChange}
+                min="0"
+                placeholder="0"
+                className={inputClassName}
+              />
+            </SheetField>
+
+            <SheetField label="Teacher Count">
+              <input
+                type="number"
+                name="teacherCount"
+                value={formData.teacherCount}
+                onChange={handleChange}
+                min="0"
+                placeholder="0"
+                className={inputClassName}
+              />
+            </SheetField>
+          </div>
+        </SheetSection>
+      </form>
+    </SlideSheet>
   );
 }

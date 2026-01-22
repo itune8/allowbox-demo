@@ -1,16 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { schoolService, type School } from '../../../lib/services/superadmin/school.service';
-import { GlassCard, AnimatedStatCard, Icon3D } from '@/components/ui';
+import { Button } from '@repo/ui/button';
 import {
   BarChart3,
-  PieChart,
   TrendingUp,
   TrendingDown,
   Users,
-  School as SchoolIcon,
+  Building2,
   Download,
   FileText,
   AlertTriangle,
@@ -26,21 +24,6 @@ interface ReportMetrics {
   growthRate: number;
   churnRate: number;
 }
-
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
-};
 
 export default function ReportsPage() {
   const [schools, setSchools] = useState<School[]>([]);
@@ -58,7 +41,6 @@ export default function ReportsPage() {
       setLoading(true);
       const schoolsData = await schoolService.getSchools();
       setSchools(schoolsData);
-
       const reportMetrics = calculateMetrics(schoolsData);
       setMetrics(reportMetrics);
     } catch (error) {
@@ -72,24 +54,22 @@ export default function ReportsPage() {
     const totalStudents = schoolsData.reduce((sum, s) => sum + (s.studentCount || 0), 0);
     const avgStudentsPerSchool = schoolsData.length > 0 ? totalStudents / schoolsData.length : 0;
 
-    // Sort schools by student count for top performing
     const sortedByStudents = [...schoolsData]
       .sort((a, b) => (b.studentCount || 0) - (a.studentCount || 0))
       .slice(0, 5)
       .map(s => ({
         name: s.schoolName,
         students: s.studentCount || 0,
-        engagement: Math.floor(Math.random() * 30) + 70, // Mock engagement score
+        engagement: Math.floor(Math.random() * 30) + 70,
       }));
 
-    // Mock low engagement schools
     const lowEngagement = schoolsData
       .filter(s => s.isActive)
       .slice(0, 5)
       .map(s => ({
         name: s.schoolName,
         students: s.studentCount || 0,
-        engagement: Math.floor(Math.random() * 30) + 30, // Mock low engagement score
+        engagement: Math.floor(Math.random() * 30) + 30,
       }));
 
     return {
@@ -98,8 +78,8 @@ export default function ReportsPage() {
       avgStudentsPerSchool,
       topPerformingSchools: sortedByStudents,
       lowEngagementSchools: lowEngagement,
-      growthRate: 12.5, // Mock growth rate
-      churnRate: 2.3, // Mock churn rate
+      growthRate: 12.5,
+      churnRate: 2.3,
     };
   };
 
@@ -119,11 +99,7 @@ export default function ReportsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="rounded-full h-12 w-12 border-4 border-purple-200 border-t-purple-500"
-        />
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -131,324 +107,226 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
-      >
-        <div className="flex items-center gap-4">
-          <Icon3D bgColor="bg-purple-500">
-            <BarChart3 className="w-5 h-5" />
-          </Icon3D>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Reports & Analytics
-            </h2>
-            <p className="text-gray-600 mt-1">
-              Multi-school analytics and performance insights
-            </p>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Reports & Analytics</h1>
+          <p className="text-slate-500 mt-1">Multi-school analytics and performance insights</p>
         </div>
         <div className="flex items-center gap-2">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => downloadReport('pdf')}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center gap-2"
-          >
-            <Download className="w-4 h-4" />
+          <Button variant="outline" onClick={() => downloadReport('pdf')}>
+            <Download className="w-4 h-4 mr-2" />
             Download PDF
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => downloadReport('csv')}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center gap-2"
-          >
-            <FileText className="w-4 h-4" />
+          </Button>
+          <Button variant="outline" onClick={() => downloadReport('csv')}>
+            <FileText className="w-4 h-4 mr-2" />
             Export CSV
-          </motion.button>
+          </Button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <GlassCard className="bg-white p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="timeRange" className="block text-sm font-medium text-gray-700 mb-2">
-                Time Range
-              </label>
-              <select
-                id="timeRange"
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as any)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="7d">Last 7 Days</option>
-                <option value="30d">Last 30 Days</option>
-                <option value="90d">Last 90 Days</option>
-                <option value="1y">Last Year</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="reportType" className="block text-sm font-medium text-gray-700 mb-2">
-                Report Type
-              </label>
-              <select
-                id="reportType"
-                value={reportType}
-                onChange={(e) => setReportType(e.target.value as any)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="overview">Overview</option>
-                <option value="schools">Schools Performance</option>
-                <option value="revenue">Revenue Analysis</option>
-                <option value="engagement">Engagement Metrics</option>
-              </select>
-            </div>
+      <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="timeRange" className="block text-sm font-medium text-slate-700 mb-2">
+              Time Range
+            </label>
+            <select
+              id="timeRange"
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value as any)}
+              className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            >
+              <option value="7d">Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+              <option value="90d">Last 90 Days</option>
+              <option value="1y">Last Year</option>
+            </select>
           </div>
-        </GlassCard>
-      </motion.div>
+          <div>
+            <label htmlFor="reportType" className="block text-sm font-medium text-slate-700 mb-2">
+              Report Type
+            </label>
+            <select
+              id="reportType"
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value as any)}
+              className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            >
+              <option value="overview">Overview</option>
+              <option value="schools">Schools Performance</option>
+              <option value="revenue">Revenue Analysis</option>
+              <option value="engagement">Engagement Metrics</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
       {/* Key Metrics */}
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="grid grid-cols-1 md:grid-cols-4 gap-4"
-      >
-        <AnimatedStatCard
-          title="Total Schools"
-          value={metrics?.totalSchools || 0}
-          icon={<SchoolIcon className="w-5 h-5 text-primary" />}
-          iconBgColor="bg-primary-50"
-          trend={metrics?.growthRate ? { value: `${metrics.growthRate}%`, isPositive: metrics.growthRate > 0 } : undefined}
-        />
-
-        <AnimatedStatCard
-          title="Total Students"
-          value={metrics?.totalStudents.toLocaleString() || '0'}
-          icon={<Users className="w-5 h-5 text-purple-600" />}
-          iconBgColor="bg-purple-50"
-        />
-
-        <AnimatedStatCard
-          title="Growth Rate"
-          value={`+${metrics?.growthRate}%`}
-          icon={<TrendingUp className="w-5 h-5 text-white" />}
-          iconBgColor="bg-green-500"
-        />
-
-        <AnimatedStatCard
-          title="Churn Rate"
-          value={`${metrics?.churnRate}%`}
-          icon={<TrendingDown className="w-5 h-5 text-white" />}
-          iconBgColor="bg-red-500"
-        />
-      </motion.div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-blue-50">
+              <Building2 className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Total Schools</p>
+              <p className="text-2xl font-semibold text-slate-900">{metrics?.totalSchools || 0}</p>
+              {metrics?.growthRate && (
+                <p className="text-xs text-emerald-600 flex items-center gap-0.5 mt-0.5">
+                  <TrendingUp className="w-3 h-3" />
+                  +{metrics.growthRate}%
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-purple-50">
+              <Users className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Total Students</p>
+              <p className="text-2xl font-semibold text-slate-900">{metrics?.totalStudents.toLocaleString() || '0'}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-emerald-50">
+              <TrendingUp className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Growth Rate</p>
+              <p className="text-2xl font-semibold text-slate-900">+{metrics?.growthRate}%</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-red-50">
+              <TrendingDown className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Churn Rate</p>
+              <p className="text-2xl font-semibold text-slate-900">{metrics?.churnRate}%</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Top Performing Schools */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <GlassCard className="bg-white">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <Icon3D bgColor="bg-purple-500">
-                <Award className="w-4 h-4" />
-              </Icon3D>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Top Performing Schools
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  Ranked by student count and engagement
-                </p>
-              </div>
+      <div className="bg-white rounded-xl border border-slate-200">
+        <div className="px-5 py-4 border-b border-slate-200">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-purple-50">
+              <Award className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-slate-900">Top Performing Schools</h3>
+              <p className="text-sm text-slate-500">Ranked by student count and engagement</p>
             </div>
           </div>
-          <div className="p-6">
-            <motion.div
-              variants={container}
-              initial="hidden"
-              animate="show"
-              className="space-y-4"
+        </div>
+        <div className="p-5 space-y-4">
+          {metrics?.topPerformingSchools.map((school, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-4 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 transition-colors"
             >
-              {metrics?.topPerformingSchools.map((school, index) => (
-                <motion.div
-                  key={index}
-                  variants={item}
-                  whileHover={{ scale: 1.02, x: 5 }}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center gap-4">
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex items-center justify-center w-10 h-10 bg-purple-500 rounded-full"
-                    >
-                      <span className="text-lg font-bold text-white">
-                        {index + 1}
-                      </span>
-                    </motion.div>
-                    <div>
-                      <p className="font-medium text-gray-900">{school.name}</p>
-                      <p className="text-sm text-gray-600">
-                        {school.students} students
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">
-                      {school.engagement}% engagement
-                    </p>
-                    <div className="w-32 bg-gray-200 rounded-full h-2 mt-1 overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${school.engagement}%` }}
-                        transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
-                        className="bg-green-500 h-2 rounded-full"
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </GlassCard>
-      </motion.div>
-
-      {/* Low Engagement Schools */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <GlassCard className="bg-white">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <Icon3D bgColor="bg-orange-500">
-                <AlertTriangle className="w-4 h-4" />
-              </Icon3D>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Schools Needing Attention
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  Schools with low engagement that may need support
-                </p>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center w-10 h-10 bg-purple-500 rounded-full">
+                  <span className="text-lg font-bold text-white">{index + 1}</span>
+                </div>
+                <div>
+                  <p className="font-medium text-slate-900">{school.name}</p>
+                  <p className="text-sm text-slate-600">{school.students} students</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-slate-900">{school.engagement}% engagement</p>
+                <div className="w-32 bg-slate-100 rounded-full h-2 mt-1 overflow-hidden">
+                  <div
+                    className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${school.engagement}%` }}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-          <div className="p-6">
-            <motion.div
-              variants={container}
-              initial="hidden"
-              animate="show"
-              className="space-y-4"
-            >
-              {metrics?.lowEngagementSchools.map((school, index) => (
-                <motion.div
-                  key={index}
-                  variants={item}
-                  whileHover={{ scale: 1.02, x: 5 }}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center gap-4">
-                    <motion.div
-                      initial={{ scale: 0, rotate: -180 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex items-center justify-center w-10 h-10 bg-yellow-100 rounded-full"
-                    >
-                      <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                    </motion.div>
-                    <div>
-                      <p className="font-medium text-gray-900">{school.name}</p>
-                      <p className="text-sm text-gray-600">
-                        {school.students} students
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">
-                      {school.engagement}% engagement
-                    </p>
-                    <div className="w-32 bg-gray-200 rounded-full h-2 mt-1 overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${school.engagement}%` }}
-                        transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
-                        className="bg-red-500 h-2 rounded-full"
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </GlassCard>
-      </motion.div>
+          ))}
+        </div>
+      </div>
 
-      {/* Revenue by Plan Chart */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <GlassCard className="bg-white p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Icon3D bgColor="bg-purple-500">
-              <PieChart className="w-4 h-4" />
-            </Icon3D>
-            <h3 className="text-lg font-semibold text-gray-900">
-              Revenue Distribution by Plan
-            </h3>
+      {/* Schools Needing Attention */}
+      <div className="bg-white rounded-xl border border-slate-200">
+        <div className="px-5 py-4 border-b border-slate-200">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-50">
+              <AlertTriangle className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-slate-900">Schools Needing Attention</h3>
+              <p className="text-sm text-slate-500">Schools with low engagement that may need support</p>
+            </div>
           </div>
-          <motion.div
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-1 md:grid-cols-4 gap-4"
-          >
-            {['free', 'basic', 'premium', 'enterprise'].map((plan, index) => {
-              const planSchools = schools.filter(s => s.subscriptionPlan === plan);
-              const revenue = planSchools.reduce((sum, s) => sum + (s.mrr || 0), 0);
-              const bgColors = [
-                'bg-gray-500',
-                'bg-blue-500',
-                'bg-purple-500',
-                'bg-orange-500',
-              ];
-              return (
-                <motion.div
-                  key={plan}
-                  variants={item}
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  className="border border-gray-200 rounded-lg p-4 bg-white hover:shadow-lg transition-all"
-                >
-                  <div className={`w-8 h-8 rounded-lg ${bgColors[index]} mb-3`} />
-                  <p className="text-sm text-gray-600 capitalize">{plan}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-2">
-                    {formatCurrency(revenue)}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {planSchools.length} schools
-                  </p>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        </GlassCard>
-      </motion.div>
+        </div>
+        <div className="p-5 space-y-4">
+          {metrics?.lowEngagementSchools.map((school, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-4 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full">
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-slate-900">{school.name}</p>
+                  <p className="text-sm text-slate-600">{school.students} students</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-slate-900">{school.engagement}% engagement</p>
+                <div className="w-32 bg-slate-100 rounded-full h-2 mt-1 overflow-hidden">
+                  <div
+                    className="bg-red-500 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${school.engagement}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Revenue Distribution by Plan */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="p-2 rounded-lg bg-purple-50">
+            <BarChart3 className="w-5 h-5 text-purple-600" />
+          </div>
+          <h3 className="font-semibold text-slate-900">Revenue Distribution by Plan</h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {['free', 'basic', 'premium', 'enterprise'].map((plan, index) => {
+            const planSchools = schools.filter(s => s.subscriptionPlan === plan);
+            const revenue = planSchools.reduce((sum, s) => sum + (s.mrr || 0), 0);
+            const bgColors = ['bg-slate-500', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500'];
+            return (
+              <div
+                key={plan}
+                className="border border-slate-200 rounded-lg p-4 bg-white hover:shadow-md transition-all"
+              >
+                <div className={`w-8 h-8 rounded-lg ${bgColors[index]} mb-3`} />
+                <p className="text-sm text-slate-500 capitalize">{plan}</p>
+                <p className="text-2xl font-semibold text-slate-900 mt-1">{formatCurrency(revenue)}</p>
+                <p className="text-xs text-slate-500 mt-1">{planSchools.length} schools</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

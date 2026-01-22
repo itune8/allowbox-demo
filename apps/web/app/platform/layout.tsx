@@ -1,12 +1,9 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Sidebar, type SidebarMenuItem } from '@repo/ui/sidebar';
-import { Button } from '@repo/ui/button';
-import { Icon3D } from '@repo/ui/icon-3d';
 import { useAuth } from '../../contexts/auth-context';
 import { ProtectedRoute } from '../../components/protected-route';
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard,
   School,
@@ -18,115 +15,78 @@ import {
   Activity,
   HelpCircle,
   Settings,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  LogOut,
+  Menu,
+  X,
+  Home,
+  ChevronDown,
 } from 'lucide-react';
 
-const sidebarMenu: SidebarMenuItem[] = [
-  // Overview
-  {
-    key: 'dashboard',
-    label: 'Dashboard',
-    icon: (
-      <Icon3D bgColor="bg-primary">
-        <LayoutDashboard size={20} />
-      </Icon3D>
-    ),
-  },
+// Professional menu structure
+interface MenuItem {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+}
 
-  // Management Section
-  { key: 'section-management', label: 'Management', isSection: true },
-  {
-    key: 'schools',
-    label: 'Schools',
-    icon: (
-      <Icon3D bgColor="bg-sky-500">
-        <School size={20} />
-      </Icon3D>
-    ),
-  },
-  {
-    key: 'users',
-    label: 'Users & Roles',
-    icon: (
-      <Icon3D bgColor="bg-violet-500">
-        <Users size={20} />
-      </Icon3D>
-    ),
-  },
+interface MenuSection {
+  title: string;
+  items: MenuItem[];
+}
 
-  // Finance Section
-  { key: 'section-finance', label: 'Finance', isSection: true },
+const menuSections: MenuSection[] = [
   {
-    key: 'finance',
-    label: 'Finance & Billing',
-    icon: (
-      <Icon3D bgColor="bg-green-500">
-        <DollarSign size={20} />
-      </Icon3D>
-    ),
+    title: 'Overview',
+    items: [
+      { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+    ],
   },
   {
-    key: 'invoices',
-    label: 'Invoices',
-    icon: (
-      <Icon3D bgColor="bg-amber-500">
-        <FileText size={20} />
-      </Icon3D>
-    ),
+    title: 'Management',
+    items: [
+      { key: 'schools', label: 'Schools', icon: <School className="w-5 h-5" /> },
+      { key: 'users', label: 'Users & Roles', icon: <Users className="w-5 h-5" /> },
+    ],
   },
+  {
+    title: 'Finance',
+    items: [
+      { key: 'finance', label: 'Finance & Billing', icon: <DollarSign className="w-5 h-5" /> },
+      { key: 'invoices', label: 'Invoices', icon: <FileText className="w-5 h-5" /> },
+    ],
+  },
+  {
+    title: 'Communication',
+    items: [
+      { key: 'announcements', label: 'Announcements', icon: <Bell className="w-5 h-5" /> },
+      { key: 'support', label: 'Support Tickets', icon: <HelpCircle className="w-5 h-5" /> },
+    ],
+  },
+  {
+    title: 'Analytics',
+    items: [
+      { key: 'reports', label: 'Reports', icon: <BarChart3 className="w-5 h-5" /> },
+      { key: 'activity', label: 'Activity Logs', icon: <Activity className="w-5 h-5" /> },
+    ],
+  },
+  {
+    title: 'System',
+    items: [
+      { key: 'settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
+    ],
+  },
+];
 
-  // Communication Section
-  { key: 'section-comms', label: 'Communication', isSection: true },
-  {
-    key: 'announcements',
-    label: 'Announcements',
-    icon: (
-      <Icon3D bgColor="bg-pink-500">
-        <Bell size={20} />
-      </Icon3D>
-    ),
-  },
-  {
-    key: 'support',
-    label: 'Support Tickets',
-    icon: (
-      <Icon3D bgColor="bg-teal-500">
-        <HelpCircle size={20} />
-      </Icon3D>
-    ),
-  },
-
-  // Analytics Section
-  { key: 'section-analytics', label: 'Analytics', isSection: true },
-  {
-    key: 'reports',
-    label: 'Reports',
-    icon: (
-      <Icon3D bgColor="bg-purple-500">
-        <BarChart3 size={20} />
-      </Icon3D>
-    ),
-  },
-  {
-    key: 'activity',
-    label: 'Activity Logs',
-    icon: (
-      <Icon3D bgColor="bg-cyan-500">
-        <Activity size={20} />
-      </Icon3D>
-    ),
-  },
-
-  // System Section
-  { key: 'section-system', label: 'System', isSection: true },
-  {
-    key: 'settings',
-    label: 'Settings',
-    icon: (
-      <Icon3D bgColor="bg-gray-500">
-        <Settings size={20} />
-      </Icon3D>
-    ),
-  },
+// Mobile bottom navigation
+const mobileNavItems = [
+  { key: 'dashboard', label: 'Home', icon: <Home className="w-5 h-5" /> },
+  { key: 'schools', label: 'Schools', icon: <School className="w-5 h-5" /> },
+  { key: 'finance', label: 'Finance', icon: <DollarSign className="w-5 h-5" /> },
+  { key: 'support', label: 'Support', icon: <HelpCircle className="w-5 h-5" /> },
+  { key: 'menu', label: 'Menu', icon: <Menu className="w-5 h-5" /> },
 ];
 
 export default function PlatformLayout({
@@ -137,9 +97,9 @@ export default function PlatformLayout({
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const profileRef = useRef<HTMLDivElement | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Determine active menu item from pathname
   const activeItem = useMemo(() => {
@@ -148,24 +108,17 @@ export default function PlatformLayout({
     return segments[segments.length - 1] || 'dashboard';
   }, [pathname]);
 
-  // Close profile menu on outside click
-  useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      if (!profileRef.current) return;
-      if (!profileRef.current.contains(e.target as Node)) {
-        setShowProfileMenu(false);
-      }
+  const handleNavigation = (key: string) => {
+    if (key === 'menu') {
+      setMobileMenuOpen(true);
+      return;
     }
-    document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
-  }, []);
-
-  const handleMenuClick = (key: string) => {
     if (key === 'dashboard') {
       router.push('/platform/dashboard');
     } else {
       router.push(`/platform/${key}`);
     }
+    setMobileMenuOpen(false);
   };
 
   // Check if user has platform access (super_admin, sales, support, finance)
@@ -179,95 +132,285 @@ export default function PlatformLayout({
 
   // Get user's primary role for platform
   const userRole = user?.roles?.find(role => platformRoles.includes(role)) || 'super_admin';
+  const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
+  const userInitials = user ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}` : 'U';
 
   return (
     <ProtectedRoute>
-      <div className="relative flex min-h-screen bg-gray-50">
-        {/* Sidebar */}
-        <Sidebar
-          title="Allowbox Platform"
-          subtitle="Super Admin"
-          menu={sidebarMenu}
-          activeItem={activeItem}
-          onItemClick={handleMenuClick}
-          user={{
-            name: `${user?.firstName} ${user?.lastName}`,
-            email: user?.email,
-            role: userRole,
-          }}
-          onLogout={logout}
-        />
+      <div className="min-h-screen bg-slate-50">
+        {/* Professional Sidebar - Desktop */}
+        <aside
+          className={`hidden md:flex flex-col fixed inset-y-0 left-0 z-30 bg-white border-r border-slate-200 transition-all duration-300 ${
+            sidebarCollapsed ? 'w-[72px]' : 'w-64'
+          }`}
+        >
+          {/* Logo / Brand */}
+          <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200">
+            {!sidebarCollapsed && (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">A</span>
+                </div>
+                <div className="overflow-hidden">
+                  <h1 className="text-sm font-semibold text-slate-900 truncate">
+                    AllowBox Platform
+                  </h1>
+                  <p className="text-xs text-slate-500">Super Admin</p>
+                </div>
+              </div>
+            )}
+            {sidebarCollapsed && (
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center mx-auto">
+                <span className="text-white font-bold text-sm">A</span>
+              </div>
+            )}
+          </div>
 
-        {/* Main content - add left margin to account for fixed sidebar */}
-        <div className="flex-1 flex flex-col md:ml-64">
-          {/* Topbar */}
-          <header className="bg-white shadow-sm sticky top-0 z-30 border-b border-gray-200">
-            <div className="container-padding h-16 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-                  Platform Management
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto py-4 px-3">
+            {menuSections.map((section, sectionIndex) => (
+              <div key={section.title} className={sectionIndex > 0 ? 'mt-6' : ''}>
+                {!sidebarCollapsed && (
+                  <h3 className="px-3 mb-2 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    {section.title}
+                  </h3>
+                )}
+                <ul className="space-y-1">
+                  {section.items.map((item) => {
+                    const isActive = activeItem === item.key;
+                    return (
+                      <li key={item.key}>
+                        <button
+                          onClick={() => handleNavigation(item.key)}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                            isActive
+                              ? 'bg-primary text-white'
+                              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                          } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                          title={sidebarCollapsed ? item.label : undefined}
+                        >
+                          <span className={isActive ? 'text-white' : 'text-slate-400'}>
+                            {item.icon}
+                          </span>
+                          {!sidebarCollapsed && <span>{item.label}</span>}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </nav>
+
+          {/* Collapse Toggle */}
+          <div className="p-3 border-t border-slate-200">
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              {sidebarCollapsed ? (
+                <ChevronRight className="w-4 h-4" />
+              ) : (
+                <>
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Collapse</span>
+                </>
+              )}
+            </button>
+          </div>
+        </aside>
+
+        {/* Mobile Sidebar Overlay */}
+        {mobileMenuOpen && (
+          <div className="md:hidden fixed inset-0 z-50">
+            <div
+              className="absolute inset-0 bg-slate-900/50"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <aside className="absolute inset-y-0 left-0 w-72 bg-white shadow-xl">
+              <div className="h-14 flex items-center justify-between px-4 border-b border-slate-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">A</span>
+                  </div>
+                  <span className="font-semibold text-slate-900">
+                    AllowBox Platform
+                  </span>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <nav className="overflow-y-auto py-4 px-3 h-[calc(100%-56px)]">
+                {menuSections.map((section, sectionIndex) => (
+                  <div key={section.title} className={sectionIndex > 0 ? 'mt-6' : ''}>
+                    <h3 className="px-3 mb-2 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      {section.title}
+                    </h3>
+                    <ul className="space-y-1">
+                      {section.items.map((item) => {
+                        const isActive = activeItem === item.key;
+                        return (
+                          <li key={item.key}>
+                            <button
+                              onClick={() => handleNavigation(item.key)}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                                isActive
+                                  ? 'bg-primary text-white'
+                                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                              }`}
+                            >
+                              <span className={isActive ? 'text-white' : 'text-slate-400'}>
+                                {item.icon}
+                              </span>
+                              <span>{item.label}</span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+              </nav>
+            </aside>
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        <div
+          className={`transition-all duration-300 ${
+            sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-64'
+          }`}
+        >
+          {/* Professional Header */}
+          <header className="sticky top-0 z-20 h-16 bg-white border-b border-slate-200">
+            <div className="h-full px-4 md:px-6 flex items-center justify-between">
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-700"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+
+              {/* Page Title - Desktop */}
+              <div className="hidden md:block">
+                <h1 className="text-lg font-semibold text-slate-900">
+                  {activeItem === 'dashboard' ? 'Dashboard' :
+                   menuSections.flatMap(s => s.items).find(i => i.key === activeItem)?.label || 'Dashboard'}
                 </h1>
-                <span className="hidden md:inline-flex px-3 py-1 bg-primary-50 text-primary text-xs font-semibold rounded-full">
-                  {userRole.replace('_', ' ').toUpperCase()}
-                </span>
               </div>
 
-              {/* Desktop Profile */}
-              <div className="hidden md:flex items-center gap-3 relative" ref={profileRef}>
-                <button
-                  className="flex items-center gap-3 rounded-xl hover:bg-gray-50 transition-colors px-3 py-2"
-                  onClick={() => setShowProfileMenu((s) => !s)}
-                >
-                  <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-semibold shadow-md">
-                    {user?.firstName?.[0]}{user?.lastName?.[0]}
+              {/* Mobile Title */}
+              <div className="md:hidden flex-1 text-center">
+                <h1 className="text-base font-semibold text-slate-900">
+                  AllowBox Platform
+                </h1>
+              </div>
+
+              {/* Right Actions */}
+              <div className="flex items-center gap-2 md:gap-4">
+                {/* Search - Desktop */}
+                <div className="hidden lg:flex items-center">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      className="w-64 pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                    />
                   </div>
-                  <div className="text-left">
-                    <p className="text-sm font-semibold text-gray-900">
-                      {user?.firstName} {user?.lastName}
-                    </p>
-                    <p className="text-xs text-gray-500">{user?.email}</p>
-                  </div>
-                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                </div>
+
+                {/* Notifications */}
+                <button className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+                  <Bell className="w-5 h-5" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
                 </button>
 
-                {showProfileMenu && (
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-xl animate-zoom-in overflow-hidden">
-                    <div className="p-3 bg-gray-50 border-b border-gray-200">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Account</p>
+                {/* User Menu */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex items-center gap-2 p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                      <span className="text-white text-sm font-medium">{userInitials}</span>
                     </div>
-                    <button
-                      className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm text-gray-900 transition-colors flex items-center gap-2"
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        router.push('/auth/forgot_password');
-                      }}
-                    >
-                      <Settings className="w-4 h-4" />
-                      Reset Password
-                    </button>
-                    <div className="h-px bg-gray-200" />
-                    <button
-                      className="w-full text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors flex items-center gap-2"
-                      onClick={logout}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      Logout
-                    </button>
-                  </div>
-                )}
+                    <ChevronDown className="hidden md:block w-4 h-4 text-slate-400" />
+                  </button>
+
+                  {showUserMenu && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowUserMenu(false)}
+                      />
+                      <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                        <div className="px-4 py-3 border-b border-slate-100">
+                          <p className="text-sm font-medium text-slate-900">{userName}</p>
+                          <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                          <p className="text-xs text-primary font-medium mt-1">
+                            {userRole.replace('_', ' ').toUpperCase()}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            router.push('/platform/settings');
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                        >
+                          <Settings className="w-4 h-4" />
+                          Settings
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            logout();
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Sign out
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </header>
 
-          {/* Page content */}
-          <main className="flex-1 container-padding py-6 md:py-8 overflow-y-auto pb-20 md:pb-8">
+          {/* Page Content */}
+          <main className="p-4 md:p-6 pb-24 md:pb-6 min-h-[calc(100vh-64px)]">
             {children}
           </main>
         </div>
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="md:hidden fixed bottom-0 inset-x-0 z-20 bg-white border-t border-slate-200 safe-area-bottom">
+          <div className="flex items-center justify-around h-16">
+            {mobileNavItems.map((item) => {
+              const isActive = activeItem === item.key;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => handleNavigation(item.key)}
+                  className={`flex flex-col items-center gap-1 px-3 py-2 min-w-[64px] ${
+                    isActive ? 'text-primary' : 'text-slate-400'
+                  }`}
+                >
+                  {item.icon}
+                  <span className="text-xs font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       </div>
     </ProtectedRoute>
   );

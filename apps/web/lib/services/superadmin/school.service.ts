@@ -51,7 +51,7 @@ export interface School {
 
 export interface CreateSchoolDto {
   schoolName: string;
-  tenantId: string;
+  tenantId?: string;
   domain: string;
   contactEmail: string;
   contactPhone?: string;

@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, X, Shield, Trash2, UserPlus } from 'lucide-react';
+import { Users, Search, Shield, Trash2, UserPlus, Check } from 'lucide-react';
 import { Button } from '@repo/ui/button';
 import { useAuth } from '../../../contexts/auth-context';
 import { hasPermission } from '../../../lib/permissions';
 import { userService } from '../../../lib/services/user.service';
-import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet, SheetSection, SheetField, SheetDetailRow } from '../../../components/ui';
+import { SlideSheet, SheetSection, SheetField, SheetDetailRow } from '../../../components/ui';
 
 type UserRole = 'super_admin' | 'sales' | 'support' | 'finance' | 'tenant_admin' | 'teacher' | 'parent' | 'student';
 
@@ -53,14 +52,12 @@ export default function UsersPage() {
   const [filterRole, setFilterRole] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Form state
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [showPermissionsPanel, setShowPermissionsPanel] = useState(false);
   const [selectedUser, setSelectedUser] = useState<StaffUser | null>(null);
   const [formData, setFormData] = useState<CreateUserForm>(defaultFormData);
   const [submitting, setSubmitting] = useState(false);
 
-  // Page protection: Only super_admin can access Users & Roles
   const canAccessUsers = hasPermission(currentUser?.roles, 'canAccessUsers');
 
   useEffect(() => {
@@ -77,7 +74,6 @@ export default function UsersPage() {
     try {
       setLoading(true);
       setError(null);
-      // Get platform staff users (super_admin, sales, support, finance)
       const response = await userService.getPlatformUsers();
       setUsers(response as StaffUser[]);
     } catch (err) {
@@ -90,7 +86,7 @@ export default function UsersPage() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.firstName || !formData.email || !formData.password) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
       setError('Please fill in all required fields');
       return;
     }
@@ -103,7 +99,7 @@ export default function UsersPage() {
         email: formData.email,
         password: formData.password,
         role: formData.role,
-        phone: formData.phone || undefined,
+        phoneNumber: formData.phone || undefined,
       });
       await loadUsers();
       setShowAddPanel(false);
@@ -147,15 +143,15 @@ export default function UsersPage() {
 
   const getRoleBadge = (role: UserRole) => {
     const badges: Record<string, { bg: string; text: string; label: string }> = {
-      super_admin: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Super Admin' },
-      sales: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Sales' },
-      support: { bg: 'bg-green-100', text: 'text-green-700', label: 'Support' },
-      finance: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Finance' },
-      tenant_admin: { bg: 'bg-primary-100', text: 'text-primary-dark', label: 'School Admin' },
+      super_admin: { bg: 'bg-purple-50', text: 'text-purple-700', label: 'Super Admin' },
+      sales: { bg: 'bg-blue-50', text: 'text-blue-700', label: 'Sales' },
+      support: { bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Support' },
+      finance: { bg: 'bg-amber-50', text: 'text-amber-700', label: 'Finance' },
+      tenant_admin: { bg: 'bg-slate-100', text: 'text-slate-700', label: 'School Admin' },
     };
-    const badge = badges[role] || { bg: 'bg-gray-100', text: 'text-gray-700', label: role };
+    const badge = badges[role] || { bg: 'bg-slate-100', text: 'text-slate-600', label: role };
     return (
-      <span className={`text-xs px-2 py-1 rounded font-medium ${badge.bg} ${badge.text}`}>
+      <span className={`text-xs px-2 py-1 rounded-md font-medium ${badge.bg} ${badge.text}`}>
         {badge.label}
       </span>
     );
@@ -208,273 +204,204 @@ export default function UsersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="rounded-full h-12 w-12 border-4 border-gray-200 border-t-violet-500"
-        />
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
+  const inputClassName = "w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors";
+
   return (
     <div className="space-y-6">
-      {/* Header with Icon */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
-      >
-        <div className="flex items-center gap-4">
-          <Icon3D bgColor="bg-violet-500">
-            <Users className="w-8 h-8" />
-          </Icon3D>
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900">
-              Users & Roles
-            </h2>
-            <p className="text-gray-600 mt-1">
-              Manage internal staff and their permissions
-            </p>
-          </div>
+      {/* Error Banner */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="text-sm underline hover:no-underline">
+            Dismiss
+          </button>
         </div>
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button onClick={() => setShowAddPanel(true)}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Add User
-          </Button>
-        </motion.div>
-      </motion.div>
+      )}
 
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-          >
-            <GlassCard className="bg-red-50 border-red-200">
-              <div className="p-4 text-red-700 flex items-center justify-between">
-                <span>{error}</span>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setError(null)}
-                  className="underline"
-                >
-                  Dismiss
-                </motion.button>
-              </div>
-            </GlassCard>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Users & Roles</h1>
+          <p className="text-slate-500 mt-1">Manage internal staff and their permissions</p>
+        </div>
+        <Button onClick={() => setShowAddPanel(true)}>
+          <UserPlus className="w-4 h-4 mr-2" />
+          Add User
+        </Button>
+      </div>
 
       {/* Stats Cards */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-4 gap-4"
-      >
-        <AnimatedStatCard
-          title="Total Users"
-          value={stats.total.toString()}
-          icon={<Users className="w-5 h-5 text-white" />}
-          iconBgColor="bg-violet-500"
-        />
-        <AnimatedStatCard
-          title="Sales Team"
-          value={stats.sales.toString()}
-          icon={<Users className="w-5 h-5 text-white" />}
-          iconBgColor="bg-sky-500"
-        />
-        <AnimatedStatCard
-          title="Support Team"
-          value={stats.support.toString()}
-          icon={<Users className="w-5 h-5 text-white" />}
-          iconBgColor="bg-green-500"
-        />
-        <AnimatedStatCard
-          title="Finance Team"
-          value={stats.finance.toString()}
-          icon={<Users className="w-5 h-5 text-white" />}
-          iconBgColor="bg-orange-500"
-        />
-      </motion.div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-purple-50">
+              <Users className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Total Users</p>
+              <p className="text-2xl font-semibold text-slate-900">{stats.total}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-blue-50">
+              <Users className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Sales Team</p>
+              <p className="text-2xl font-semibold text-slate-900">{stats.sales}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-emerald-50">
+              <Users className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Support Team</p>
+              <p className="text-2xl font-semibold text-slate-900">{stats.support}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-amber-50">
+              <Users className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Finance Team</p>
+              <p className="text-2xl font-semibold text-slate-900">{stats.finance}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <GlassCard className="bg-white">
-          <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-                Search
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <motion.input
-                  whileFocus={{ scale: 1.02 }}
-                  id="search"
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name or email..."
-                  className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="roleFilter" className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by role
-              </label>
-              <motion.select
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                id="roleFilter"
-                value={filterRole}
-                onChange={(e) => setFilterRole(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
-              >
-                <option value="all">All Roles</option>
-                <option value="super_admin">Super Admin</option>
-                <option value="sales">Sales</option>
-                <option value="support">Support</option>
-                <option value="finance">Finance</option>
-              </motion.select>
+      <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="search" className="block text-sm font-medium text-slate-700 mb-2">
+              Search
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                id="search"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name or email..."
+                className="w-full h-10 pl-10 pr-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
             </div>
           </div>
-        </GlassCard>
-      </motion.div>
+          <div>
+            <label htmlFor="roleFilter" className="block text-sm font-medium text-slate-700 mb-2">
+              Filter by role
+            </label>
+            <select
+              id="roleFilter"
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value)}
+              className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            >
+              <option value="all">All Roles</option>
+              <option value="super_admin">Super Admin</option>
+              <option value="sales">Sales</option>
+              <option value="support">Support</option>
+              <option value="finance">Finance</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
       {/* Users Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <GlassCard className="bg-white overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">User</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">Role</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">Joined</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">Last Login</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">Status</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredUsers.length === 0 ? (
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Role
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Joined
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Last Login
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <td colSpan={6} className="px-4 py-12 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
+                      <Users className="w-12 h-12 text-slate-300" />
+                      <span>No users found</span>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredUsers.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex flex-col items-center"
-                      >
-                        <Users className="w-16 h-16 text-gray-300 mb-3" />
-                        No users found
-                      </motion.div>
+              ) : (
+                filteredUsers.map((user) => (
+                  <tr key={user._id || user.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div>
+                        <div className="font-medium text-slate-900">
+                          {user.firstName} {user.lastName}
+                        </div>
+                        <div className="text-slate-500 text-xs">{user.email}</div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">{getRoleBadge(user.role)}</td>
+                    <td className="px-4 py-3 text-slate-600">{formatDate(user.createdAt)}</td>
+                    <td className="px-4 py-3 text-slate-600">{formatLastLogin(user.lastLogin)}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs px-2 py-1 rounded-md font-medium ${
+                        user.isActive
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {user.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setShowPermissionsPanel(true);
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                        >
+                          <Shield className="w-3.5 h-3.5" />
+                          Permissions
+                        </button>
+                        <button
+                          onClick={() => handleToggleActive(user)}
+                          className="px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                          {user.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user)}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ) : (
-                  <AnimatePresence>
-                    {filteredUsers.map((user, index) => (
-                      <motion.tr
-                        key={user._id || user.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ delay: index * 0.05 }}
-                        whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.6)', scale: 1.005 }}
-                        className="transition-colors"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {user.firstName} {user.lastName}
-                            </div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getRoleBadge(user.role)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {formatDate(user.createdAt)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {formatLastLogin(user.lastLogin)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-xs px-2 py-1 rounded font-medium ${
-                            user.isActive
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100/30 text-gray-700'
-                          }`}>
-                            {user.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex items-center gap-3">
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setShowPermissionsPanel(true);
-                              }}
-                              className="text-violet-600 hover:text-violet-900 font-medium flex items-center gap-1"
-                            >
-                              <Shield className="w-4 h-4" />
-                              Permissions
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => handleToggleActive(user)}
-                              className="text-gray-600 hover:text-gray-900 font-medium"
-                            >
-                              {user.isActive ? 'Deactivate' : 'Activate'}
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.2, color: '#ef4444' }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => handleDeleteUser(user)}
-                              className="text-gray-400 hover:text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </motion.button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </AnimatePresence>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </GlassCard>
-      </motion.div>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Add User SlideSheet */}
       <SlideSheet
@@ -485,119 +412,97 @@ export default function UsersPage() {
         size="md"
         footer={
           <div className="flex justify-end gap-3">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button type="button" variant="outline" onClick={() => setShowAddPanel(false)}>
-                Cancel
-              </Button>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button onClick={handleCreateUser} disabled={submitting}>
-                {submitting ? 'Creating...' : 'Create User'}
-              </Button>
-            </motion.div>
+            <Button variant="outline" onClick={() => setShowAddPanel(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateUser} disabled={submitting}>
+              {submitting ? 'Creating...' : 'Create User'}
+            </Button>
           </div>
         }
       >
-        <form onSubmit={handleCreateUser} className="space-y-4">
+        <form onSubmit={handleCreateUser} className="space-y-6">
           <SheetSection>
             <div className="grid grid-cols-2 gap-4">
               <SheetField label="First Name" required>
-                <motion.input
-                  whileFocus={{ scale: 1.02 }}
+                <input
                   type="text"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                  className={inputClassName}
                   required
                 />
               </SheetField>
-              <SheetField label="Last Name">
-                <motion.input
-                  whileFocus={{ scale: 1.02 }}
+              <SheetField label="Last Name" required>
+                <input
                   type="text"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                  className={inputClassName}
+                  required
                 />
               </SheetField>
             </div>
 
             <SheetField label="Email" required>
-              <motion.input
-                whileFocus={{ scale: 1.02 }}
+              <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                className={inputClassName}
                 required
               />
             </SheetField>
 
             <SheetField label="Password" required>
-              <motion.input
-                whileFocus={{ scale: 1.02 }}
+              <input
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                className={inputClassName}
                 required
-                minLength={6}
+                minLength={8}
               />
             </SheetField>
 
             <SheetField label="Phone">
-              <motion.input
-                whileFocus={{ scale: 1.02 }}
+              <input
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                className={inputClassName}
               />
             </SheetField>
 
             <SheetField label="Role" required>
-              <motion.select
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <select
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                className={inputClassName}
               >
                 <option value="support">Support</option>
                 <option value="sales">Sales</option>
                 <option value="finance">Finance</option>
                 <option value="super_admin">Super Admin</option>
-              </motion.select>
+              </select>
             </SheetField>
           </SheetSection>
 
           <SheetSection title="Role Permissions">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-purple-50 rounded-lg p-4"
-            >
-              <p className="text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-violet-600" />
-                Permissions for {formData.role}
+            <div className="bg-slate-50 rounded-lg p-4">
+              <p className="text-sm font-medium text-slate-900 mb-3 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-primary" />
+                Permissions for {formData.role.replace('_', ' ')}
               </p>
-              <ul className="space-y-1">
+              <ul className="space-y-2">
                 {getRolePermissions(formData.role).map((permission, index) => (
-                  <motion.li
-                    key={index}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="flex items-start gap-2 text-sm text-gray-600"
-                  >
-                    <svg className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                  <li key={index} className="flex items-start gap-2 text-sm text-slate-600">
+                    <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                     {permission}
-                  </motion.li>
+                  </li>
                 ))}
               </ul>
-            </motion.div>
+            </div>
           </SheetSection>
         </form>
       </SlideSheet>
@@ -609,66 +514,47 @@ export default function UsersPage() {
           setShowPermissionsPanel(false);
           setSelectedUser(null);
         }}
-        title={selectedUser ? `Permissions: ${selectedUser.firstName} ${selectedUser.lastName}` : ''}
-        subtitle="View user role and permissions"
+        title={selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : ''}
+        subtitle="User permissions"
         size="md"
         footer={
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                setShowPermissionsPanel(false);
-                setSelectedUser(null);
-              }}
-            >
-              Close
-            </Button>
-          </motion.div>
+          <Button variant="outline" className="w-full" onClick={() => {
+            setShowPermissionsPanel(false);
+            setSelectedUser(null);
+          }}>
+            Close
+          </Button>
         }
       >
         {selectedUser && (
           <>
-            <SheetSection title="Current Role">
-              {getRoleBadge(selectedUser.role)}
-            </SheetSection>
-
             <SheetSection title="User Details">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-50 rounded-lg p-4 space-y-2"
-              >
+              <div className="bg-slate-50 rounded-lg p-4 space-y-3">
                 <SheetDetailRow label="Email" value={selectedUser.email} />
+                <SheetDetailRow label="Role" value={getRoleBadge(selectedUser.role)} />
                 <SheetDetailRow label="Joined" value={formatDate(selectedUser.createdAt)} />
-                <div className="flex justify-between py-2">
-                  <span className="text-sm text-gray-600">Status</span>
-                  <span className={`text-sm font-medium ${selectedUser.isActive ? 'text-green-600' : 'text-gray-500'}`}>
-                    {selectedUser.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-              </motion.div>
+                <SheetDetailRow
+                  label="Status"
+                  value={
+                    <span className={`text-xs px-2 py-1 rounded-md font-medium ${
+                      selectedUser.isActive
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {selectedUser.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  }
+                />
+              </div>
             </SheetSection>
 
             <SheetSection title="Granted Permissions">
-              <p className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-violet-600" />
-                Permissions
-              </p>
               <ul className="space-y-2">
                 {getRolePermissions(selectedUser.role).map((permission, index) => (
-                  <motion.li
-                    key={index}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="flex items-start gap-2 text-sm text-gray-700"
-                  >
-                    <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                  <li key={index} className="flex items-start gap-2 text-sm text-slate-700">
+                    <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                     {permission}
-                  </motion.li>
+                  </li>
                 ))}
               </ul>
             </SheetSection>

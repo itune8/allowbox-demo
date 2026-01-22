@@ -195,7 +195,7 @@ class UserService {
     email: string;
     password: string;
     role: string;
-    phone?: string;
+    phoneNumber?: string;
   }): Promise<User> {
     const response = await apiClient.post<User>('/users/platform', userData);
     return response.data;

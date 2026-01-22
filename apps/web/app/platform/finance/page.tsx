@@ -2,14 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { DollarSign, TrendingUp, Wallet, AlertCircle, CreditCard } from 'lucide-react';
+import { DollarSign, TrendingUp, Wallet, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../../contexts/auth-context';
 import { hasPermission } from '../../../lib/permissions';
 import { schoolService, type School } from '../../../lib/services/superadmin/school.service';
-import { GlassCard } from '../../../components/ui/glass-card';
-import { AnimatedStatCard } from '../../../components/ui/animated-stat-card';
-import { Icon3D } from '../../../components/ui/icon-3d';
 
 interface FinanceMetrics {
   totalMRR: number;
@@ -32,21 +28,6 @@ interface Payment {
   invoiceId: string;
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
-};
-
 export default function FinancePage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -55,7 +36,6 @@ export default function FinancePage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'paid' | 'pending' | 'overdue'>('all');
 
-  // Page protection: Only super_admin and finance can access
   const canAccessFinance = hasPermission(user?.roles, 'canAccessFinance');
 
   useEffect(() => {
@@ -105,7 +85,6 @@ export default function FinancePage() {
     });
   };
 
-  // Generate mock payment data from schools
   const getPayments = (): Payment[] => {
     const payments: Payment[] = [];
     schools.forEach((school, idx) => {
@@ -153,13 +132,13 @@ export default function FinancePage() {
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { bg: string; text: string; label: string }> = {
-      paid: { bg: 'bg-green-100', text: 'text-green-700', label: 'Paid' },
-      pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Pending' },
-      overdue: { bg: 'bg-red-100', text: 'text-red-700', label: 'Overdue' },
+      paid: { bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Paid' },
+      pending: { bg: 'bg-amber-50', text: 'text-amber-700', label: 'Pending' },
+      overdue: { bg: 'bg-red-50', text: 'text-red-700', label: 'Overdue' },
     };
     const badge = badges[status] || badges.pending;
     return (
-      <span className={`text-xs px-2 py-1 rounded font-medium ${badge?.bg} ${badge?.text}`}>
+      <span className={`text-xs px-2 py-1 rounded-md font-medium ${badge?.bg} ${badge?.text}`}>
         {badge?.label}
       </span>
     );
@@ -168,209 +147,151 @@ export default function FinancePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-12 h-12 border-4 border-green-200 border-t-green-500 rounded-full"
-        />
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex items-start gap-4"
-      >
-        <Icon3D bgColor="bg-green-500" size="lg">
-          <DollarSign className="w-6 h-6" />
-        </Icon3D>
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Finance & Billing
-          </h2>
-          <p className="text-gray-600 mt-1">
-            Manage revenue, billing, and payments across all schools
-          </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900">Finance & Billing</h1>
+        <p className="text-slate-500 mt-1">Manage revenue, billing, and payments across all schools</p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-emerald-50">
+              <DollarSign className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Monthly Revenue</p>
+              <p className="text-2xl font-semibold text-slate-900">{formatCurrency(metrics?.totalMRR || 0)}</p>
+            </div>
+          </div>
         </div>
-      </motion.div>
-
-      {/* Metrics Cards */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
-      >
-        <AnimatedStatCard
-          title="Monthly Recurring Revenue"
-          value={formatCurrency(metrics?.totalMRR || 0)}
-          icon={<DollarSign className="w-6 h-6" />}
-          iconBgColor="bg-green-500"
-          delay={0}
-        />
-
-        <AnimatedStatCard
-          title="Annual Recurring Revenue"
-          value={formatCurrency(metrics?.totalARR || 0)}
-          icon={<TrendingUp className="w-6 h-6" />}
-          iconBgColor="bg-emerald-500"
-          delay={1}
-        />
-
-        <AnimatedStatCard
-          title="Total Revenue"
-          value={formatCurrency(metrics?.totalRevenue || 0)}
-          icon={<Wallet className="w-6 h-6 text-emerald-600" />}
-          iconBgColor="bg-emerald-50"
-          delay={2}
-        />
-
-        <AnimatedStatCard
-          title="Outstanding Balance"
-          value={formatCurrency(metrics?.outstandingBalance || 0)}
-          icon={<AlertCircle className="w-6 h-6" />}
-          iconBgColor="bg-red-500"
-          delay={3}
-        />
-      </motion.div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-blue-50">
+              <TrendingUp className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Annual Revenue</p>
+              <p className="text-2xl font-semibold text-slate-900">{formatCurrency(metrics?.totalARR || 0)}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-purple-50">
+              <Wallet className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Total Revenue</p>
+              <p className="text-2xl font-semibold text-slate-900">{formatCurrency(metrics?.totalRevenue || 0)}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-red-50">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Outstanding</p>
+              <p className="text-2xl font-semibold text-slate-900">{formatCurrency(metrics?.outstandingBalance || 0)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Revenue by Plan */}
-      <GlassCard className="bg-white p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Revenue by Plan
-        </h3>
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-1 md:grid-cols-4 gap-4"
-        >
-          {metrics?.revenueByPlan.map((item, idx) => (
-            <motion.div
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 className="font-semibold text-slate-900 mb-4">Revenue by Plan</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {metrics?.revenueByPlan.map((item) => (
+            <div
               key={item.plan}
-              variants={itemVariants}
-              whileHover={{ y: -4, scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-              className="bg-emerald-50 border border-green-100 rounded-lg p-4 cursor-pointer"
+              className="bg-slate-50 border border-slate-100 rounded-lg p-4"
             >
-              <p className="text-sm text-gray-600">{item.plan}</p>
-              <p className="text-xl font-bold text-gray-900 mt-1">
+              <p className="text-sm text-slate-500">{item.plan}</p>
+              <p className="text-xl font-semibold text-slate-900 mt-1">
                 {formatCurrency(item.mrr)}
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 {item.schools} {item.schools === 1 ? 'school' : 'schools'}
               </p>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
-      </GlassCard>
+        </div>
+      </div>
 
       {/* Payments Table */}
-      <GlassCard className="bg-white">
-        <div className="p-6 border-b border-gray-100">
+      <div className="bg-white rounded-xl border border-slate-200">
+        <div className="p-5 border-b border-slate-200">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Payment History
-            </h3>
+            <h3 className="font-semibold text-slate-900">Payment History</h3>
             <div className="flex items-center gap-2">
-              <label htmlFor="statusFilter" className="text-sm text-gray-600">
+              <label htmlFor="statusFilter" className="text-sm text-slate-500">
                 Filter:
               </label>
-              <motion.select
-                whileTap={{ scale: 0.98 }}
+              <select
                 id="statusFilter"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as any)}
-                className="px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
                 <option value="all">All</option>
                 <option value="paid">Paid</option>
                 <option value="pending">Pending</option>
                 <option value="overdue">Overdue</option>
-              </motion.select>
+              </select>
             </div>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-emerald-50 border-b border-gray-100">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Invoice ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  School
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">Invoice ID</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">School</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">Amount</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">Date</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              <AnimatePresence mode="popLayout">
-                {filteredPayments.length === 0 ? (
-                  <motion.tr
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                      No payments found
-                    </td>
-                  </motion.tr>
-                ) : (
-                  filteredPayments.slice(0, 20).map((payment, idx) => (
-                    <motion.tr
-                      key={payment.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ delay: idx * 0.05 }}
-                      whileHover={{ backgroundColor: 'rgba(16, 185, 129, 0.05)' }}
-                      className="transition-colors"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {payment.invoiceId}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {payment.schoolName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                        {formatCurrency(payment.amount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {formatDate(payment.date)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {getStatusBadge(payment.status)}
-                      </td>
-                    </motion.tr>
-                  ))
-                )}
-              </AnimatePresence>
+            <tbody className="divide-y divide-slate-100">
+              {filteredPayments.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-12 text-center text-slate-500">
+                    No payments found
+                  </td>
+                </tr>
+              ) : (
+                filteredPayments.slice(0, 20).map((payment) => (
+                  <tr key={payment.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-slate-900">{payment.invoiceId}</td>
+                    <td className="px-4 py-3 text-slate-700">{payment.schoolName}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900">{formatCurrency(payment.amount)}</td>
+                    <td className="px-4 py-3 text-slate-600">{formatDate(payment.date)}</td>
+                    <td className="px-4 py-3">{getStatusBadge(payment.status)}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
         {filteredPayments.length > 20 && (
-          <div className="px-6 py-4 border-t border-gray-100 text-center">
-            <p className="text-sm text-gray-500">
-              Showing 20 of {filteredPayments.length} payments
-            </p>
+          <div className="px-4 py-3 border-t border-slate-200 text-center">
+            <p className="text-sm text-slate-500">Showing 20 of {filteredPayments.length} payments</p>
           </div>
         )}
-      </GlassCard>
+      </div>
     </div>
   );
 }
