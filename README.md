@@ -2,6 +2,8 @@
 
 **Multi-tenant SaaS platform for school management**
 
+<!-- Last deployed: 2026-02-08 -->
+
 This is the frontend-only Turborepo scaffold for Allowbox, a comprehensive school management system. The backend is hosted separately and exposes standard REST endpoints for authentication, tenant management, student management, invoices, and payment processing.
 
 ## Tech Stack
