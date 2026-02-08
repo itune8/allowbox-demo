@@ -31,3 +31,7 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Local env files
+.env.local
+.env*.local

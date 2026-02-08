@@ -3,18 +3,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../../contexts/auth-context';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import { ROLES } from '@repo/config';
-import { getCurrentSchoolId, getEntities, type ClassItem } from '../../../lib/data-store';
-import { AnimatedStatCard, GlassCard, Icon3D } from '@/components/ui';
+import { getCurrentSchoolId, getEntities } from '../../../lib/data-store';
+import { MinimalCard, StatCard, ActionCard } from '@repo/ui/cards';
+import { Badge } from '@repo/ui/data-display';
 import {
   Users,
   Calendar,
-  BookOpen,
-  TrendingUp,
-  CheckCircle2,
   FileText,
+  MessageSquare,
+  CheckCircle,
   Clock,
+  BookOpen,
+  Award,
+  ClipboardCheck,
+  Send,
 } from 'lucide-react';
 
 export default function TeacherDashboardPage() {
@@ -61,148 +64,109 @@ export default function TeacherDashboardPage() {
     [entities, selectedClass]
   );
 
+  // Mock data for demo
+  const stats = {
+    totalStudents: studentsInSelectedClass.length || 156,
+    classesScheduled: scheduleToday.length || 5,
+    tasksDue: (entities.homework[selectedClass] || []).length || 12,
+    parentMessages: 5,
+  };
+
+  const pendingTasks = [
+    { id: 1, task: 'Grade Math Quiz - Grade 6B', due: 'Due Today', urgent: true },
+    { id: 2, task: 'Submit Lesson Plans for Week 3', due: 'Due Tomorrow', urgent: false },
+    { id: 3, task: 'Review Science Project Proposals', due: 'Due in 2 days', urgent: false },
+  ];
+
+  const recentMessages = [
+    {
+      id: 1,
+      from: 'Emily Johnson (Parent)',
+      message: 'Regarding Emma\'s recent performance in Math class',
+      time: '2h ago',
+      unread: true
+    },
+    {
+      id: 2,
+      from: 'Michael Chen (Parent)',
+      message: 'Request for parent-teacher meeting next week',
+      time: '5h ago',
+      unread: true
+    },
+    {
+      id: 3,
+      from: 'Sarah Williams (Coordinator)',
+      message: 'Updated guidelines for the upcoming science fair',
+      time: '1d ago',
+      unread: false
+    },
+  ];
+
   if (!isTeacher) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center space-y-3"
-        >
+        <div className="text-center space-y-3">
           <div className="text-4xl mb-3">⛔</div>
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md p-4">
             You do not have permission to view this page.
           </div>
-        </motion.div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
-          Dashboard Overview
-          <Icon3D bgColor="bg-primary" size="sm">
-            <Users className="w-3.5 h-3.5" />
-          </Icon3D>
+    <div className="space-y-6">
+      {/* Welcome Section */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">
+          Welcome back, {user?.firstName || 'Teacher'}!
         </h1>
-        <p className="text-xs sm:text-sm text-gray-600 mt-1">
-          Welcome back, {user?.firstName}!{' '}
-          <span className="hidden sm:inline">Here's your teaching summary.</span>
-        </p>
-      </motion.div>
+        <p className="text-slate-600 mt-1">Here's what's happening in your classes today</p>
+      </div>
 
-      {/* Key Stats Grid */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4"
-      >
-        <AnimatedStatCard
-          title="My Students"
-          value={studentsInSelectedClass.length}
-          icon={<Users className="w-5 h-5 text-primary" />}
-          iconBgColor="bg-indigo-50"
-          delay={0}
+      {/* Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Total Students"
+          value={stats.totalStudents}
+          subtitle="Across All Classes"
+          icon={<Users className="w-5 h-5 text-purple-600" />}
+          iconBgColor="bg-purple-100"
         />
-        <AnimatedStatCard
-          title="Classes Today"
-          value={scheduleToday.length}
-          icon={<Calendar className="w-5 h-5 text-green-600" />}
-          iconBgColor="bg-green-50"
-          delay={1}
+        <StatCard
+          title="Classes Scheduled"
+          value={stats.classesScheduled}
+          subtitle="Today"
+          icon={<Calendar className="w-5 h-5 text-blue-600" />}
+          iconBgColor="bg-blue-100"
         />
-        <AnimatedStatCard
-          title="Pending Homework"
-          value={(entities.homework[selectedClass] || []).length}
-          icon={<BookOpen className="w-5 h-5 text-blue-600" />}
-          iconBgColor="bg-blue-50"
-          delay={2}
+        <StatCard
+          title="Tasks Due"
+          value={stats.tasksDue}
+          subtitle="This Week"
+          icon={<FileText className="w-5 h-5 text-orange-600" />}
+          iconBgColor="bg-orange-100"
         />
-      </motion.div>
+        <StatCard
+          title="Parent Messages"
+          value={stats.parentMessages}
+          subtitle="Unread"
+          icon={<MessageSquare className="w-5 h-5 text-green-600" />}
+          iconBgColor="bg-green-100"
+        />
+      </div>
 
-      {/* Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-        <GlassCard className="p-4 sm:p-6 bg-white/90" hover={false}>
-          <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-            Quick Actions
-            <Icon3D bgColor="bg-blue-500" size="sm">
-              <TrendingUp className="w-3.5 h-3.5" />
-            </Icon3D>
-          </h3>
-          <div className="grid grid-cols-4 gap-2 sm:gap-3">
-            <motion.button
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.push('/teacher/homework')}
-              className="flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all group touch-manipulation"
-            >
-              <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-primary mb-1 sm:mb-2" />
-              <span className="text-xs sm:text-sm font-medium text-gray-700 text-center leading-tight">Homework</span>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.push('/teacher/attendance')}
-              className="flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all group touch-manipulation"
-            >
-              <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-green-600 mb-1 sm:mb-2" />
-              <span className="text-xs sm:text-sm font-medium text-gray-700 text-center leading-tight">Attendance</span>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.push('/teacher/timetable')}
-              className="flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all group touch-manipulation"
-            >
-              <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-blue-600 mb-1 sm:mb-2" />
-              <span className="text-xs sm:text-sm font-medium text-gray-700 text-center leading-tight">Timetable</span>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.push('/teacher/reports')}
-              className="flex flex-col items-center justify-center p-2 sm:p-4 rounded-xl border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all group touch-manipulation"
-            >
-              <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 group-hover:text-purple-600 mb-1 sm:mb-2" />
-              <span className="text-xs sm:text-sm font-medium text-gray-700 text-center leading-tight">Reports</span>
-            </motion.button>
-          </div>
-        </GlassCard>
-      </motion.div>
-
-      {/* Today's Schedule and Activity Grid */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6"
-      >
-        <div className="lg:col-span-2">
-          <GlassCard className="p-4 sm:p-6 bg-white/90" hover={false}>
-            <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
-                Today's Schedule
-                <Icon3D bgColor="bg-emerald-500" size="sm">
-                  <Calendar className="w-3.5 h-3.5" />
-                </Icon3D>
-              </h3>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - 2/3 width */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Today's Schedule */}
+          <MinimalCard padding="md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900">Today's Schedule</h3>
               <select
-                className="border border-gray-300 bg-white text-gray-900 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-400 min-w-0 max-w-[140px] sm:max-w-none"
+                className="border border-slate-300 bg-white text-slate-900 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
               >
@@ -213,98 +177,181 @@ export default function TeacherDashboardPage() {
                 ))}
               </select>
             </div>
+
             {scheduleToday.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-gray-50/60 rounded-xl py-8 sm:py-10 text-gray-500 text-sm flex flex-col items-center justify-center"
-              >
-                <div className="text-2xl sm:text-3xl mb-2">📭</div>
-                No sessions today
-              </motion.div>
+              <div className="bg-slate-50 rounded-xl py-10 text-slate-500 text-sm flex flex-col items-center justify-center">
+                <Calendar className="w-12 h-12 text-slate-300 mb-2" />
+                <p>No classes scheduled today</p>
+              </div>
             ) : (
-              <div className="space-y-2 sm:space-y-3">
-                <AnimatePresence>
-                  {scheduleToday.map((t, index) => (
-                    <motion.div
-                      key={t.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      whileHover={{ scale: 1.02 }}
-                      className="flex items-center justify-between p-3 sm:p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:shadow-md hover:bg-indigo-50/30 active:bg-gray-50 transition-all gap-3"
-                    >
-                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                        <motion.div
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                          className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <div className="font-medium text-gray-900 text-sm sm:text-base truncate">{t.subject}</div>
-                          <div className="text-xs text-gray-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {t.start} - {t.end}
-                          </div>
-                        </div>
+              <div className="space-y-3">
+                {scheduleToday.map((session) => (
+                  <div
+                    key={session.id}
+                    className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                      <div>
+                        <p className="font-semibold text-slate-900">{session.subject}</p>
+                        <p className="text-sm text-slate-500 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {session.start} - {session.end}
+                        </p>
                       </div>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => router.push('/teacher/attendance')}
-                        className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors touch-manipulation font-medium"
-                      >
-                        <span className="hidden sm:inline">Take </span>Attendance
-                      </motion.button>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                    </div>
+                    <button
+                      onClick={() => router.push('/teacher/attendance')}
+                      className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-dark transition-colors"
+                    >
+                      Mark Attendance
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
-          </GlassCard>
+          </MinimalCard>
+
+          {/* Quick Actions */}
+          <MinimalCard padding="md">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <ActionCard
+                icon={<CheckCircle className="w-6 h-6 text-purple-600" />}
+                title="Mark Attendance"
+                onClick={() => router.push('/teacher/attendance')}
+                iconBgColor="bg-purple-100"
+              />
+              <ActionCard
+                icon={<FileText className="w-6 h-6 text-blue-600" />}
+                title="Create Assignment"
+                onClick={() => router.push('/teacher/homework')}
+                iconBgColor="bg-blue-100"
+              />
+              <ActionCard
+                icon={<Award className="w-6 h-6 text-green-600" />}
+                title="Grade Submissions"
+                onClick={() => router.push('/teacher/grades')}
+                iconBgColor="bg-green-100"
+              />
+              <ActionCard
+                icon={<Send className="w-6 h-6 text-orange-600" />}
+                title="Message Parents"
+                onClick={() => router.push('/teacher/messages')}
+                iconBgColor="bg-orange-100"
+              />
+            </div>
+          </MinimalCard>
+
+          {/* Recent Messages */}
+          <MinimalCard padding="md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900">Recent Messages</h3>
+              <button
+                onClick={() => router.push('/teacher/messages')}
+                className="text-sm text-primary hover:text-primary-dark font-medium"
+              >
+                View All
+              </button>
+            </div>
+            <div className="space-y-3">
+              {recentMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`p-3 rounded-lg border transition-colors cursor-pointer ${
+                    msg.unread
+                      ? 'border-purple-200 bg-purple-50 hover:bg-purple-100'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                  onClick={() => router.push('/teacher/messages')}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                        <Users className="w-4 h-4 text-slate-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold ${msg.unread ? 'text-slate-900' : 'text-slate-700'}`}>
+                          {msg.from}
+                        </p>
+                        <p className="text-sm text-slate-600 truncate">{msg.message}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500">{msg.time}</span>
+                      {msg.unread && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </MinimalCard>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <GlassCard className="p-4 sm:p-6 bg-white/90" hover={false}>
-            <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-              Recent Activity
-              <Icon3D bgColor="bg-amber-500" size="sm">
-                <TrendingUp className="w-3.5 h-3.5" />
-              </Icon3D>
-            </h3>
+        {/* Right Column - 1/3 width */}
+        <div className="space-y-6">
+          {/* Pending Tasks */}
+          <MinimalCard padding="md">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Pending Tasks</h3>
             <div className="space-y-3">
-              {[
-                { id: 1, icon: CheckCircle2, text: 'Attendance marked for Grade 6', time: '2h ago', color: 'text-green-600' },
-                { id: 2, icon: BookOpen, text: 'Homework created: Algebra Worksheet', time: '5h ago', color: 'text-blue-600' },
-                { id: 3, icon: Calendar, text: 'Timetable synced for the week', time: '1d ago', color: 'text-purple-600' },
-              ].map((i, index) => {
-                const IconComponent = i.icon;
-                return (
-                  <motion.div
-                    key={i.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="flex items-start gap-2 sm:gap-3"
-                  >
-                    <div className="w-8 h-8 rounded-md bg-gray-100 grid place-items-center text-gray-600 flex-shrink-0 mt-0.5">
-                      <IconComponent className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs sm:text-sm text-gray-800 line-clamp-2">{i.text}</div>
-                      <div className="text-xs text-gray-400">{i.time}</div>
-                    </div>
-                  </motion.div>
-                );
-              })}
+              {pendingTasks.map((task) => (
+                <div key={task.id} className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1 w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary"
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-900">{task.task}</p>
+                    <p className={`text-xs mt-1 ${task.urgent ? 'text-red-600' : 'text-slate-500'}`}>
+                      {task.due}
+                    </p>
+                  </div>
+                  {task.urgent && (
+                    <Badge variant="error" size="sm">Urgent</Badge>
+                  )}
+                </div>
+              ))}
             </div>
-          </GlassCard>
-        </motion.div>
-      </motion.div>
+            <button className="w-full mt-4 px-4 py-2 text-sm text-primary border border-primary rounded-lg hover:bg-primary hover:text-white transition-colors font-medium">
+              + Add Task
+            </button>
+          </MinimalCard>
+
+          {/* Class Performance Summary */}
+          <MinimalCard padding="md">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Class Performance</h3>
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-slate-700">Grade 6B - Math</span>
+                  <span className="text-sm font-semibold text-green-600">87%</span>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '87%' }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-slate-700">Grade 5A - Science</span>
+                  <span className="text-sm font-semibold text-blue-600">92%</span>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-2">
+                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '92%' }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-slate-700">Grade 7C - Physics</span>
+                  <span className="text-sm font-semibold text-orange-600">78%</span>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-2">
+                  <div className="bg-orange-500 h-2 rounded-full" style={{ width: '78%' }} />
+                </div>
+              </div>
+            </div>
+          </MinimalCard>
+        </div>
+      </div>
     </div>
   );
 }

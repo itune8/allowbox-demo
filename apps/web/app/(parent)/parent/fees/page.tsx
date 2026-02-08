@@ -1,21 +1,19 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../../contexts/auth-context';
 import { Button } from '@repo/ui/button';
 import { userService, type User } from '@/lib/services/user.service';
 import { feeService, type Invoice } from '@/lib/services/fee.service';
-import { GlassCard, AnimatedStatCard, Icon3D } from '../../../../components/ui';
+import { MinimalCard, StatCard } from '@repo/ui/cards';
+import { Badge } from '@repo/ui/data-display';
 import {
   DollarSign,
   Receipt,
   FileText,
   Download,
-  TrendingUp,
   CheckCircle,
   Clock,
-  AlertCircle,
   Wallet,
 } from 'lucide-react';
 
@@ -34,13 +32,9 @@ export default function FeesPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch current user with populated children field
       const currentUser = await userService.getUserById(user?.id || '');
-
-      // Get children from the user's children array
       const childrenIds = currentUser.children || [];
 
-      // Fetch all children details
       const myChildren: User[] = [];
       if (childrenIds.length > 0) {
         const allUsers = await userService.getUsers();
@@ -86,27 +80,6 @@ export default function FeesPage() {
     return { total, paid, pending };
   }, [invoices]);
 
-  const months = Array.from({ length: 6 }).map((_, i) => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - (5 - i));
-    return {
-      label: d.toLocaleDateString('en-US', { month: 'short' }),
-      value: d.toISOString().slice(0, 7),
-    };
-  });
-
-  const monthlyValues = months.map(({ value: ym }) =>
-    invoices
-      .filter(inv =>
-        inv.status === 'paid' &&
-        inv.paidDate &&
-        inv.paidDate.slice(0, 7) === ym
-      )
-      .reduce((s, inv) => s + inv.paidAmount, 0)
-  );
-
-  const maxMonthly = Math.max(1, ...monthlyValues);
-
   const getChildName = (studentId: string) => {
     const child = children.find(c => (c.id || c._id) === studentId);
     return child ? `${child.firstName} ${child.lastName}` : 'Unknown';
@@ -141,252 +114,174 @@ export default function FeesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-10 h-10 border-3 border-yellow-500 border-t-transparent rounded-full"
-        />
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="space-y-6"
-    >
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Icon3D bgColor="bg-yellow-500" size="lg">
-            <Wallet className="w-6 h-6" />
-          </Icon3D>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Fees</h1>
-            <p className="text-sm text-gray-500">Track fee payments for your children</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Fees & Payments</h1>
+          <p className="text-slate-600 mt-1">Track fee payments for your children</p>
         </div>
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Button
-            onClick={downloadFeeStatement}
-            variant="outline"
-            className="shadow-lg shadow-yellow-500/25"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Download Statement
-          </Button>
-        </motion.div>
+        <Button
+          onClick={downloadFeeStatement}
+          variant="outline"
+          size="md"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Download Statement
+        </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <AnimatedStatCard
-          title="Total"
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard
+          title="Total Fees"
           value={`$${stats.total.toLocaleString()}`}
-          icon={<FileText className="w-5 h-5 text-gray-600" />}
-          iconBgColor="bg-gray-100"
-          delay={0}
+          subtitle="All Invoices"
+          icon={<FileText className="w-5 h-5 text-slate-600" />}
+          iconBgColor="bg-slate-100"
         />
-        <AnimatedStatCard
+        <StatCard
           title="Paid"
           value={`$${stats.paid.toLocaleString()}`}
+          subtitle="Completed Payments"
           icon={<CheckCircle className="w-5 h-5 text-green-600" />}
           iconBgColor="bg-green-100"
-          delay={1}
         />
-        <AnimatedStatCard
+        <StatCard
           title="Pending"
           value={`$${stats.pending.toLocaleString()}`}
-          icon={<Clock className="w-5 h-5 text-yellow-600" />}
-          iconBgColor="bg-yellow-100"
-          delay={2}
+          subtitle="Outstanding Balance"
+          icon={<Clock className="w-5 h-5 text-amber-600" />}
+          iconBgColor="bg-amber-100"
         />
       </div>
 
-      {/* Payment Trend Chart */}
-      <GlassCard>
-        <div className="flex items-center gap-3 mb-6">
-          <Icon3D bgColor="bg-yellow-500" size="sm">
-            <TrendingUp className="w-4 h-4" />
-          </Icon3D>
-          <h3 className="text-lg font-semibold text-gray-900">
-            Payment Trend (Last 6 Months)
-          </h3>
-        </div>
-        <div className="h-40 flex items-end gap-3">
-          {months.map((month, i) => (
-            <motion.div
-              key={month.value}
-              className="flex-1 flex flex-col items-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <motion.div
-                className="w-full bg-gray-50 rounded-t transition-all hover:from-yellow-600 hover:to-amber-500"
-                initial={{ height: 0 }}
-                animate={{
-                  height: `${monthlyValues[i] ? (monthlyValues[i]! / maxMonthly) * 100 : 0}%`,
-                }}
-                transition={{ delay: i * 0.1 + 0.2, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                style={{
-                  minHeight: monthlyValues[i] && monthlyValues[i]! > 0 ? '10px' : '0px',
-                }}
-                title={`${month.label}: $${monthlyValues[i]?.toLocaleString() || 0}`}
-                whileHover={{ scale: 1.05 }}
-              />
-              <div className="text-xs text-gray-500 mt-2">{month.label}</div>
-            </motion.div>
-          ))}
-        </div>
-      </GlassCard>
-
       {/* Fee Invoices Table */}
-      <GlassCard>
-        <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
-          <div className="flex items-center gap-3">
-            <Icon3D bgColor="bg-yellow-500" size="sm">
-              <Receipt className="w-4 h-4" />
-            </Icon3D>
-            <h3 className="text-lg font-semibold text-gray-900">Fee Invoices</h3>
-          </div>
+      <MinimalCard padding="md">
+        <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+          <h3 className="text-lg font-semibold text-slate-900">Fee Invoices</h3>
           <div className="flex gap-2">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => setSelectedFilter('all')}
-              className={`px-4 py-2 text-sm rounded-xl transition-all ${
+              className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors ${
                 selectedFilter === 'all'
-                  ? 'bg-yellow-100 text-yellow-700 font-medium'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-primary text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               All
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            </button>
+            <button
               onClick={() => setSelectedFilter('pending')}
-              className={`px-4 py-2 text-sm rounded-xl transition-all ${
+              className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors ${
                 selectedFilter === 'pending'
-                  ? 'bg-amber-100 text-amber-700 font-medium'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               Pending
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            </button>
+            <button
               onClick={() => setSelectedFilter('paid')}
-              className={`px-4 py-2 text-sm rounded-xl transition-all ${
+              className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors ${
                 selectedFilter === 'paid'
-                  ? 'bg-green-100 text-green-700 font-medium'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-green-500 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               Paid
-            </motion.button>
+            </button>
           </div>
         </div>
 
         {children.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-12 text-gray-500"
-          >
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
-              <FileText className="w-8 h-8 text-gray-400" />
+          <div className="text-center py-12 text-slate-500">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-slate-100 flex items-center justify-center">
+              <FileText className="w-8 h-8 text-slate-400" />
             </div>
             <p>No children linked to your account yet.</p>
-          </motion.div>
+          </div>
         ) : filteredInvoices.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-12 text-gray-500"
-          >
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
-              <Receipt className="w-8 h-8 text-gray-400" />
+          <div className="text-center py-12 text-slate-500">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-slate-100 flex items-center justify-center">
+              <Receipt className="w-8 h-8 text-slate-400" />
             </div>
             <p>No invoices found for the selected filter.</p>
-          </motion.div>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-slate-50">
                 <tr className="text-left">
-                  <th className="py-4 px-4 font-semibold text-gray-700">Invoice #</th>
-                  <th className="py-4 px-4 font-semibold text-gray-700">Child</th>
-                  <th className="py-4 px-4 font-semibold text-gray-700">Issue Date</th>
-                  <th className="py-4 px-4 font-semibold text-gray-700">Due Date</th>
-                  <th className="py-4 px-4 font-semibold text-gray-700">Amount</th>
-                  <th className="py-4 px-4 font-semibold text-gray-700">Paid</th>
-                  <th className="py-4 px-4 font-semibold text-gray-700">Balance</th>
-                  <th className="py-4 px-4 font-semibold text-gray-700">Status</th>
-                  <th className="py-4 px-4 font-semibold text-gray-700">Action</th>
+                  <th className="py-3 px-4 font-semibold text-slate-700">Invoice #</th>
+                  <th className="py-3 px-4 font-semibold text-slate-700">Child</th>
+                  <th className="py-3 px-4 font-semibold text-slate-700">Issue Date</th>
+                  <th className="py-3 px-4 font-semibold text-slate-700">Due Date</th>
+                  <th className="py-3 px-4 font-semibold text-slate-700">Amount</th>
+                  <th className="py-3 px-4 font-semibold text-slate-700">Paid</th>
+                  <th className="py-3 px-4 font-semibold text-slate-700">Balance</th>
+                  <th className="py-3 px-4 font-semibold text-slate-700">Status</th>
+                  <th className="py-3 px-4 font-semibold text-slate-700">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredInvoices.map((inv, index) => {
+              <tbody className="divide-y divide-slate-100">
+                {filteredInvoices.map((inv) => {
                   const isOverdue = inv.status !== 'paid' && new Date(inv.dueDate) < new Date();
                   const balance = inv.totalAmount - inv.paidAmount;
 
                   return (
-                    <motion.tr
+                    <tr
                       key={inv._id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.03 }}
-                      whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.8)' }}
-                      className="group transition-all"
+                      className="hover:bg-slate-50 transition-colors"
                     >
-                      <td className="py-4 px-4 font-mono text-xs font-medium text-gray-900">{inv.invoiceNumber}</td>
-                      <td className="py-4 px-4 text-gray-900">{getChildName(inv.studentId)}</td>
-                      <td className="py-4 px-4 text-gray-600">{new Date(inv.issueDate).toLocaleDateString()}</td>
-                      <td className="py-4 px-4 text-gray-600">{new Date(inv.dueDate).toLocaleDateString()}</td>
-                      <td className="py-4 px-4 font-semibold text-gray-900">${inv.totalAmount.toLocaleString()}</td>
-                      <td className="py-4 px-4 text-green-600 font-medium">${inv.paidAmount.toLocaleString()}</td>
-                      <td className="py-4 px-4 font-semibold text-gray-900">${balance.toLocaleString()}</td>
-                      <td className="py-4 px-4">
-                        <span
-                          className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
+                      <td className="py-3 px-4 font-mono text-xs font-medium text-slate-900">{inv.invoiceNumber}</td>
+                      <td className="py-3 px-4 text-slate-900">{getChildName(inv.studentId)}</td>
+                      <td className="py-3 px-4 text-slate-600">{new Date(inv.issueDate).toLocaleDateString()}</td>
+                      <td className="py-3 px-4 text-slate-600">{new Date(inv.dueDate).toLocaleDateString()}</td>
+                      <td className="py-3 px-4 font-semibold text-slate-900">${inv.totalAmount.toLocaleString()}</td>
+                      <td className="py-3 px-4 text-green-600 font-medium">${inv.paidAmount.toLocaleString()}</td>
+                      <td className="py-3 px-4 font-semibold text-slate-900">${balance.toLocaleString()}</td>
+                      <td className="py-3 px-4">
+                        <Badge
+                          variant={
                             inv.status === 'paid'
-                              ? 'bg-green-100 text-green-700'
+                              ? 'success'
                               : isOverdue
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-yellow-100 text-yellow-700'
-                          }`}
+                              ? 'error'
+                              : 'warning'
+                          }
+                          size="sm"
                         >
                           {inv.status === 'paid' ? 'Paid' : isOverdue ? 'Overdue' : inv.status}
-                        </span>
+                        </Badge>
                       </td>
-                      <td className="py-4 px-4">
+                      <td className="py-3 px-4">
                         {inv.status !== 'paid' && (
-                          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                alert(`Payment integration coming soon for invoice ${inv.invoiceNumber}`);
-                              }}
-                            >
-                              Pay Now
-                            </Button>
-                          </motion.div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              alert(`Payment integration coming soon for invoice ${inv.invoiceNumber}`);
+                            }}
+                          >
+                            Pay Now
+                          </Button>
                         )}
                       </td>
-                    </motion.tr>
+                    </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
         )}
-      </GlassCard>
-    </motion.section>
+      </MinimalCard>
+    </div>
   );
 }
