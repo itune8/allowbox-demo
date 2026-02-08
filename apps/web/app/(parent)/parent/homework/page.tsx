@@ -226,9 +226,9 @@ export default function ParentHomeworkPage() {
                           <Calendar className="w-3 h-3" />
                           Due: {new Date(hw.dueDate).toLocaleDateString()}
                         </span>
-                        <span>{hw.subject}</span>
-                        {submission?.grade && (
-                          <span className="font-medium text-green-600">Grade: {submission.grade}</span>
+                        <span>{hw.subjectId?.name}</span>
+                        {submission?.score !== undefined && (
+                          <span className="font-medium text-green-600">Score: {submission.score}</span>
                         )}
                       </div>
                     </div>

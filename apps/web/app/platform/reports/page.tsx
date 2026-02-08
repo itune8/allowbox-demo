@@ -313,8 +313,8 @@ export default function ReportsPage() {
             return (
               <div key={day} className="flex-1 flex flex-col items-center gap-2">
                 <div className="w-full flex gap-1">
-                  <div className="flex-1 bg-purple-500 rounded-t" style={{ height: `${teacherHeights[index] * 2.8}px` }}></div>
-                  <div className="flex-1 bg-orange-500 rounded-t" style={{ height: `${parentHeights[index] * 2.8}px` }}></div>
+                  <div className="flex-1 bg-purple-500 rounded-t" style={{ height: `${(teacherHeights[index] ?? 0) * 2.8}px` }}></div>
+                  <div className="flex-1 bg-orange-500 rounded-t" style={{ height: `${(parentHeights[index] ?? 0) * 2.8}px` }}></div>
                 </div>
                 <span className="text-xs text-slate-500">{day}</span>
               </div>
