@@ -5,46 +5,51 @@ import { useRouter } from 'next/navigation';
 import {
   Building2,
   Users,
-  TrendingUp,
-  DollarSign,
+  Clock,
+  Headphones,
   Plus,
-  AlertCircle,
-  CheckCircle2,
+  DollarSign,
+  Download,
+  Check,
+  MoreVertical,
+  ChevronDown,
+  Filter,
 } from 'lucide-react';
-import { useAuth } from '../../../contexts/auth-context';
-import { hasPermission } from '../../../lib/permissions';
 import { schoolService, type School } from '../../../lib/services/superadmin/school.service';
+import {
+  PlatformStatCard,
+  StatusBadge,
+  SchoolDetailsModal,
+  InvoiceModal,
+} from '../../../components/platform';
 
 interface DashboardMetrics {
   totalSchools: number;
   activeSchools: number;
-  inactiveSchools: number;
-  totalStudents: number;
-  totalTeachers: number;
-  totalRevenue: number;
-  mrr: number;
-  arr: number;
-}
-
-interface Alert {
-  id: string;
-  type: 'unpaid' | 'expiring_trial' | 'inactive';
-  schoolName: string;
-  schoolId: string;
-  message: string;
-  severity: 'low' | 'medium' | 'high';
-  createdAt: string;
+  pendingSchools: number;
+  totalUsers: number;
+  openTickets: number;
+  closedTickets: number;
 }
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user } = useAuth();
   const [schools, setSchools] = useState<School[]>([]);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const canCreateSchools = hasPermission(user?.roles, 'canCreateSchools');
+  // Modal state
+  const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
+  const [showSchoolDetails, setShowSchoolDetails] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [invoicePayment, setInvoicePayment] = useState<any>(null);
+
+  // Accept/Reject state
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Active schools filter
+  const [planFilter, setPlanFilter] = useState<string>('all');
+  const [showPlanDropdown, setShowPlanDropdown] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -56,11 +61,18 @@ export default function DashboardPage() {
       const schoolsData = await schoolService.getSchools();
       setSchools(schoolsData);
 
-      const dashboardMetrics = calculateMetrics(schoolsData);
-      setMetrics(dashboardMetrics);
+      const activeSchools = schoolsData.filter(s => s.isActive).length;
+      const pendingSchools = schoolsData.filter(s => s.subscriptionStatus === 'trial' || !s.isActive).length;
+      const totalUsers = schoolsData.reduce((sum, s) => sum + (s.studentCount || 0) + (s.teacherCount || 0), 0);
 
-      const dashboardAlerts = generateAlerts(schoolsData);
-      setAlerts(dashboardAlerts);
+      setMetrics({
+        totalSchools: schoolsData.length,
+        activeSchools,
+        pendingSchools,
+        totalUsers,
+        openTickets: 12,
+        closedTickets: 45,
+      });
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
     } finally {
@@ -68,122 +80,47 @@ export default function DashboardPage() {
     }
   };
 
-  const calculateMetrics = (schoolsData: School[]): DashboardMetrics => {
-    const activeSchools = schoolsData.filter(s => s.isActive).length;
-    const inactiveSchools = schoolsData.filter(s => !s.isActive).length;
-    const totalStudents = schoolsData.reduce((sum, s) => sum + (s.studentCount || 0), 0);
-    const totalTeachers = schoolsData.reduce((sum, s) => sum + (s.teacherCount || 0), 0);
-    const totalRevenue = schoolsData.reduce((sum, s) => sum + (s.totalRevenue || 0), 0);
-    const mrr = schoolsData.reduce((sum, s) => sum + (s.mrr || 0), 0);
-    const arr = schoolsData.reduce((sum, s) => sum + (s.arr || 0), 0);
-
-    return {
-      totalSchools: schoolsData.length,
-      activeSchools,
-      inactiveSchools,
-      totalStudents,
-      totalTeachers,
-      totalRevenue,
-      mrr,
-      arr,
-    };
+  const handleViewDetails = (school: School) => {
+    setSelectedSchool(school);
+    setShowSchoolDetails(true);
   };
 
-  const generateAlerts = (schoolsData: School[]): Alert[] => {
-    const alertsList: Alert[] = [];
-
-    schoolsData.forEach(school => {
-      if (school.outstandingBalance > 0) {
-        alertsList.push({
-          id: `unpaid-${school._id}`,
-          type: 'unpaid',
-          schoolName: school.schoolName,
-          schoolId: school._id,
-          message: `Outstanding balance: $${school.outstandingBalance.toFixed(2)}`,
-          severity: school.outstandingBalance > 1000 ? 'high' : 'medium',
-          createdAt: new Date().toISOString(),
-        });
-      }
-    });
-
-    schoolsData.forEach(school => {
-      if (school.subscriptionStatus === 'trial' && school.trialEndDate) {
-        const daysUntilExpiry = Math.ceil(
-          (new Date(school.trialEndDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-        );
-        if (daysUntilExpiry <= 7 && daysUntilExpiry >= 0) {
-          alertsList.push({
-            id: `trial-${school._id}`,
-            type: 'expiring_trial',
-            schoolName: school.schoolName,
-            schoolId: school._id,
-            message: `Trial expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}`,
-            severity: daysUntilExpiry <= 3 ? 'high' : 'medium',
-            createdAt: new Date().toISOString(),
-          });
-        }
-      }
-    });
-
-    schoolsData.forEach(school => {
-      if (!school.isActive) {
-        alertsList.push({
-          id: `inactive-${school._id}`,
-          type: 'inactive',
-          schoolName: school.schoolName,
-          schoolId: school._id,
-          message: 'School is currently inactive',
-          severity: 'low',
-          createdAt: new Date().toISOString(),
-        });
-      }
-    });
-
-    return alertsList.sort((a, b) => {
-      const severityOrder = { high: 0, medium: 1, low: 2 };
-      return severityOrder[a.severity] - severityOrder[b.severity];
-    });
+  const handleOpenInvoice = (school: School, payment: any) => {
+    setSelectedSchool(school);
+    setInvoicePayment(payment);
+    setShowInvoice(true);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const getAlertIcon = (type: Alert['type']) => {
-    switch (type) {
-      case 'unpaid':
-        return <DollarSign className="w-5 h-5" />;
-      case 'expiring_trial':
-        return <AlertCircle className="w-5 h-5" />;
-      case 'inactive':
-        return <Building2 className="w-5 h-5" />;
+  const handleAccept = async (school: School) => {
+    setActionLoading(school._id);
+    try {
+      await schoolService.updateSchool(school._id, {
+        subscriptionStatus: 'active',
+        isActive: true,
+      });
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Failed to accept school:', error);
+      alert('Failed to accept school. Please try again.');
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  const getSeverityStyles = (severity: Alert['severity']) => {
-    switch (severity) {
-      case 'high':
-        return 'border-l-red-500 bg-red-50/50';
-      case 'medium':
-        return 'border-l-amber-500 bg-amber-50/50';
-      case 'low':
-        return 'border-l-blue-500 bg-blue-50/50';
-    }
-  };
-
-  const getSeverityBadge = (severity: Alert['severity']) => {
-    switch (severity) {
-      case 'high':
-        return 'bg-red-100 text-red-700';
-      case 'medium':
-        return 'bg-amber-100 text-amber-700';
-      case 'low':
-        return 'bg-blue-100 text-blue-700';
+  const handleReject = async (school: School) => {
+    if (!confirm(`Are you sure you want to reject "${school.schoolName}"? This will suspend the school.`)) return;
+    setActionLoading(school._id);
+    try {
+      await schoolService.updateSchool(school._id, {
+        subscriptionStatus: 'suspended',
+        isActive: false,
+      });
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Failed to reject school:', error);
+      alert('Failed to reject school. Please try again.');
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -195,204 +132,295 @@ export default function DashboardPage() {
     );
   }
 
+  const pendingSchoolsList = schools
+    .filter(s => s.subscriptionStatus === 'trial' || !s.isActive)
+    .slice(0, 5);
+
+  const activeSchoolsList = schools
+    .filter(s => s.isActive)
+    .filter(s => planFilter === 'all' || s.subscriptionPlan === planFilter)
+    .slice(0, 6);
+
+  // Estimate billing based on plan
+  const getBilling = (school: School) => {
+    const pricePerUser = school.pricePerStudent || 4.5;
+    const totalUsers = (school.studentCount || 0) + (school.teacherCount || 0);
+    const monthly = Math.round(pricePerUser * totalUsers);
+    return `$${monthly.toLocaleString()}/mo`;
+  };
+
+  const getTimeAgo = (dateStr?: string) => {
+    if (!dateStr) return 'Recently';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours < 1) return 'Just now';
+    if (hours < 24) return `Registered ${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    const days = Math.floor(hours / 24);
+    return `Registered ${days} day${days !== 1 ? 's' : ''} ago`;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
-          <p className="text-slate-500 mt-1">Overview of your platform metrics and alerts</p>
-        </div>
-        {canCreateSchools && (
-          <button
-            onClick={() => router.push('/platform/schools')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add School
-          </button>
-        )}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Super Admin Dashboard</h1>
+        <p className="text-slate-500 mt-1">Manage schools, subscriptions, and platform operations</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-blue-50">
-              <Building2 className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Total Schools</p>
-              <p className="text-2xl font-semibold text-slate-900">{metrics?.totalSchools || 0}</p>
-              <p className="text-xs text-emerald-600 mt-0.5">{metrics?.activeSchools} active</p>
+        <PlatformStatCard
+          icon={<Building2 className="w-5 h-5" />}
+          color="blue"
+          label="Total Schools"
+          value={metrics?.totalSchools || 0}
+          trend={{ value: '+12%', positive: true }}
+        />
+        <PlatformStatCard
+          icon={<Users className="w-5 h-5" />}
+          color="purple"
+          label="Total Users"
+          value={metrics?.totalUsers?.toLocaleString() || '0'}
+          trend={{ value: '+8%', positive: true }}
+        />
+        <PlatformStatCard
+          icon={<Clock className="w-5 h-5" />}
+          color="orange"
+          label="Pending Schools"
+          value={metrics?.pendingSchools || 0}
+          badge="Review"
+        />
+        <PlatformStatCard
+          icon={<Headphones className="w-5 h-5" />}
+          color="teal"
+          label="Open / Closed Tickets"
+          value={`${metrics?.openTickets || 0} / ${metrics?.closedTickets || 0}`}
+        />
+      </div>
+
+      {/* Quick Actions + Pending School Approvals - Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Quick Actions - Left Panel */}
+        <div className="lg:col-span-4">
+          <div className="bg-white rounded-xl border border-slate-200 p-5 h-full">
+            <h2 className="text-lg font-semibold text-slate-900 mb-5">Quick Actions</h2>
+            <div className="space-y-3">
+              <button
+                onClick={() => router.push('/platform/schools')}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add New School
+              </button>
+              <button
+                onClick={() => router.push('/platform/finance')}
+                className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+              >
+                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100">
+                  <DollarSign className="w-4 h-4 text-blue-600" />
+                </span>
+                <span className="font-medium">View Billing</span>
+              </button>
+              <button
+                onClick={() => {/* Export report logic */}}
+                className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+              >
+                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100">
+                  <Download className="w-4 h-4 text-emerald-600" />
+                </span>
+                <span className="font-medium">Export Report</span>
+              </button>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-emerald-50">
-              <Users className="w-5 h-5 text-emerald-600" />
+
+        {/* Pending School Approvals - Right Panel */}
+        <div className="lg:col-span-8">
+          <div className="bg-white rounded-xl border border-slate-200 h-full flex flex-col">
+            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Pending School Approvals</h2>
+              <span className="text-sm text-purple-600 font-medium">
+                {pendingSchoolsList.length} pending
+              </span>
             </div>
-            <div>
-              <p className="text-sm text-slate-500">Total Students</p>
-              <p className="text-2xl font-semibold text-slate-900">{metrics?.totalStudents.toLocaleString() || '0'}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{metrics?.totalTeachers.toLocaleString()} teachers</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-purple-50">
-              <TrendingUp className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Monthly Revenue</p>
-              <p className="text-2xl font-semibold text-slate-900">{formatCurrency(metrics?.mrr || 0)}</p>
-              <p className="text-xs text-slate-500 mt-0.5">ARR: {formatCurrency(metrics?.arr || 0)}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-amber-50">
-              <DollarSign className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Total Revenue</p>
-              <p className="text-2xl font-semibold text-slate-900">{formatCurrency(metrics?.totalRevenue || 0)}</p>
-              <p className="text-xs text-slate-500 mt-0.5">All time</p>
+            <div className="flex-1 divide-y divide-slate-100">
+              {pendingSchoolsList.length === 0 ? (
+                <div className="px-5 py-10 text-center text-slate-400">
+                  <Check className="w-10 h-10 mx-auto mb-2 text-emerald-300" />
+                  <p className="text-sm font-medium">All caught up! No pending approvals.</p>
+                </div>
+              ) : (
+                pendingSchoolsList.map((school) => {
+                  const isLoading = actionLoading === school._id;
+                  const planName = school.subscriptionPlan
+                    ? school.subscriptionPlan.charAt(0).toUpperCase() + school.subscriptionPlan.slice(1) + ' Plan'
+                    : 'Basic Plan';
+                  return (
+                    <div
+                      key={school._id}
+                      className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="p-2 rounded-lg bg-purple-100 flex-shrink-0">
+                          <Building2 className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-slate-900 truncate">{school.schoolName}</p>
+                          <p className="text-sm text-slate-500">
+                            {getTimeAgo(school.createdAt)} &middot; {planName}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-11 sm:ml-0">
+                        <button
+                          onClick={() => handleViewDetails(school)}
+                          className="px-3 py-2 text-sm font-medium text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleAccept(school)}
+                          disabled={isLoading}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                        >
+                          {isLoading ? (
+                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Check className="w-3.5 h-3.5" />
+                          )}
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleReject(school)}
+                          disabled={isLoading}
+                          className="px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Alerts */}
+      {/* Active Schools Table */}
       <div className="bg-white rounded-xl border border-slate-200">
-        <div className="px-5 py-4 border-b border-slate-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-50">
-                <AlertCircle className="w-5 h-5 text-red-600" />
-              </div>
-              <h2 className="text-lg font-semibold text-slate-900">Alerts & Notifications</h2>
-            </div>
-            <span className="text-sm text-slate-500">
-              {alerts.length} alert{alerts.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-        </div>
-
-        <div className="divide-y divide-slate-100">
-          {alerts.length === 0 ? (
-            <div className="px-5 py-10 text-center">
-              <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-400" />
-              <p className="mt-3 text-slate-500">No alerts at this time</p>
-            </div>
-          ) : (
-            alerts.slice(0, 10).map((alert) => (
-              <div
-                key={alert.id}
-                className={`px-5 py-4 flex items-start gap-4 border-l-4 cursor-pointer hover:bg-slate-50 transition-colors ${getSeverityStyles(alert.severity)}`}
-                onClick={() => router.push('/platform/schools')}
+        <div className="px-5 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-slate-900">Active Schools</h2>
+          <div className="flex items-center gap-3">
+            {/* Plan Filter Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowPlanDropdown(!showPlanDropdown)}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
               >
-                <div className="flex-shrink-0 mt-0.5 text-slate-500">
-                  {getAlertIcon(alert.type)}
+                {planFilter === 'all' ? 'All Plans' : planFilter.charAt(0).toUpperCase() + planFilter.slice(1)}
+                <ChevronDown className="w-4 h-4 text-slate-400" />
+              </button>
+              {showPlanDropdown && (
+                <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-10">
+                  {['all', 'premium', 'standard', 'enterprise', 'basic'].map((plan) => (
+                    <button
+                      key={plan}
+                      onClick={() => { setPlanFilter(plan); setShowPlanDropdown(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                        planFilter === plan
+                          ? 'bg-purple-50 text-purple-700 font-medium'
+                          : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {plan === 'all' ? 'All Plans' : plan.charAt(0).toUpperCase() + plan.slice(1)}
+                    </button>
+                  ))}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-900">{alert.schoolName}</p>
-                  <p className="text-sm text-slate-600 mt-0.5">{alert.message}</p>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded-md font-medium ${getSeverityBadge(alert.severity)}`}>
-                  {alert.severity}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
-
-        {alerts.length > 10 && (
-          <div className="px-5 py-3 border-t border-slate-200 text-center">
-            <button className="text-sm text-primary font-medium hover:underline">
-              View all {alerts.length} alerts
+              )}
+            </div>
+            <button className="p-2 text-slate-400 hover:text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+              <Filter className="w-4 h-4" />
             </button>
           </div>
-        )}
-      </div>
-
-      {/* Distribution Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Subscription Distribution */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="p-2 rounded-lg bg-purple-50">
-              <TrendingUp className="w-5 h-5 text-purple-600" />
-            </div>
-            <h3 className="font-semibold text-slate-900">Subscription Distribution</h3>
-          </div>
-          <div className="space-y-4">
-            {['free', 'basic', 'premium', 'enterprise'].map((plan) => {
-              const count = schools.filter(s => s.subscriptionPlan === plan).length;
-              const percentage = schools.length > 0 ? (count / schools.length) * 100 : 0;
-              const colors: Record<string, string> = {
-                free: 'bg-slate-400',
-                basic: 'bg-blue-500',
-                premium: 'bg-purple-500',
-                enterprise: 'bg-amber-500',
-              };
-              return (
-                <div key={plan}>
-                  <div className="flex items-center justify-between text-sm mb-1.5">
-                    <span className="font-medium text-slate-700 capitalize">{plan}</span>
-                    <span className="text-slate-500">{count} schools ({percentage.toFixed(0)}%)</span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-500 ${colors[plan]}`}
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
         </div>
-
-        {/* Status Overview */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="p-2 rounded-lg bg-emerald-50">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            </div>
-            <h3 className="font-semibold text-slate-900">Status Overview</h3>
-          </div>
-          <div className="space-y-4">
-            {['trial', 'active', 'suspended', 'cancelled'].map((status) => {
-              const count = schools.filter(s => s.subscriptionStatus === status).length;
-              const percentage = schools.length > 0 ? (count / schools.length) * 100 : 0;
-              const colors: Record<string, string> = {
-                trial: 'bg-blue-500',
-                active: 'bg-emerald-500',
-                suspended: 'bg-amber-500',
-                cancelled: 'bg-red-500',
-              };
-              return (
-                <div key={status}>
-                  <div className="flex items-center justify-between text-sm mb-1.5">
-                    <span className="font-medium text-slate-700 capitalize">{status}</span>
-                    <span className="text-slate-500">{count} schools ({percentage.toFixed(0)}%)</span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-500 ${colors[status]}`}
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-5 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">School Name</th>
+                <th className="px-5 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Plan</th>
+                <th className="px-5 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Users</th>
+                <th className="px-5 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Status</th>
+                <th className="px-5 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Billing</th>
+                <th className="px-5 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {activeSchoolsList.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-12 text-center text-slate-500">
+                    <Building2 className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                    No active schools found
+                  </td>
+                </tr>
+              ) : (
+                activeSchoolsList.map((school, index) => (
+                  <tr key={school._id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="p-1.5 rounded-lg bg-purple-50">
+                          <Building2 className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <span className="font-medium text-slate-900 block">{school.schoolName}</span>
+                          <span className="text-xs text-slate-400">ID: SCH-{String(index + 1).padStart(3, '0')}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <StatusBadge value={school.subscriptionPlan} type="plan" />
+                    </td>
+                    <td className="px-5 py-3.5 text-slate-700">
+                      {(school.studentCount || 0) + (school.teacherCount || 0)}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <StatusBadge value={school.subscriptionStatus} type="status" showDot />
+                    </td>
+                    <td className="px-5 py-3.5 font-medium text-slate-900">
+                      {getBilling(school)}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <button
+                        onClick={() => handleViewDetails(school)}
+                        className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
+
+      {/* School Details Modal */}
+      <SchoolDetailsModal
+        isOpen={showSchoolDetails}
+        onClose={() => setShowSchoolDetails(false)}
+        school={selectedSchool}
+        onOpenInvoice={handleOpenInvoice}
+      />
+
+      {/* Invoice Modal */}
+      <InvoiceModal
+        isOpen={showInvoice}
+        onClose={() => setShowInvoice(false)}
+        school={selectedSchool}
+        payment={invoicePayment}
+      />
     </div>
   );
 }

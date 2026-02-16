@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Button } from '@repo/ui/button';
+import { useState, useEffect, useCallback } from 'react';
 import {
   announcementService,
   type Announcement,
@@ -9,8 +8,9 @@ import {
   type AnnouncementTarget,
   type AnnouncementPriority,
 } from '../../../lib/services/announcement.service';
-import { SlideSheet, SheetSection, SheetField } from '../../../components/ui';
-import { Megaphone, Bell, Plus, Trash2, Users, Clock, Eye, Send } from 'lucide-react';
+import { Portal } from '../../../components/portal';
+import { Bell, Plus, Trash2, Users, Clock, Eye, Send, CheckCircle, FileText, X } from 'lucide-react';
+import { PlatformStatCard } from '../../../components/platform';
 
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -18,6 +18,7 @@ export default function AnnouncementsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [form, setForm] = useState<CreateAnnouncementDto>({
     title: '',
     message: '',
@@ -28,6 +29,13 @@ export default function AnnouncementsPage() {
   useEffect(() => {
     fetchAnnouncements();
   }, []);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const fetchAnnouncements = async () => {
     setLoading(true);
@@ -43,17 +51,19 @@ export default function AnnouncementsPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!form.title || !form.message) return;
     setSubmitting(true);
     try {
       await announcementService.create(form);
       setShowModal(false);
       setForm({ title: '', message: '', target: 'ALL', priority: 'NORMAL' });
+      setToast({ message: 'Announcement sent successfully', type: 'success' });
       fetchAnnouncements();
     } catch (err: any) {
       console.error('Failed to create announcement:', err);
-      alert(err.response?.data?.message || 'Failed to send announcement');
+      setToast({ message: err.response?.data?.message || 'Failed to send announcement', type: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -63,12 +73,18 @@ export default function AnnouncementsPage() {
     if (!confirm('Are you sure you want to delete this announcement?')) return;
     try {
       await announcementService.delete(id);
+      setToast({ message: 'Announcement deleted', type: 'success' });
       fetchAnnouncements();
     } catch (err: any) {
       console.error('Failed to delete:', err);
-      alert('Failed to delete announcement');
+      setToast({ message: 'Failed to delete announcement', type: 'error' });
     }
   };
+
+  const handleCloseModal = useCallback(() => {
+    setShowModal(false);
+    setForm({ title: '', message: '', target: 'ALL', priority: 'NORMAL' });
+  }, []);
 
   const getTargetBadge = (target: AnnouncementTarget) => {
     const badges: Record<AnnouncementTarget, { bg: string; text: string }> = {
@@ -118,34 +134,86 @@ export default function AnnouncementsPage() {
     return 'System';
   };
 
+  // Stats
+  const stats = {
+    total: announcements.length,
+    sent: announcements.length,
+    scheduled: 0,
+    draft: 0,
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#824ef2] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-[10000] px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white transition-all ${
+          toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Announcements</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Announcements</h1>
           <p className="text-slate-500 mt-1">Send messages and notifications to schools</p>
         </div>
-        <Button onClick={() => setShowModal(true)}>
-          <Plus className="w-4 h-4 mr-2" />
+        <button
+          onClick={() => setShowModal(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-colors"
+          style={{ backgroundColor: '#824ef2' }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#7040d9')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#824ef2')}
+        >
+          <Plus className="w-4 h-4" />
           New Announcement
-        </Button>
+        </button>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          {error}
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="text-sm underline">Dismiss</button>
         </div>
       )}
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <PlatformStatCard
+          icon={<Bell className="w-5 h-5" />}
+          color="blue"
+          label="Total Announcements"
+          value={stats.total}
+        />
+        <PlatformStatCard
+          icon={<CheckCircle className="w-5 h-5" />}
+          color="green"
+          label="Sent"
+          value={stats.sent}
+        />
+        <PlatformStatCard
+          icon={<Clock className="w-5 h-5" />}
+          color="amber"
+          label="Scheduled"
+          value={stats.scheduled}
+        />
+        <PlatformStatCard
+          icon={<FileText className="w-5 h-5" />}
+          color="slate"
+          label="Draft"
+          value={stats.draft}
+        />
+      </div>
 
       {/* Announcements List */}
       {announcements.length === 0 ? (
@@ -163,15 +231,19 @@ export default function AnnouncementsPage() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Bell className="w-4 h-4 text-primary" />
+                    <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                      <Bell className="w-4 h-4 text-purple-600" />
                     </div>
                     <h3 className="font-medium text-slate-900">{announcement.title}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${getTargetBadge(announcement.target).bg} ${getTargetBadge(announcement.target).text}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getTargetBadge(announcement.target).bg} ${getTargetBadge(announcement.target).text}`}>
                       {getTargetLabel(announcement.target)}
                     </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${getPriorityBadge(announcement.priority).bg} ${getPriorityBadge(announcement.priority).text}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getPriorityBadge(announcement.priority).bg} ${getPriorityBadge(announcement.priority).text}`}>
                       {announcement.priority}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      <span className="text-xs text-emerald-600 font-medium">Sent</span>
                     </span>
                   </div>
                   <p className="text-slate-600 text-sm mb-3">{announcement.message}</p>
@@ -180,14 +252,14 @@ export default function AnnouncementsPage() {
                       <Users className="w-3 h-3" />
                       <span>Sent by {getCreatedByName(announcement)}</span>
                     </div>
-                    <span>•</span>
+                    <span>&middot;</span>
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       <span>{formatDate(announcement.createdAt)}</span>
                     </div>
                     {announcement.readCount > 0 && (
                       <>
-                        <span>•</span>
+                        <span>&middot;</span>
                         <div className="flex items-center gap-1">
                           <Eye className="w-3 h-3" />
                           <span>{announcement.readCount} read</span>
@@ -208,90 +280,175 @@ export default function AnnouncementsPage() {
         </div>
       )}
 
-      {/* Create Announcement SlideSheet */}
-      <SlideSheet
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        title="New Announcement"
-        subtitle="Send a message to schools"
-        size="md"
-        footer={
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" type="button" onClick={() => setShowModal(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Sending...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Send className="w-4 h-4" />
-                  Send Announcement
-                </span>
-              )}
-            </Button>
+      {/* Create Announcement Popup Modal */}
+      {showModal && (
+        <CreateAnnouncementModal
+          form={form}
+          setForm={setForm}
+          onClose={handleCloseModal}
+          onSubmit={handleSubmit}
+          submitting={submitting}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ─── Create Announcement Modal ─── */
+
+function CreateAnnouncementModal({
+  form,
+  setForm,
+  onClose,
+  onSubmit,
+  submitting,
+}: {
+  form: CreateAnnouncementDto;
+  setForm: (form: CreateAnnouncementDto) => void;
+  onClose: () => void;
+  onSubmit: (e?: React.FormEvent) => void;
+  submitting: boolean;
+}) {
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleEsc);
+      document.body.style.overflow = '';
+    };
+  }, [onClose]);
+
+  return (
+    <Portal>
+      <div
+        className="fixed inset-0 bg-slate-900/50 z-[9998] transition-opacity"
+        onClick={onClose}
+      />
+
+      <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-6">
+        <div
+          className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-[520px] max-h-[92vh] sm:max-h-[85vh] flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">New Announcement</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Send a message to schools</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 -mr-2 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              <X className="w-5 h-5 text-slate-400" />
+            </button>
           </div>
-        }
-      >
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <SheetSection>
-            <SheetField label="Title" required>
+
+          {/* Content */}
+          <form
+            onSubmit={(e) => { e.preventDefault(); onSubmit(); }}
+            className="flex-1 overflow-y-auto px-6 py-5 space-y-4"
+          >
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Title <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 required
-                className="w-full h-10 border border-slate-200 rounded-lg px-3 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full h-11 border border-slate-200 rounded-lg px-3 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
                 placeholder="Announcement title"
               />
-            </SheetField>
+            </div>
 
-            <SheetField label="Message" required>
+            {/* Message */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Message <span className="text-red-500">*</span>
+              </label>
               <textarea
                 value={form.message}
                 onChange={(e) => setForm({ ...form, message: e.target.value })}
                 required
-                rows={4}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                rows={5}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white text-slate-900 resize-y focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
                 placeholder="Write your announcement message..."
               />
-            </SheetField>
-          </SheetSection>
+            </div>
 
-          <SheetSection>
+            {/* Send To + Priority */}
             <div className="grid grid-cols-2 gap-4">
-              <SheetField label="Send To" required>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Send To <span className="text-red-500">*</span>
+                </label>
                 <select
                   value={form.target}
                   onChange={(e) => setForm({ ...form, target: e.target.value as AnnouncementTarget })}
-                  className="w-full h-10 border border-slate-200 rounded-lg px-3 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full h-11 border border-slate-200 rounded-lg px-3 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
                 >
                   <option value="ALL">All Schools</option>
                   <option value="ACTIVE">Active Schools Only</option>
                   <option value="TRIAL">Trial Schools Only</option>
                   <option value="SUSPENDED">Suspended Schools</option>
                 </select>
-              </SheetField>
+              </div>
 
-              <SheetField label="Priority" required>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Priority <span className="text-red-500">*</span>
+                </label>
                 <select
                   value={form.priority}
                   onChange={(e) => setForm({ ...form, priority: e.target.value as AnnouncementPriority })}
-                  className="w-full h-10 border border-slate-200 rounded-lg px-3 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full h-11 border border-slate-200 rounded-lg px-3 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
                 >
                   <option value="LOW">Low</option>
                   <option value="NORMAL">Normal</option>
                   <option value="HIGH">High</option>
                   <option value="URGENT">Urgent</option>
                 </select>
-              </SheetField>
+              </div>
             </div>
-          </SheetSection>
-        </form>
-      </SlideSheet>
-    </div>
+          </form>
+
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200">
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 text-sm font-medium text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onSubmit()}
+              disabled={submitting || !form.title || !form.message}
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50"
+              style={{ backgroundColor: '#824ef2' }}
+              onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = '#7040d9'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#824ef2'; }}
+            >
+              {submitting ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  Send Announcement
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Portal>
   );
 }

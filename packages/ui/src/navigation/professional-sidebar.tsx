@@ -64,7 +64,7 @@ export const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
           <div>{logo}</div>
         ) : (
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 bg-[#824ef2] rounded-lg flex items-center justify-center shrink-0">
               <span className="text-white font-bold text-lg">E</span>
             </div>
             {!isCollapsed && (
@@ -100,7 +100,7 @@ export const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
                     'w-full flex items-center gap-3 rounded-lg transition-colors',
                     isCollapsed ? 'px-2 py-2.5 justify-center' : 'px-3 py-2.5',
                     activeItem === item.key
-                      ? 'bg-primary text-white'
+                      ? 'bg-[#824ef2] text-white'
                       : 'text-slate-700 hover:bg-slate-100',
                     item.disabled && 'opacity-50 cursor-not-allowed'
                   )}
@@ -227,7 +227,7 @@ export const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
       {/* Mobile menu button (shown when sidebar is not open) */}
       <button
         onClick={() => setIsMobileOpen(true)}
-        className="md:hidden fixed bottom-4 right-4 z-30 w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center hover:bg-primary-dark transition-colors"
+        className="md:hidden fixed bottom-4 right-4 z-30 w-14 h-14 bg-[#824ef2] text-white rounded-full shadow-lg flex items-center justify-center hover:opacity-90 transition-colors"
         aria-label="Open menu"
       >
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

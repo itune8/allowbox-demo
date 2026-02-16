@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { activityLogService, type ActivityLog } from '../../../lib/services/activity-log.service';
 import { Activity, Clock, User, Target, Calendar, Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@repo/ui/button';
+import { PlatformStatCard, StatusBadge } from '../../../components/platform';
 
 export default function ActivityPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -64,18 +64,6 @@ export default function ActivityPage() {
     fetchLogs();
   };
 
-  const getActionColor = (action: string) => {
-    if (action.includes('CREATED') || action.includes('LOGIN'))
-      return 'text-emerald-700 bg-emerald-50';
-    if (action.includes('UPDATED') || action.includes('SENT'))
-      return 'text-blue-700 bg-blue-50';
-    if (action.includes('SUSPENDED') || action.includes('DELETED') || action.includes('CANCELLED'))
-      return 'text-red-700 bg-red-50';
-    if (action.includes('WARNING'))
-      return 'text-amber-700 bg-amber-50';
-    return 'text-slate-700 bg-slate-50';
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       month: 'short',
@@ -96,50 +84,30 @@ export default function ActivityPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-cyan-50">
-              <Activity className="w-5 h-5 text-cyan-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Total Activities</p>
-              <p className="text-2xl font-semibold text-slate-900">{stats.totalActivities}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-blue-50">
-              <Clock className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Today's Activities</p>
-              <p className="text-2xl font-semibold text-slate-900">{stats.todayActivities}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-purple-50">
-              <User className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Active Users</p>
-              <p className="text-2xl font-semibold text-slate-900">{stats.activeUsers}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-red-50">
-              <Target className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Critical Events</p>
-              <p className="text-2xl font-semibold text-slate-900">{stats.criticalEvents}</p>
-            </div>
-          </div>
-        </div>
+        <PlatformStatCard
+          icon={<Activity className="w-5 h-5" />}
+          color="cyan"
+          label="Total Activities"
+          value={stats.totalActivities}
+        />
+        <PlatformStatCard
+          icon={<Clock className="w-5 h-5" />}
+          color="blue"
+          label="Today's Activities"
+          value={stats.todayActivities}
+        />
+        <PlatformStatCard
+          icon={<User className="w-5 h-5" />}
+          color="purple"
+          label="Active Users"
+          value={stats.activeUsers}
+        />
+        <PlatformStatCard
+          icon={<Target className="w-5 h-5" />}
+          color="red"
+          label="Critical Events"
+          value={stats.criticalEvents}
+        />
       </div>
 
       {/* Search Bar */}
@@ -152,10 +120,16 @@ export default function ActivityPage() {
               placeholder="Search logs by action, user, or description..."
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="h-10 w-full border border-slate-200 rounded-lg pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none bg-white text-slate-900"
+              className="h-10 w-full border border-slate-200 rounded-lg pl-10 pr-4 text-sm focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none bg-white text-slate-900"
             />
           </div>
-          <Button type="submit">Search</Button>
+          <button
+            type="submit"
+            style={{ backgroundColor: '#824ef2' }}
+            className="h-10 px-5 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-colors"
+          >
+            Search
+          </button>
         </form>
       </div>
 
@@ -185,7 +159,7 @@ export default function ActivityPage() {
                 <tr>
                   <td colSpan={6} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
-                      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      <div className="w-8 h-8 border-2 border-[#824ef2] border-t-transparent rounded-full animate-spin" />
                       <span className="text-slate-500">Loading activity logs...</span>
                     </div>
                   </td>
@@ -203,9 +177,10 @@ export default function ActivityPage() {
                 logs.map((log) => (
                   <tr key={log.id || log._id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-md text-xs font-medium ${getActionColor(log.action)}`}>
-                        {log.action.replace(/_/g, ' ')}
-                      </span>
+                      <StatusBadge
+                        value={log.action.replace(/_/g, ' ').toLowerCase()}
+                        type="status"
+                      />
                     </td>
                     <td className="px-4 py-3 text-slate-700 max-w-xs truncate">
                       {log.description}
@@ -237,27 +212,25 @@ export default function ActivityPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
+          <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
+            className="inline-flex items-center gap-1 h-9 px-3 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ChevronLeft className="w-4 h-4 mr-1" />
+            <ChevronLeft className="w-4 h-4" />
             Previous
-          </Button>
+          </button>
           <span className="px-4 py-2 text-sm text-slate-600 font-medium">
             Page {page} of {totalPages}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
+          <button
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
+            className="inline-flex items-center gap-1 h-9 px-3 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>
