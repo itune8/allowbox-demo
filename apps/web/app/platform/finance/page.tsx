@@ -28,6 +28,7 @@ import {
   SchoolBillingModal,
   ReviewPaymentModal,
   SendReminderModal,
+  CreateInvoiceModal,
 } from '../../../components/platform';
 
 interface FinanceMetrics {
@@ -65,6 +66,7 @@ export default function FinancePage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Modal states
+  const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
   const [billingModalOpen, setBillingModalOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
@@ -414,14 +416,14 @@ export default function FinancePage() {
             Export Report
           </button>
           <button
-            onClick={() => router.push('/platform/schools')}
+            onClick={() => setCreateInvoiceOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-colors"
             style={{ backgroundColor: '#824ef2' }}
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#7040d9')}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#824ef2')}
           >
             <Plus className="w-4 h-4" />
-            Add School
+            Add Invoice
           </button>
         </div>
       </div>
@@ -621,6 +623,18 @@ export default function FinancePage() {
           </div>
         )}
       </div>
+
+      {/* Create Invoice Modal */}
+      <CreateInvoiceModal
+        isOpen={createInvoiceOpen}
+        onClose={() => setCreateInvoiceOpen(false)}
+        schools={schools}
+        onSubmit={(data) => {
+          setCreateInvoiceOpen(false);
+          setToast({ message: `Invoice created for school`, type: 'success' });
+          loadData();
+        }}
+      />
 
       {/* School Billing Details Modal */}
       <SchoolBillingModal

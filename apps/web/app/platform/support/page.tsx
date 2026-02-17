@@ -485,9 +485,9 @@ export default function SupportPage() {
       )}
 
       {/* Two-Panel Layout */}
-      <div className="flex flex-col lg:flex-row gap-0 h-[calc(100vh-200px)] min-h-[600px]">
+      <div className="flex flex-col lg:flex-row gap-0">
         {/* Left Panel - Ticket List */}
-        <div className="w-full lg:w-[380px] xl:w-[420px] flex-shrink-0 bg-white rounded-xl lg:rounded-r-none border border-slate-200 flex flex-col overflow-hidden">
+        <div className="w-full lg:w-[380px] xl:w-[420px] flex-shrink-0 bg-white rounded-xl lg:rounded-r-none border border-slate-200 flex flex-col overflow-hidden lg:sticky lg:top-20 lg:h-[calc(100vh-120px)]">
           {/* Search */}
           <div className="px-4 pt-4 pb-3">
             <div className="relative">
@@ -603,7 +603,7 @@ export default function SupportPage() {
         </div>
 
         {/* Right Panel - Ticket Detail */}
-        <div className="hidden lg:flex flex-1 bg-white rounded-xl lg:rounded-l-none border border-slate-200 lg:border-l-0 flex-col overflow-hidden">
+        <div className="hidden lg:flex flex-1 bg-white rounded-xl lg:rounded-l-none border border-slate-200 lg:border-l-0 flex-col min-w-0">
           {selectedTicket ? (
             <TicketDetailPanel
               ticket={selectedTicket}
@@ -722,7 +722,7 @@ function TicketDetailPanel({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       {/* Header Bar */}
       <div className="px-6 py-4 border-b border-slate-200">
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -776,8 +776,8 @@ function TicketDetailPanel({
         </div>
       </div>
 
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+      {/* Content */}
+      <div className="px-6 py-5 space-y-5">
         {/* Requester Information Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <h3 className="text-sm font-bold text-slate-800 mb-4">Requester Information</h3>
@@ -862,8 +862,8 @@ function TicketDetailPanel({
         )}
       </div>
 
-      {/* Response Area - pinned to bottom */}
-      <div className="border-t border-slate-200 bg-white">
+      {/* Response Area */}
+      <div className="border-t border-slate-200">
         {/* Add Response */}
         <div className="px-6 pt-4 pb-2">
           <h4 className="text-sm font-bold text-slate-800 mb-2">Add Response</h4>

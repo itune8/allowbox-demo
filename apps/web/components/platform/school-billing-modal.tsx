@@ -13,7 +13,6 @@ import {
   Calendar,
   User,
   CreditCard,
-  FileText,
 } from 'lucide-react';
 import type { School } from '../../lib/services/superadmin/school.service';
 
@@ -136,7 +135,7 @@ export function SchoolBillingModal({ isOpen, onClose, school, invoiceId }: Schoo
 
       <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-6">
         <div
-          className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-[680px] max-h-[92vh] sm:max-h-[88vh] flex flex-col"
+          className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-[820px] max-h-[92vh] sm:max-h-[88vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -175,13 +174,13 @@ export function SchoolBillingModal({ isOpen, onClose, school, invoiceId }: Schoo
           {/* Content */}
           <div className="flex-1 overflow-y-auto px-6 py-5">
             {activeTab === 'overview' ? (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {/* School Information + Current Plan Details */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   {/* School Information */}
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">School Information</h3>
-                    <div className="flex items-center gap-2.5 mb-3">
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-4">School Information</h3>
+                    <div className="flex items-center gap-2.5 mb-4">
                       <div className="p-2 rounded-lg bg-[#824ef2]/10">
                         <Building2 className="w-4 h-4 text-[#824ef2]" />
                       </div>
@@ -190,21 +189,21 @@ export function SchoolBillingModal({ isOpen, onClose, school, invoiceId }: Schoo
                         <p className="text-xs text-slate-400">ID: {school.tenantId || school._id?.slice(0, 8)}</p>
                       </div>
                     </div>
-                    <div className="space-y-2.5 text-sm">
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <User className="w-3.5 h-3.5 text-slate-400" />
+                    <div className="space-y-3.5 text-sm">
+                      <div className="flex items-center gap-2.5 text-slate-600">
+                        <User className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                         <span>{school.adminId?.firstName ? `${school.adminId.firstName} ${school.adminId.lastName}` : 'Contact Person'}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Mail className="w-3.5 h-3.5 text-slate-400" />
+                      <div className="flex items-center gap-2.5 text-slate-600">
+                        <Mail className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                         <span>{school.contactEmail || school.adminId?.email || 'N/A'}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Phone className="w-3.5 h-3.5 text-slate-400" />
+                      <div className="flex items-center gap-2.5 text-slate-600">
+                        <Phone className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                         <span>{school.contactPhone || 'N/A'}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      <div className="flex items-center gap-2.5 text-slate-600">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                         <span className="truncate">{address}</span>
                       </div>
                     </div>
@@ -212,8 +211,8 @@ export function SchoolBillingModal({ isOpen, onClose, school, invoiceId }: Schoo
 
                   {/* Current Plan Details */}
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">Current Plan Details</h3>
-                    <div className="space-y-2.5 text-sm">
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-4">Current Plan Details</h3>
+                    <div className="space-y-3.5 text-sm">
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500">Plan Type:</span>
                         <span className={`text-xs font-medium px-2 py-0.5 rounded ${getPlanBadge(planLabel)}`}>{planLabel}</span>
@@ -238,52 +237,10 @@ export function SchoolBillingModal({ isOpen, onClose, school, invoiceId }: Schoo
                         <span className="text-slate-500">Next Billing Date:</span>
                         <span className="text-slate-700">{formatDate(school.nextBillingDate)}</span>
                       </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between pt-3 mt-1 border-t border-slate-100">
                         <span className="text-slate-500 font-medium">Total Amount:</span>
                         <span className="text-lg font-bold text-[#824ef2]">{formatCurrency(amount)}</span>
                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recent Invoice History */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Recent Invoice History</h3>
-                    <button
-                      onClick={() => setActiveTab('history')}
-                      className="text-xs font-medium text-[#824ef2] hover:underline"
-                    >
-                      View All
-                    </button>
-                  </div>
-                  <div className="border border-slate-200 rounded-xl overflow-hidden">
-                    <div className="divide-y divide-slate-100">
-                      {invoices.slice(0, 3).map((inv) => (
-                        <div key={inv.id} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50/50">
-                          <div className="flex items-center gap-3">
-                            <div className="p-1.5 rounded-lg bg-[#824ef2]/10">
-                              <FileText className="w-3.5 h-3.5 text-[#824ef2]" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-slate-900">{inv.id}</p>
-                              <p className="text-xs text-slate-400">{inv.plan} - {inv.users} Users - {inv.duration}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              <p className="text-sm font-semibold text-slate-900">{formatCurrency(inv.amount)}</p>
-                              <p className="text-xs text-slate-400">{formatDate(inv.date)}</p>
-                            </div>
-                            <button
-                              className="p-1.5 text-slate-400 hover:text-[#824ef2] hover:bg-[#824ef2]/5 rounded-lg transition-colors"
-                              title="Download"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
                     </div>
                   </div>
                 </div>
@@ -293,32 +250,32 @@ export function SchoolBillingModal({ isOpen, onClose, school, invoiceId }: Schoo
               <div className="space-y-6">
                 {/* Invoice Table */}
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">Invoice History</h3>
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide mb-3">Invoice History</h3>
                   <div className="border border-slate-200 rounded-xl overflow-x-auto">
-                    <table className="w-full text-sm min-w-[550px]">
+                    <table className="w-full text-xs">
                       <thead className="bg-slate-50">
                         <tr className="border-b border-slate-200">
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Invoice #</th>
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Users</th>
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Invoice #</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Date</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Plan</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Users</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Amount</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {invoices.map((inv) => (
                           <tr key={inv.id} className="hover:bg-slate-50/50">
-                            <td className="px-3 py-2.5 font-medium text-[#824ef2]">{inv.id}</td>
+                            <td className="px-3 py-2.5 font-medium text-[#824ef2] whitespace-nowrap">{inv.id}</td>
                             <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{formatDate(inv.date)}</td>
-                            <td className="px-3 py-2.5 text-slate-600">{inv.plan}</td>
-                            <td className="px-3 py-2.5 text-slate-600">{inv.users}</td>
-                            <td className="px-3 py-2.5 font-semibold text-slate-900">{formatCurrency(inv.amount)}</td>
-                            <td className="px-3 py-2.5">
-                              <span className="text-xs font-medium px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">{inv.status}</span>
+                            <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{inv.plan}</td>
+                            <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{inv.users}</td>
+                            <td className="px-3 py-2.5 font-semibold text-slate-900 whitespace-nowrap">{formatCurrency(inv.amount)}</td>
+                            <td className="px-3 py-2.5 whitespace-nowrap">
+                              <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">{inv.status}</span>
                             </td>
-                            <td className="px-3 py-2.5">
+                            <td className="px-3 py-2.5 whitespace-nowrap">
                               <div className="flex items-center gap-1">
                                 <button className="p-1 text-slate-400 hover:text-[#824ef2] rounded transition-colors" title="Download">
                                   <Download className="w-3.5 h-3.5" />
@@ -337,29 +294,29 @@ export function SchoolBillingModal({ isOpen, onClose, school, invoiceId }: Schoo
 
                 {/* Transaction Log */}
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">Transaction Log</h3>
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide mb-3">Transaction Log</h3>
                   <div className="border border-slate-200 rounded-xl overflow-x-auto">
-                    <table className="w-full text-sm min-w-[500px]">
+                    <table className="w-full text-xs">
                       <thead className="bg-slate-50">
                         <tr className="border-b border-slate-200">
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Transaction ID</th>
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Description</th>
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Method</th>
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Transaction ID</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Date</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Description</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Method</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Amount</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Status</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {transactions.map((txn) => (
                           <tr key={txn.id} className="hover:bg-slate-50/50">
-                            <td className="px-3 py-2.5 font-medium text-slate-700">{txn.id}</td>
+                            <td className="px-3 py-2.5 font-medium text-slate-700 whitespace-nowrap">{txn.id}</td>
                             <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{formatDate(txn.date)}</td>
-                            <td className="px-3 py-2.5 text-slate-600">{txn.description}</td>
-                            <td className="px-3 py-2.5 text-slate-600">{txn.method}</td>
-                            <td className="px-3 py-2.5 font-semibold text-slate-900">{formatCurrency(txn.amount)}</td>
-                            <td className="px-3 py-2.5">
-                              <span className="text-xs font-medium px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">{txn.status}</span>
+                            <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{txn.description}</td>
+                            <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{txn.method}</td>
+                            <td className="px-3 py-2.5 font-semibold text-slate-900 whitespace-nowrap">{formatCurrency(txn.amount)}</td>
+                            <td className="px-3 py-2.5 whitespace-nowrap">
+                              <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">{txn.status}</span>
                             </td>
                           </tr>
                         ))}

@@ -4,7 +4,6 @@ import { useEffect, useCallback, type ReactElement } from 'react';
 import { Portal } from '../portal';
 import {
   X,
-  Building2,
   Check,
   Ban,
   XCircle,
@@ -185,91 +184,93 @@ export function SchoolViewModal({
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-6 py-5">
-            {/* School Name + ID + Action Buttons */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-[#824ef2]/10">
-                  <Building2 className="w-6 h-6 text-[#824ef2]" />
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 mb-6">
+              {getActionButtons()}
+            </div>
+
+            {/* School Information Card */}
+            <div className="mb-6">
+              <h3 className="text-base font-bold text-slate-900 mb-3">School Information</h3>
+              <div className="border border-slate-200 rounded-xl p-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">School Name</p>
+                    <p className="text-sm font-medium text-slate-900">{school.schoolName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Status</p>
+                    <span className={`inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full ${
+                      school.isActive
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : status === 'trial'
+                          ? 'bg-amber-50 text-amber-700'
+                          : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {school.isActive ? 'Active' : (status || 'Pending')}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Address</p>
+                    <p className="text-sm font-medium text-slate-900">{address}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Email</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {school.contactEmail || 'contact@school.edu'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Phone</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {school.contactPhone || '+1 (555) 123-4567'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Registration Date</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {formatDate(school.createdAt)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">{school.schoolName}</h3>
-                  <p className="text-sm text-slate-400">ID: {school.tenantId || 'SCH-001'}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 ml-12 sm:ml-0">
-                {getActionButtons()}
               </div>
             </div>
 
-            {/* Contact Information Card */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <p className="text-[11px] font-semibold text-[#824ef2] uppercase tracking-wider mb-1.5">
-                    Address
-                  </p>
-                  <p className="text-sm font-medium text-slate-800">{address}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-[#824ef2] uppercase tracking-wider mb-1.5">
-                    Email
-                  </p>
-                  <p className="text-sm font-medium text-slate-800">
-                    {school.contactEmail || 'contact@school.edu'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-[#824ef2] uppercase tracking-wider mb-1.5">
-                    Contact Number
-                  </p>
-                  <p className="text-sm font-medium text-slate-800">
-                    {school.contactPhone || '+1 (555) 123-4567'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-[#824ef2] uppercase tracking-wider mb-1.5">
-                    Registration Date
-                  </p>
-                  <p className="text-sm font-medium text-slate-800">
-                    {formatDate(school.createdAt)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Current Plan Card - Purple Gradient */}
-            <h3 className="text-base font-bold text-slate-900 mb-3">Current Plan</h3>
-            <div className="rounded-xl overflow-hidden mb-6" style={{ background: 'linear-gradient(135deg, #824ef2 0%, #a78bfa 100%)' }}>
-              {/* Plan top row */}
-              <div className="px-5 pt-5 pb-3 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-white/70 uppercase tracking-wider">Plan Type</p>
-                  <p className="text-xl font-bold text-white mt-0.5">{planLabel} Plan</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-medium text-white/70 uppercase tracking-wider">Billing Cycle</p>
-                  <p className="text-xl font-bold text-white mt-0.5">Annual</p>
-                </div>
-              </div>
-              {/* Plan bottom row */}
-              <div className="px-5 pb-5 pt-3 border-t border-white/20 grid grid-cols-3 gap-4">
-                <div>
-                  <p className="text-xs font-medium text-white/70 uppercase tracking-wider">Users</p>
-                  <p className="text-base font-bold text-white mt-0.5">{totalUsers} Users</p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-white/70 uppercase tracking-wider">Students</p>
-                  <p className="text-base font-bold text-white mt-0.5">
-                    {totalStudents.toLocaleString()} Students
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-white/70 uppercase tracking-wider">Next Billing</p>
-                  <p className="text-base font-bold text-white mt-0.5">
-                    {school.nextBillingDate
-                      ? shortDate(school.nextBillingDate)
-                      : 'Jan 15, 2025'}
-                  </p>
+            {/* Current Plan */}
+            <div className="mb-6">
+              <h3 className="text-base font-bold text-slate-900 mb-3">Current Plan</h3>
+              <div className="border border-slate-200 rounded-xl p-5">
+                <div className="grid grid-cols-3 gap-x-8 gap-y-5">
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Plan Type</p>
+                    <p className="text-sm font-medium text-slate-900">{planLabel} Plan</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Number of Users</p>
+                    <p className="text-sm font-medium text-slate-900">{totalUsers} Users</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Next Billing Date</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {school.nextBillingDate
+                        ? shortDate(school.nextBillingDate)
+                        : 'Jan 15, 2025'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Monthly Cost</p>
+                    <p className="text-sm font-medium text-slate-900">{formatCurrency((school.mrr || 0))}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Plan Status</p>
+                    <span className={`text-sm font-medium ${school.isActive ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      {school.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Auto-Renewal</p>
+                    <p className="text-sm font-medium text-slate-900">Enabled</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -280,24 +281,12 @@ export function SchoolViewModal({
               <table className="w-full text-sm">
                 <thead className="bg-slate-50">
                   <tr className="border-b border-slate-200">
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#824ef2] uppercase tracking-wider">
-                      Invoice Date
-                    </th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#824ef2] uppercase tracking-wider">
-                      Payment Date
-                    </th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#824ef2] uppercase tracking-wider">
-                      Plan
-                    </th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#824ef2] uppercase tracking-wider">
-                      Users
-                    </th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#824ef2] uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#824ef2] uppercase tracking-wider">
-                      Action
-                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Invoice Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Payment Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Plan</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Users</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Amount</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -311,7 +300,7 @@ export function SchoolViewModal({
                         {formatCurrency(p.amount)}
                       </td>
                       <td className="px-4 py-3">
-                        <button className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-[#824ef2] transition-colors">
+                        <button className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
                           <Download className="w-3.5 h-3.5" />
                           Download
                         </button>

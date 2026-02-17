@@ -11,7 +11,6 @@ import {
   School,
   Users,
   DollarSign,
-  FileText,
   BarChart3,
   Bell,
   Activity,
@@ -62,13 +61,11 @@ export default function PlatformLayout({
       title: 'Finance',
       items: [
         { key: 'finance', label: 'Fees & Billing', icon: <DollarSign className="w-5 h-5" /> },
-        { key: 'invoices', label: 'Invoices', icon: <FileText className="w-5 h-5" /> },
       ],
     },
     {
       title: 'Communication',
       items: [
-        { key: 'announcements', label: 'Announcements', icon: <Bell className="w-5 h-5" /> },
         { key: 'support', label: 'Support Tickets', icon: <HelpCircle className="w-5 h-5" /> },
       ],
     },
@@ -130,16 +127,8 @@ export default function PlatformLayout({
             sidebarCollapsed ? 'md:ml-20' : 'md:ml-64'
           }`}
         >
-          {/* Top bar with page info */}
-          <header className="sticky top-0 z-20 bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6">
-            <div>
-              <h1 className="text-lg font-semibold text-slate-900">
-                {activeItem === 'dashboard' ? 'Platform Overview' : activeItem.charAt(0).toUpperCase() + activeItem.slice(1).replace('-', ' ')}
-              </h1>
-              <p className="text-xs text-slate-500">
-                Manage all schools and users
-              </p>
-            </div>
+          {/* Top bar */}
+          <header className="sticky top-0 z-20 bg-white border-b border-slate-200 h-16 flex items-center justify-end px-6">
             <div className="flex items-center gap-3">
               {/* Search */}
               <div className="relative hidden lg:block">

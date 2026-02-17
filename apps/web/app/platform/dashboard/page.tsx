@@ -10,6 +10,7 @@ import {
   Plus,
   DollarSign,
   Download,
+  BarChart3,
   Check,
   MoreVertical,
   ChevronDown,
@@ -230,6 +231,15 @@ export default function DashboardPage() {
                 </span>
                 <span className="font-medium">Export Report</span>
               </button>
+              <button
+                onClick={() => router.push('/platform/reports')}
+                className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+              >
+                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-100">
+                  <BarChart3 className="w-4 h-4 text-orange-600" />
+                </span>
+                <span className="font-medium">Reports</span>
+              </button>
             </div>
           </div>
         </div>
@@ -281,10 +291,10 @@ export default function DashboardPage() {
                         <button
                           onClick={() => handleAccept(school)}
                           disabled={isLoading}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-emerald-700 bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg hover:from-emerald-100 hover:to-emerald-200 transition-all disabled:opacity-50"
                         >
                           {isLoading ? (
-                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span className="w-3.5 h-3.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
                           ) : (
                             <Check className="w-3.5 h-3.5" />
                           )}
@@ -293,7 +303,7 @@ export default function DashboardPage() {
                         <button
                           onClick={() => handleReject(school)}
                           disabled={isLoading}
-                          className="px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+                          className="px-4 py-2 text-sm font-medium text-red-600 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-lg hover:from-red-100 hover:to-red-200 transition-all disabled:opacity-50"
                         >
                           Reject
                         </button>

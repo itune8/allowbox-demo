@@ -57,8 +57,8 @@ export const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
     <>
       {/* Header */}
       <div className={cn(
-        'p-4 border-b border-slate-200',
-        isCollapsed && 'hidden md:block'
+        'px-4 border-b border-slate-200 h-16 flex items-center',
+        isCollapsed && 'hidden md:flex'
       )}>
         {logo ? (
           <div>{logo}</div>
@@ -187,7 +187,7 @@ export const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
         <button
           onClick={handleCollapse}
           className={cn(
-            'absolute -right-3 top-6',
+            'absolute -right-3 top-[29px]',
             'w-6 h-6',
             'bg-white border border-slate-200 rounded-full',
             'flex items-center justify-center',
