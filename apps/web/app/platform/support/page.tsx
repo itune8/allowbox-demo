@@ -484,10 +484,10 @@ export default function SupportPage() {
         </div>
       )}
 
-      {/* Two-Panel Layout */}
-      <div className="flex flex-col lg:flex-row gap-0">
+      {/* Two-Panel Layout - Both panels scroll independently */}
+      <div className="flex flex-col lg:flex-row gap-0 lg:h-[calc(100vh-180px)]">
         {/* Left Panel - Ticket List */}
-        <div className="w-full lg:w-[380px] xl:w-[420px] flex-shrink-0 bg-white rounded-xl lg:rounded-r-none border border-slate-200 flex flex-col overflow-hidden lg:sticky lg:top-20 lg:h-[calc(100vh-120px)]">
+        <div className="w-full lg:w-[380px] xl:w-[420px] flex-shrink-0 bg-white rounded-xl lg:rounded-r-none border border-slate-200 flex flex-col overflow-hidden">
           {/* Search */}
           <div className="px-4 pt-4 pb-3">
             <div className="relative">
@@ -602,8 +602,8 @@ export default function SupportPage() {
           </div>
         </div>
 
-        {/* Right Panel - Ticket Detail */}
-        <div className="hidden lg:flex flex-1 bg-white rounded-xl lg:rounded-l-none border border-slate-200 lg:border-l-0 flex-col min-w-0">
+        {/* Right Panel - Ticket Detail (scrolls independently) */}
+        <div className="hidden lg:flex flex-1 bg-white rounded-xl lg:rounded-l-none border border-slate-200 lg:border-l-0 flex-col min-w-0 overflow-hidden">
           {selectedTicket ? (
             <TicketDetailPanel
               ticket={selectedTicket}
@@ -722,9 +722,9 @@ function TicketDetailPanel({
   };
 
   return (
-    <div className="flex flex-col">
-      {/* Header Bar */}
-      <div className="px-6 py-4 border-b border-slate-200">
+    <div className="flex flex-col h-full">
+      {/* Header Bar - Fixed */}
+      <div className="px-6 py-4 border-b border-slate-200 flex-shrink-0">
         <div className="flex items-center justify-between flex-wrap gap-3">
           {/* Left: badges + ticket ID */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -776,7 +776,8 @@ function TicketDetailPanel({
         </div>
       </div>
 
-      {/* Content */}
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto">
       <div className="px-6 py-5 space-y-5">
         {/* Requester Information Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
@@ -969,6 +970,7 @@ function TicketDetailPanel({
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

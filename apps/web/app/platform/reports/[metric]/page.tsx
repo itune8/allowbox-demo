@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -168,7 +168,22 @@ const metricsConfig: Record<string, MetricConfig> = {
   },
 };
 
-function LineChart({ data, isDescending }: { data: number[]; isDescending?: boolean }) {
+function LineChart({
+  data,
+  isDescending,
+  prefix = '',
+  suffix = '',
+  breakdownData,
+}: {
+  data: number[];
+  isDescending?: boolean;
+  prefix?: string;
+  suffix?: string;
+  breakdownData?: { period: string; value: string; change: string; changePositive: boolean; percentChange: string }[];
+}) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+
   const maxVal = Math.max(...data);
   const minVal = Math.min(...data);
   const range = maxVal - minVal || 1;
@@ -185,7 +200,7 @@ function LineChart({ data, isDescending }: { data: number[]; isDescending?: bool
   const points = data.map((val, i) => {
     const x = padLeft + (i / (data.length - 1)) * plotW;
     const y = padTop + plotH - ((val - minVal) / range) * plotH;
-    return { x, y };
+    return { x, y, val };
   });
 
   const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
@@ -208,8 +223,53 @@ function LineChart({ data, isDescending }: { data: number[]; isDescending?: bool
     return val.toString();
   };
 
+  const formatValue = (val: number) => {
+    if (prefix === '$') {
+      if (val >= 1000) return `$${(val / 1000).toFixed(1)}k`;
+      return `$${val}`;
+    }
+    if (suffix === '%') return `${val % 1 !== 0 ? val.toFixed(1) : val}%`;
+    return val.toString();
+  };
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * chartW;
+
+    // Find closest point
+    let closest = 0;
+    let minDist = Infinity;
+    for (let i = 0; i < points.length; i++) {
+      const dist = Math.abs(points[i]!.x - svgX);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = i;
+      }
+    }
+    setHoveredIndex(closest);
+  }, [points]);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredIndex(null);
+  }, []);
+
+  // Get breakdown info for hovered index (breakdown is reverse chronological)
+  const getBreakdownInfo = (index: number) => {
+    if (!breakdownData) return null;
+    const reverseIndex = breakdownData.length - 1 - index;
+    return breakdownData[reverseIndex] || null;
+  };
+
   return (
-    <svg viewBox={`0 0 ${chartW} ${chartH}`} className="w-full h-full">
+    <svg
+      ref={svgRef}
+      viewBox={`0 0 ${chartW} ${chartH}`}
+      className="w-full h-full"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
       {/* Grid lines */}
       {yLabels.map((val, i) => {
         const y = padTop + plotH - ((val - niceMin) / (niceMax - niceMin)) * plotH;
@@ -223,6 +283,20 @@ function LineChart({ data, isDescending }: { data: number[]; isDescending?: bool
         );
       })}
 
+      {/* Vertical hover line */}
+      {hoveredIndex !== null && (
+        <line
+          x1={points[hoveredIndex]!.x}
+          y1={padTop}
+          x2={points[hoveredIndex]!.x}
+          y2={padTop + plotH}
+          stroke="#824ef2"
+          strokeWidth="1"
+          strokeDasharray="4 4"
+          opacity="0.4"
+        />
+      )}
+
       {/* Area fill */}
       <path d={areaPath} fill="url(#chartGradient)" />
 
@@ -231,14 +305,98 @@ function LineChart({ data, isDescending }: { data: number[]; isDescending?: bool
 
       {/* Data points */}
       {points.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="4" fill="#824ef2" stroke="white" strokeWidth="2" />
+        <circle
+          key={i}
+          cx={p.x}
+          cy={p.y}
+          r={hoveredIndex === i ? 6 : 4}
+          fill={hoveredIndex === i ? '#824ef2' : '#824ef2'}
+          stroke="white"
+          strokeWidth={hoveredIndex === i ? 3 : 2}
+          style={{ transition: 'r 0.15s ease, stroke-width 0.15s ease' }}
+        />
       ))}
+
+      {/* Tooltip */}
+      {hoveredIndex !== null && (() => {
+        const p = points[hoveredIndex]!;
+        const breakdown = getBreakdownInfo(hoveredIndex);
+        const tooltipW = 160;
+        const tooltipH = breakdown ? 72 : 44;
+        let tooltipX = p.x - tooltipW / 2;
+        if (tooltipX < padLeft) tooltipX = padLeft;
+        if (tooltipX + tooltipW > chartW - padRight) tooltipX = chartW - padRight - tooltipW;
+        const tooltipY = p.y - tooltipH - 14;
+        const clampedY = tooltipY < 2 ? p.y + 14 : tooltipY;
+
+        return (
+          <g>
+            {/* Tooltip box */}
+            <rect
+              x={tooltipX}
+              y={clampedY}
+              width={tooltipW}
+              height={tooltipH}
+              rx="8"
+              fill="#1E293B"
+              opacity="0.95"
+            />
+            {/* Arrow */}
+            <polygon
+              points={`${p.x - 5},${clampedY + (tooltipY < 2 ? -6 : tooltipH)} ${p.x + 5},${clampedY + (tooltipY < 2 ? -6 : tooltipH)} ${p.x},${clampedY + (tooltipY < 2 ? -12 : tooltipH + 6)}`}
+              fill="#1E293B"
+              opacity="0.95"
+            />
+            {/* Month + Value */}
+            <text x={tooltipX + 12} y={clampedY + 18} className="text-[11px] fill-slate-300 font-medium">
+              {months[hoveredIndex]}
+              {breakdown ? ` 2024` : ''}
+            </text>
+            <text x={tooltipX + tooltipW - 12} y={clampedY + 18} textAnchor="end" className="text-[12px] fill-white font-bold">
+              {breakdown ? breakdown.value : formatValue(p.val)}
+            </text>
+            {/* Change info */}
+            {breakdown && (
+              <>
+                <text x={tooltipX + 12} y={clampedY + 38} className="text-[10px] fill-slate-400">
+                  Change
+                </text>
+                <text
+                  x={tooltipX + tooltipW - 12}
+                  y={clampedY + 38}
+                  textAnchor="end"
+                  className={`text-[11px] font-medium ${breakdown.changePositive ? 'fill-emerald-400' : 'fill-red-400'}`}
+                >
+                  {breakdown.change}
+                </text>
+                <text x={tooltipX + 12} y={clampedY + 56} className="text-[10px] fill-slate-400">
+                  Growth
+                </text>
+                <text
+                  x={tooltipX + tooltipW - 12}
+                  y={clampedY + 56}
+                  textAnchor="end"
+                  className={`text-[11px] font-medium ${breakdown.changePositive ? 'fill-emerald-400' : 'fill-red-400'}`}
+                >
+                  {breakdown.percentChange}
+                </text>
+              </>
+            )}
+          </g>
+        );
+      })()}
 
       {/* Month labels */}
       {months.map((m, i) => {
         const x = padLeft + (i / (data.length - 1)) * plotW;
         return (
-          <text key={m} x={x} y={chartH - 8} textAnchor="middle" className="text-[10px] fill-slate-500">
+          <text
+            key={m}
+            x={x}
+            y={chartH - 8}
+            textAnchor="middle"
+            className={`text-[10px] ${hoveredIndex === i ? 'fill-[#824ef2] font-bold' : 'fill-slate-500'}`}
+          >
             {m}
           </text>
         );
@@ -377,7 +535,13 @@ export default function MetricDetailPage() {
 
         {/* Line Chart */}
         <div className="h-[320px]">
-          <LineChart data={config.chartData} isDescending={isDescending} />
+          <LineChart
+            data={config.chartData}
+            isDescending={isDescending}
+            prefix={config.prefix}
+            suffix={config.suffix}
+            breakdownData={config.breakdownData}
+          />
         </div>
       </div>
 

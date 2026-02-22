@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, type ReactElement } from 'react';
+import { useEffect, useCallback, useState, type ReactElement } from 'react';
 import { Portal } from '../portal';
 import {
   X,
@@ -21,6 +21,14 @@ interface SchoolViewModalProps {
   actionLoading?: boolean;
 }
 
+type TabId = 'info' | 'plan' | 'payments';
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'info', label: 'School Info' },
+  { id: 'plan', label: 'Plan & Billing' },
+  { id: 'payments', label: 'Payment History' },
+];
+
 export function SchoolViewModal({
   isOpen,
   onClose,
@@ -30,6 +38,8 @@ export function SchoolViewModal({
   onBlock,
   actionLoading,
 }: SchoolViewModalProps) {
+  const [activeTab, setActiveTab] = useState<TabId>('info');
+
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -41,6 +51,7 @@ export function SchoolViewModal({
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
       document.body.style.overflow = 'hidden';
+      setActiveTab('info');
     }
     return () => {
       document.removeEventListener('keydown', handleEscape);
@@ -182,134 +193,165 @@ export function SchoolViewModal({
             </button>
           </div>
 
+          {/* Tabs */}
+          <div className="px-6 border-b border-slate-200">
+            <div className="flex gap-6">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`pb-3 pt-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === tab.id
+                      ? 'border-[#824ef2] text-[#824ef2]'
+                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-6 py-5">
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2 mb-6">
-              {getActionButtons()}
-            </div>
 
-            {/* School Information Card */}
-            <div className="mb-6">
-              <h3 className="text-base font-bold text-slate-900 mb-3">School Information</h3>
-              <div className="border border-slate-200 rounded-xl p-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">School Name</p>
-                    <p className="text-sm font-medium text-slate-900">{school.schoolName}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Status</p>
-                    <span className={`inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full ${
-                      school.isActive
-                        ? 'bg-emerald-50 text-emerald-700'
-                        : status === 'trial'
-                          ? 'bg-amber-50 text-amber-700'
-                          : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      {school.isActive ? 'Active' : (status || 'Pending')}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Address</p>
-                    <p className="text-sm font-medium text-slate-900">{address}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Email</p>
-                    <p className="text-sm font-medium text-slate-900">
-                      {school.contactEmail || 'contact@school.edu'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Phone</p>
-                    <p className="text-sm font-medium text-slate-900">
-                      {school.contactPhone || '+1 (555) 123-4567'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Registration Date</p>
-                    <p className="text-sm font-medium text-slate-900">
-                      {formatDate(school.createdAt)}
-                    </p>
+            {/* School Info Tab */}
+            {activeTab === 'info' && (
+              <div className="space-y-6">
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2">
+                  {getActionButtons()}
+                </div>
+
+                {/* School Information Card */}
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 mb-3">School Information</h3>
+                  <div className="border border-slate-200 rounded-xl p-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">School Name</p>
+                        <p className="text-sm font-medium text-slate-900">{school.schoolName}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">Status</p>
+                        <span className={`inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full ${
+                          school.isActive
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : status === 'trial'
+                              ? 'bg-amber-50 text-amber-700'
+                              : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {school.isActive ? 'Active' : (status || 'Pending')}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">Address</p>
+                        <p className="text-sm font-medium text-slate-900">{address}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">Email</p>
+                        <p className="text-sm font-medium text-slate-900">
+                          {school.contactEmail || 'contact@school.edu'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">Phone</p>
+                        <p className="text-sm font-medium text-slate-900">
+                          {school.contactPhone || '+1 (555) 123-4567'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">Registration Date</p>
+                        <p className="text-sm font-medium text-slate-900">
+                          {formatDate(school.createdAt)}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Current Plan */}
-            <div className="mb-6">
-              <h3 className="text-base font-bold text-slate-900 mb-3">Current Plan</h3>
-              <div className="border border-slate-200 rounded-xl p-5">
-                <div className="grid grid-cols-3 gap-x-8 gap-y-5">
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Plan Type</p>
-                    <p className="text-sm font-medium text-slate-900">{planLabel} Plan</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Number of Users</p>
-                    <p className="text-sm font-medium text-slate-900">{totalUsers} Users</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Next Billing Date</p>
-                    <p className="text-sm font-medium text-slate-900">
-                      {school.nextBillingDate
-                        ? shortDate(school.nextBillingDate)
-                        : 'Jan 15, 2025'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Monthly Cost</p>
-                    <p className="text-sm font-medium text-slate-900">{formatCurrency((school.mrr || 0))}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Plan Status</p>
-                    <span className={`text-sm font-medium ${school.isActive ? 'text-emerald-600' : 'text-amber-600'}`}>
-                      {school.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Auto-Renewal</p>
-                    <p className="text-sm font-medium text-slate-900">Enabled</p>
+            {/* Plan & Billing Tab */}
+            {activeTab === 'plan' && (
+              <div>
+                <h3 className="text-base font-bold text-slate-900 mb-3">Current Plan</h3>
+                <div className="border border-slate-200 rounded-xl p-5">
+                  <div className="grid grid-cols-3 gap-x-8 gap-y-5">
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Plan Type</p>
+                      <p className="text-sm font-medium text-slate-900">{planLabel} Plan</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Number of Users</p>
+                      <p className="text-sm font-medium text-slate-900">{totalUsers} Users</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Next Billing Date</p>
+                      <p className="text-sm font-medium text-slate-900">
+                        {school.nextBillingDate
+                          ? shortDate(school.nextBillingDate)
+                          : 'Jan 15, 2025'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Monthly Cost</p>
+                      <p className="text-sm font-medium text-slate-900">{formatCurrency((school.mrr || 0))}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Plan Status</p>
+                      <span className={`text-sm font-medium ${school.isActive ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {school.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Auto-Renewal</p>
+                      <p className="text-sm font-medium text-slate-900">Enabled</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Payment History */}
-            <h3 className="text-base font-bold text-slate-900 mb-3">Payment History</h3>
-            <div className="border border-slate-200 rounded-xl overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50">
-                  <tr className="border-b border-slate-200">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Invoice Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Payment Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Plan</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Users</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Amount</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {payments.map((p, i) => (
-                    <tr key={i} className="hover:bg-slate-50/50">
-                      <td className="px-4 py-3 text-slate-700">{shortDate(p.invoiceDate)}</td>
-                      <td className="px-4 py-3 text-slate-700">{shortDate(p.paymentDate)}</td>
-                      <td className="px-4 py-3 text-slate-700">{p.plan}</td>
-                      <td className="px-4 py-3 text-slate-700">{p.users}</td>
-                      <td className="px-4 py-3 font-semibold text-slate-900">
-                        {formatCurrency(p.amount)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <button className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-                          <Download className="w-3.5 h-3.5" />
-                          Download
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {/* Payment History Tab */}
+            {activeTab === 'payments' && (
+              <div>
+                <h3 className="text-base font-bold text-slate-900 mb-3">Payment History</h3>
+                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50">
+                      <tr className="border-b border-slate-200">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Invoice Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Payment Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Plan</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Users</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Amount</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {payments.map((p, i) => (
+                        <tr key={i} className="hover:bg-slate-50/50">
+                          <td className="px-4 py-3 text-slate-700">{shortDate(p.invoiceDate)}</td>
+                          <td className="px-4 py-3 text-slate-700">{shortDate(p.paymentDate)}</td>
+                          <td className="px-4 py-3 text-slate-700">{p.plan}</td>
+                          <td className="px-4 py-3 text-slate-700">{p.users}</td>
+                          <td className="px-4 py-3 font-semibold text-slate-900">
+                            {formatCurrency(p.amount)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <button className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+                              <Download className="w-3.5 h-3.5" />
+                              Download
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

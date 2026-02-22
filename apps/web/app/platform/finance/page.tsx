@@ -9,15 +9,9 @@ import {
   AlertTriangle,
   Plus,
   Download,
-  Eye,
-  Send,
   Search,
   ChevronLeft,
   ChevronRight,
-  CheckCircle2,
-  XCircle,
-  RefreshCw,
-  Bell,
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/auth-context';
 import { hasPermission } from '../../../lib/permissions';
@@ -29,6 +23,8 @@ import {
   ReviewPaymentModal,
   SendReminderModal,
   CreateInvoiceModal,
+  InvoiceDetailsModal,
+  PaymentReceiptModal,
 } from '../../../components/platform';
 
 interface FinanceMetrics {
@@ -74,6 +70,10 @@ export default function FinancePage() {
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<'pending' | 'rejected' | 'failed'>('pending');
   const [actionLoading, setActionLoading] = useState(false);
   const [reminderModalOpen, setReminderModalOpen] = useState(false);
+  const [invoiceDetailsOpen, setInvoiceDetailsOpen] = useState(false);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [selectedInvoiceData, setSelectedInvoiceData] = useState<any>(null);
+  const [selectedReceiptData, setSelectedReceiptData] = useState<any>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const canAccessFinance = hasPermission(user?.roles, 'canAccessFinance');
@@ -241,116 +241,146 @@ export default function FinancePage() {
     setToast({ message: `Downloading invoice ${payment.invoiceId}...`, type: 'success' });
   };
 
-  // Status-based action icons per row
+  const handleViewReceipt = (payment: Payment) => {
+    const planLabel = payment.plan.charAt(0).toUpperCase() + payment.plan.slice(1);
+    setSelectedReceiptData({
+      receiptNumber: `RCP-${payment.invoiceId.replace('INV-', '')}`,
+      schoolName: payment.schoolName,
+      schoolId: payment.schoolId.slice(0, 10),
+      paymentDate: payment.nextDue,
+      paymentMethod: 'Online (Stripe)',
+      plan: `${planLabel} Plan`,
+      billingPeriod: 'Annual',
+      amount: payment.amount,
+    });
+    setReceiptModalOpen(true);
+  };
+
+  const handleViewInvoice = (payment: Payment) => {
+    const planLabel = payment.plan.charAt(0).toUpperCase() + payment.plan.slice(1);
+    const dueDate = new Date(payment.nextDue);
+    dueDate.setDate(dueDate.getDate() + 30);
+    setSelectedInvoiceData({
+      invoiceNumber: payment.invoiceId,
+      schoolName: payment.schoolName,
+      schoolId: payment.schoolId.slice(0, 10),
+      address: payment.school.address || '123 Education Street',
+      city: [payment.school.city || 'New York', payment.school.state || 'NY', payment.school.postalCode || '10001'].join(', '),
+      email: payment.school.contactEmail || `contact@${payment.schoolName.toLowerCase().replace(/\s+/g, '')}.edu`,
+      plan: payment.plan,
+      issueDate: payment.nextDue,
+      dueDate: dueDate.toISOString(),
+      status: payment.status,
+      amount: payment.amount,
+      paidDate: payment.status === 'paid' ? payment.nextDue : undefined,
+      paymentMethod: 'Visa ****4243',
+      studentCount: payment.users,
+    });
+    setInvoiceDetailsOpen(true);
+  };
+
+  // Status-based action buttons per row
   const getRowActions = (payment: Payment) => {
     const actions = [];
 
-    // View - always present
-    actions.push(
-      <button
-        key="view"
-        onClick={() => handleView(payment)}
-        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-        title="View Details"
-      >
-        <Eye className="w-4 h-4" />
-      </button>
-    );
-
     if (payment.status === 'paid') {
-      // Paid: view, download, send receipt
+      // Paid: View Details, View Receipt, View Invoice
       actions.push(
         <button
-          key="download"
-          onClick={() => handleDownload(payment)}
-          className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-          title="Download Invoice"
+          key="details"
+          onClick={() => handleView(payment)}
+          className="px-2.5 py-1.5 text-xs font-medium text-[#824ef2] bg-[#824ef2]/5 border border-[#824ef2]/20 rounded-md hover:bg-[#824ef2]/10 transition-colors whitespace-nowrap"
         >
-          <Download className="w-4 h-4" />
+          View Details
         </button>,
         <button
-          key="send"
-          onClick={() => handleSendReminder(payment)}
-          className="p-1.5 text-slate-400 hover:text-[#824ef2] hover:bg-[#824ef2]/5 rounded-lg transition-colors"
-          title="Send Receipt"
+          key="receipt"
+          onClick={() => handleViewReceipt(payment)}
+          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100 transition-colors whitespace-nowrap"
         >
-          <Send className="w-4 h-4" />
+          View Receipt
+        </button>,
+        <button
+          key="invoice"
+          onClick={() => handleViewInvoice(payment)}
+          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100 transition-colors whitespace-nowrap"
+        >
+          View Invoice
         </button>
       );
     } else if (payment.status === 'pending') {
-      // Pending: view, accept, reject
+      // Pending: view details, accept, reject
       actions.push(
+        <button
+          key="details"
+          onClick={() => handleView(payment)}
+          className="px-2.5 py-1.5 text-xs font-medium text-[#824ef2] bg-[#824ef2]/5 border border-[#824ef2]/20 rounded-md hover:bg-[#824ef2]/10 transition-colors whitespace-nowrap"
+        >
+          View Details
+        </button>,
         <button
           key="accept"
           onClick={() => handleAcceptPayment(payment.school)}
-          className="px-2.5 py-1 text-xs font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-colors"
-          title="Accept"
+          className="px-2.5 py-1.5 text-xs font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-colors whitespace-nowrap"
         >
           Accept
         </button>,
         <button
           key="reject"
           onClick={() => handleRejectPayment(payment.school)}
-          className="px-2.5 py-1 text-xs font-medium text-white bg-red-500 rounded-md hover:bg-red-600 transition-colors"
-          title="Reject"
+          className="px-2.5 py-1.5 text-xs font-medium text-white bg-red-500 rounded-md hover:bg-red-600 transition-colors whitespace-nowrap"
         >
           Reject
         </button>
       );
     } else if (payment.status === 'overdue') {
-      // Overdue: view, download, retry, alert
+      // Overdue: View Details, View Invoice, Send Reminder
       actions.push(
         <button
-          key="download"
-          onClick={() => handleDownload(payment)}
-          className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-          title="Download"
+          key="details"
+          onClick={() => handleView(payment)}
+          className="px-2.5 py-1.5 text-xs font-medium text-[#824ef2] bg-[#824ef2]/5 border border-[#824ef2]/20 rounded-md hover:bg-[#824ef2]/10 transition-colors whitespace-nowrap"
         >
-          <Download className="w-4 h-4" />
+          View Details
         </button>,
         <button
-          key="retry"
-          onClick={() => handleReview(payment)}
-          className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-          title="Review"
+          key="invoice"
+          onClick={() => handleViewInvoice(payment)}
+          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100 transition-colors whitespace-nowrap"
         >
-          <RefreshCw className="w-4 h-4" />
+          View Invoice
         </button>,
         <button
-          key="alert"
+          key="remind"
           onClick={() => handleSendReminder(payment)}
-          className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          title="Send Alert"
+          className="px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors whitespace-nowrap"
         >
-          <AlertTriangle className="w-4 h-4" />
+          Send Reminder
         </button>
       );
     } else if (payment.status === 'failed') {
-      // Failed: view, retry, send, alert
+      // Failed: View Details, Review, Contact
       actions.push(
         <button
-          key="retry"
-          onClick={() => handleReview(payment)}
-          className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          title="Review Failed Payment"
-        >
-          <XCircle className="w-4 h-4" />
-        </button>,
-        <button
-          key="view2"
+          key="details"
           onClick={() => handleView(payment)}
-          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-          title="View"
+          className="px-2.5 py-1.5 text-xs font-medium text-[#824ef2] bg-[#824ef2]/5 border border-[#824ef2]/20 rounded-md hover:bg-[#824ef2]/10 transition-colors whitespace-nowrap"
         >
-          <Eye className="w-4 h-4" />
+          View Details
         </button>,
         <button
-          key="send"
-          onClick={() => handleSendReminder(payment)}
-          className="p-1.5 text-slate-400 hover:text-[#824ef2] hover:bg-[#824ef2]/5 rounded-lg transition-colors"
-          title="Send Notification"
+          key="review"
+          onClick={() => handleReview(payment)}
+          className="px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors whitespace-nowrap"
         >
-          <Send className="w-4 h-4" />
+          Review
+        </button>,
+        <button
+          key="contact"
+          onClick={() => handleSendReminder(payment)}
+          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100 transition-colors whitespace-nowrap"
+        >
+          Contact School
         </button>
       );
     }
@@ -671,6 +701,30 @@ export default function FinancePage() {
         overdueAmount={payments.filter(p => p.status === 'overdue').reduce((sum, p) => sum + p.amount, 0)}
         schools={schools.map(s => ({ id: s._id, name: s.schoolName }))}
         onSend={handleReminderSend}
+      />
+
+      {/* Invoice Details Modal */}
+      <InvoiceDetailsModal
+        isOpen={invoiceDetailsOpen}
+        onClose={() => {
+          setInvoiceDetailsOpen(false);
+          setSelectedInvoiceData(null);
+        }}
+        invoice={selectedInvoiceData}
+        onDownload={() => setToast({ message: 'Downloading invoice PDF...', type: 'success' })}
+        onSendEmail={() => setToast({ message: 'Invoice sent via email', type: 'success' })}
+      />
+
+      {/* Payment Receipt Modal */}
+      <PaymentReceiptModal
+        isOpen={receiptModalOpen}
+        onClose={() => {
+          setReceiptModalOpen(false);
+          setSelectedReceiptData(null);
+        }}
+        receipt={selectedReceiptData}
+        onDownload={() => setToast({ message: 'Downloading receipt PDF...', type: 'success' })}
+        onPrint={() => window.print()}
       />
     </div>
   );

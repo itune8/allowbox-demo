@@ -25,9 +25,19 @@ import {
   Landmark,
   Save,
   Pencil,
+  Trash2,
 } from 'lucide-react';
 
 /* ---------- Types ---------- */
+interface PlanData {
+  id: string;
+  name: string;
+  price: number;
+  trial: number;
+  maxStudents: string;
+  popular: boolean;
+}
+
 interface PlatformSettings {
   platformName: string;
   supportEmail: string;
@@ -74,11 +84,19 @@ const defaultSettings: PlatformSettings = {
   billingAlerts: true,
 };
 
-const plans = [
-  { name: 'Basic Plan', icon: <Send className="w-5 h-5" />, iconBg: 'bg-slate-100', iconColor: 'text-slate-600', price: 29, trial: 14, maxStudents: '500', popular: false, border: 'border-slate-200' },
-  { name: 'Pro Plan', icon: <Tag className="w-5 h-5" />, iconBg: 'bg-[#824ef2]', iconColor: 'text-white', price: 59, trial: 30, maxStudents: '2,000', popular: true, border: 'border-[#824ef2]' },
-  { name: 'Enterprise', icon: <Landmark className="w-5 h-5" />, iconBg: 'bg-slate-100', iconColor: 'text-slate-600', price: 99, trial: 45, maxStudents: 'Unlimited', popular: false, border: 'border-slate-200' },
+const defaultPlans: PlanData[] = [
+  { id: '1', name: 'Basic Plan', price: 29, trial: 14, maxStudents: '500', popular: false },
+  { id: '2', name: 'Pro Plan', price: 59, trial: 30, maxStudents: '2,000', popular: true },
+  { id: '3', name: 'Enterprise', price: 99, trial: 45, maxStudents: 'Unlimited', popular: false },
 ];
+
+const PLANS_STORAGE_KEY = 'platform_plans_v1';
+
+const planIcons: Record<number, { icon: React.ReactNode; iconBg: string; iconColor: string }> = {
+  0: { icon: <Send className="w-5 h-5" />, iconBg: 'bg-slate-100', iconColor: 'text-slate-600' },
+  1: { icon: <Tag className="w-5 h-5" />, iconBg: 'bg-[#824ef2]', iconColor: 'text-white' },
+  2: { icon: <Landmark className="w-5 h-5" />, iconBg: 'bg-slate-100', iconColor: 'text-slate-600' },
+};
 
 type SidebarSection = 'branding' | 'academic' | 'security' | 'control' | 'billing';
 
@@ -152,6 +170,177 @@ function ResetConfirmModal({ isOpen, onClose, onReset }: { isOpen: boolean; onCl
   );
 }
 
+/* ---------- Plan Modal (Create/Edit) ---------- */
+function PlanModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  plan,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: Omit<PlanData, 'id'> & { id?: string }) => void;
+  plan?: PlanData | null;
+}) {
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [trial, setTrial] = useState('');
+  const [maxStudents, setMaxStudents] = useState('');
+  const [popular, setPopular] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (plan) {
+      setName(plan.name);
+      setPrice(String(plan.price));
+      setTrial(String(plan.trial));
+      setMaxStudents(plan.maxStudents);
+      setPopular(plan.popular);
+    } else {
+      setName('');
+      setPrice('');
+      setTrial('');
+      setMaxStudents('');
+      setPopular(false);
+    }
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', handleEsc); document.body.style.overflow = ''; };
+  }, [isOpen, plan, onClose]);
+
+  if (!isOpen) return null;
+
+  const isEdit = !!plan;
+  const canSubmit = name.trim() && price.trim() && trial.trim() && maxStudents.trim();
+
+  return (
+    <Portal>
+      <div className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-6 pointer-events-none">
+        <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-[480px] pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200">
+            <h2 className="text-lg font-bold text-slate-900">{isEdit ? 'Edit Plan' : 'Create New Plan'}</h2>
+            <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
+          </div>
+          <div className="px-6 py-5 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Plan Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Pro Plan"
+                className="w-full h-11 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Price ($/mo per user)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value.replace(/[^0-9.]/g, ''))}
+                  placeholder="59"
+                  className="w-full h-11 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Trial Duration (Days)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={trial}
+                  onChange={(e) => setTrial(e.target.value.replace(/[^0-9]/g, ''))}
+                  placeholder="30"
+                  className="w-full h-11 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Max Students</label>
+              <input
+                type="text"
+                value={maxStudents}
+                onChange={(e) => setMaxStudents(e.target.value)}
+                placeholder="e.g. 2,000 or Unlimited"
+                className="w-full h-11 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
+              />
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg border border-slate-100">
+              <div>
+                <p className="text-sm font-medium text-slate-900">Mark as Popular</p>
+                <p className="text-xs text-slate-500">Highlight this plan with a badge</p>
+              </div>
+              <Toggle enabled={popular} onChange={() => setPopular(!popular)} />
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200">
+            <button onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+            <button
+              onClick={() => {
+                if (!canSubmit) return;
+                onSubmit({
+                  ...(plan ? { id: plan.id } : {}),
+                  name: name.trim(),
+                  price: parseFloat(price) || 0,
+                  trial: parseInt(trial) || 0,
+                  maxStudents: maxStudents.trim(),
+                  popular,
+                });
+              }}
+              disabled={!canSubmit}
+              style={{ backgroundColor: '#824ef2' }}
+              className="px-5 py-2.5 text-sm font-medium text-white rounded-lg hover:opacity-90 transition-colors disabled:opacity-50"
+            >
+              {isEdit ? 'Save Changes' : 'Create Plan'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Portal>
+  );
+}
+
+/* ---------- Delete Plan Confirm Modal ---------- */
+function DeletePlanModal({ isOpen, planName, onClose, onDelete }: { isOpen: boolean; planName: string; onClose: () => void; onDelete: () => void }) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', handleEsc); document.body.style.overflow = ''; };
+  }, [isOpen, onClose]);
+  if (!isOpen) return null;
+  return (
+    <Portal>
+      <div className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between p-5 border-b border-slate-200">
+            <h2 className="text-lg font-bold text-slate-900">Delete Plan</h2>
+            <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
+          </div>
+          <div className="p-5">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-red-50"><AlertCircle className="w-5 h-5 text-red-600" /></div>
+              <div>
+                <p className="text-sm font-medium text-slate-900 mb-1">Are you sure you want to delete &ldquo;{planName}&rdquo;?</p>
+                <p className="text-sm text-slate-500">Schools currently on this plan will need to be migrated. This action cannot be undone.</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 p-5 border-t border-slate-200">
+            <button onClick={onClose} className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+            <button onClick={onDelete} className="px-4 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">Delete Plan</button>
+          </div>
+        </div>
+      </div>
+    </Portal>
+  );
+}
+
 /* ---------- Main Page ---------- */
 export default function SettingsPage() {
   const [settings, setSettings] = useState<PlatformSettings>(defaultSettings);
@@ -161,6 +350,11 @@ export default function SettingsPage() {
   const [hasChanges, setHasChanges] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [activeSection, setActiveSection] = useState<SidebarSection>('branding');
+  const [plans, setPlans] = useState<PlanData[]>(defaultPlans);
+  const [planModalOpen, setPlanModalOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<PlanData | null>(null);
+  const [deletePlanModalOpen, setDeletePlanModalOpen] = useState(false);
+  const [deletingPlan, setDeletingPlan] = useState<PlanData | null>(null);
   const [numericFields, setNumericFields] = useState({
     maxUsersPerSchool: String(defaultSettings.maxUsersPerSchool),
     maxStudentsPerSchool: String(defaultSettings.maxStudentsPerSchool),
@@ -194,6 +388,10 @@ export default function SettingsPage() {
           gracePeriod: String(parsed.gracePeriod || ''),
           suspensionDelay: String(parsed.suspensionDelay || ''),
         });
+      }
+      const savedPlans = localStorage.getItem(PLANS_STORAGE_KEY);
+      if (savedPlans) {
+        setPlans(JSON.parse(savedPlans));
       }
     } catch (err) {
       console.error('Failed to load settings:', err);
@@ -233,6 +431,37 @@ export default function SettingsPage() {
     setActiveSection(key);
     const el = document.getElementById(`section-${key}`);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const savePlans = (updated: PlanData[]) => {
+    setPlans(updated);
+    localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(updated));
+  };
+
+  const handlePlanSubmit = (data: Omit<PlanData, 'id'> & { id?: string }) => {
+    if (data.id) {
+      // Edit existing plan
+      const updated = plans.map(p => p.id === data.id ? { ...p, ...data, id: data.id } : p);
+      savePlans(updated);
+      setToast({ type: 'success', text: `"${data.name}" updated successfully!` });
+    } else {
+      // Create new plan
+      const newPlan: PlanData = { ...data, id: String(Date.now()) };
+      const updated = [...plans, newPlan];
+      savePlans(updated);
+      setToast({ type: 'success', text: `"${data.name}" created successfully!` });
+    }
+    setPlanModalOpen(false);
+    setEditingPlan(null);
+  };
+
+  const handleDeletePlan = () => {
+    if (!deletingPlan) return;
+    const updated = plans.filter(p => p.id !== deletingPlan.id);
+    savePlans(updated);
+    setToast({ type: 'success', text: `"${deletingPlan.name}" deleted successfully.` });
+    setDeletePlanModalOpen(false);
+    setDeletingPlan(null);
   };
 
   const inputClassName = "w-full h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
@@ -517,6 +746,7 @@ export default function SettingsPage() {
                 <p className="text-sm text-slate-500 mt-0.5">Configure subscription plans and limits.</p>
               </div>
               <button
+                onClick={() => { setEditingPlan(null); setPlanModalOpen(true); }}
                 style={{ backgroundColor: '#824ef2' }}
                 className="inline-flex items-center gap-1.5 h-9 px-4 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-colors"
               >
@@ -525,46 +755,62 @@ export default function SettingsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {plans.map((plan) => (
-                <div
-                  key={plan.name}
-                  className={`relative rounded-xl border-2 ${plan.border} p-5 transition-shadow hover:shadow-md`}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="px-3 py-0.5 rounded-full text-xs font-bold text-white bg-[#824ef2]">
-                        POPULAR
-                      </span>
-                    </div>
-                  )}
-                  {plan.popular && (
-                    <button className="absolute top-3 right-3 p-1 hover:bg-slate-100 rounded-lg transition-colors">
-                      <Pencil className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                  )}
+              {plans.map((plan, index) => {
+                const iconSet = planIcons[index] || planIcons[0]!;
+                return (
+                  <div
+                    key={plan.id}
+                    className={`relative rounded-xl border-2 ${plan.popular ? 'border-[#824ef2]' : 'border-slate-200'} p-5 transition-shadow hover:shadow-md`}
+                  >
+                    {plan.popular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span className="px-3 py-0.5 rounded-full text-xs font-bold text-white bg-[#824ef2]">
+                          POPULAR
+                        </span>
+                      </div>
+                    )}
 
-                  <div className={`w-10 h-10 rounded-xl ${plan.iconBg} flex items-center justify-center mb-4`}>
-                    <span className={plan.iconColor}>{plan.icon}</span>
-                  </div>
-
-                  <h4 className="text-base font-bold text-slate-900">{plan.name}</h4>
-                  <div className="flex items-baseline gap-1 mt-1 mb-4">
-                    <span className="text-3xl font-bold text-slate-900">${plan.price}</span>
-                    <span className="text-sm text-slate-500">/mo per user</span>
-                  </div>
-
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500">Trial Duration</span>
-                      <span className="font-medium text-slate-900">{plan.trial} Days</span>
+                    {/* Edit / Delete Buttons */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1">
+                      <button
+                        onClick={() => { setEditingPlan(plan); setPlanModalOpen(true); }}
+                        className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                        title="Edit plan"
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+                      <button
+                        onClick={() => { setDeletingPlan(plan); setDeletePlanModalOpen(true); }}
+                        className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete plan"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                      </button>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500">Max Students</span>
-                      <span className="font-medium text-slate-900">{plan.maxStudents}</span>
+
+                    <div className={`w-10 h-10 rounded-xl ${plan.popular ? 'bg-[#824ef2]' : iconSet.iconBg} flex items-center justify-center mb-4`}>
+                      <span className={plan.popular ? 'text-white' : iconSet.iconColor}>{iconSet.icon}</span>
+                    </div>
+
+                    <h4 className="text-base font-bold text-slate-900">{plan.name}</h4>
+                    <div className="flex items-baseline gap-1 mt-1 mb-4">
+                      <span className="text-3xl font-bold text-slate-900">${plan.price}</span>
+                      <span className="text-sm text-slate-500">/mo per user</span>
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Trial Duration</span>
+                        <span className="font-medium text-slate-900">{plan.trial} Days</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Max Students</span>
+                        <span className="font-medium text-slate-900">{plan.maxStudents}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </SectionCard>
 
@@ -740,6 +986,22 @@ export default function SettingsPage() {
         isOpen={showResetConfirm}
         onClose={() => setShowResetConfirm(false)}
         onReset={handleReset}
+      />
+
+      {/* Plan Create/Edit Modal */}
+      <PlanModal
+        isOpen={planModalOpen}
+        onClose={() => { setPlanModalOpen(false); setEditingPlan(null); }}
+        onSubmit={handlePlanSubmit}
+        plan={editingPlan}
+      />
+
+      {/* Delete Plan Confirmation Modal */}
+      <DeletePlanModal
+        isOpen={deletePlanModalOpen}
+        planName={deletingPlan?.name || ''}
+        onClose={() => { setDeletePlanModalOpen(false); setDeletingPlan(null); }}
+        onDelete={handleDeletePlan}
       />
     </div>
   );

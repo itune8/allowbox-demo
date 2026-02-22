@@ -208,10 +208,12 @@ export default function DashboardPage() {
             <div className="space-y-3">
               <button
                 onClick={() => router.push('/platform/schools')}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
               >
-                <Plus className="w-4 h-4" />
-                Add New School
+                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-100">
+                  <Plus className="w-4 h-4 text-purple-600" />
+                </span>
+                <span className="font-medium">Add New School</span>
               </button>
               <button
                 onClick={() => router.push('/platform/finance')}
