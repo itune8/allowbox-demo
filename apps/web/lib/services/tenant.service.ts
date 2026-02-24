@@ -4,6 +4,7 @@ import { apiClient } from '../api-client';
 export interface TenantData {
   tenantId: string;
   schoolName: string;
+  schoolCode?: string;
   domain: string;
   address?: string;
   contactEmail: string;

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Button } from '@repo/ui/button';
-import { SlideSheet, SheetSection, SheetField, SheetDetailRow } from '@/components/ui';
+import { SchoolStatCard, SchoolStatusBadge, FormModal, ConfirmModal, useToast } from '../../../../components/school';
 import {
   BookOpen,
   Users,
@@ -16,6 +15,7 @@ import {
   Edit,
   Trash2,
   CheckCircle,
+  XCircle,
   AlertCircle,
   BookMarked,
   Calculator,
@@ -40,41 +40,6 @@ interface Subject {
   totalStudents: number;
   hoursPerWeek: number;
   status: 'active' | 'inactive';
-}
-
-// Professional Stat Card
-function StatCard({
-  title,
-  value,
-  icon: Icon,
-  variant = 'default',
-}: {
-  title: string;
-  value: number;
-  icon: React.ElementType;
-  variant?: 'default' | 'blue' | 'purple' | 'green' | 'amber';
-}) {
-  const variantStyles = {
-    default: 'bg-slate-100 text-slate-600',
-    blue: 'bg-blue-100 text-blue-600',
-    purple: 'bg-purple-100 text-purple-600',
-    green: 'bg-emerald-100 text-emerald-600',
-    amber: 'bg-amber-100 text-amber-600',
-  };
-
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-500">{title}</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900">{value}</p>
-        </div>
-        <div className={`p-2.5 rounded-lg ${variantStyles[variant]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // Category Badge
@@ -102,28 +67,16 @@ function CategoryBadge({ category }: { category: Subject['category'] }) {
   );
 }
 
-// Status Badge
-function StatusBadge({ status }: { status: Subject['status'] }) {
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
-      status === 'active'
-        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-        : 'bg-slate-50 text-slate-700 border-slate-200'
-    }`}>
-      {status === 'active' ? 'Active' : 'Inactive'}
-    </span>
-  );
-}
-
 export default function SubjectsPage() {
+  const { showToast } = useToast();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [showDetailsSheet, setShowDetailsSheet] = useState<Subject | null>(null);
-  const [showFormSheet, setShowFormSheet] = useState(false);
-  const [banner, setBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState<Subject | null>(null);
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     fetchSubjects();
@@ -265,42 +218,34 @@ export default function SubjectsPage() {
   const stats = useMemo(() => {
     const totalSubjects = subjects.length;
     const activeSubjects = subjects.filter(s => s.status === 'active').length;
+    const inactiveSubjects = subjects.filter(s => s.status === 'inactive').length;
     const totalTeachers = subjects.reduce((sum, s) => sum + s.teachersAssigned, 0);
-    const totalStudents = subjects.reduce((sum, s) => sum + s.totalStudents, 0);
-    return { totalSubjects, activeSubjects, totalTeachers, totalStudents };
+    return { totalSubjects, activeSubjects, inactiveSubjects, totalTeachers };
   }, [subjects]);
-
-  const showBanner = (type: 'success' | 'error', message: string) => {
-    setBanner({ type, message });
-    setTimeout(() => setBanner(null), 4000);
-  };
 
   const handleCreateSubject = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       // Simulated API call
       await new Promise(resolve => setTimeout(resolve, 500));
-      showBanner('success', 'Subject created successfully');
-      setShowFormSheet(false);
+      showToast('success', 'Subject created successfully');
+      setShowFormModal(false);
       await fetchSubjects();
     } catch (error) {
       console.error('Failed to create subject:', error);
-      showBanner('error', 'Failed to create subject. Please try again.');
+      showToast('error', 'Failed to create subject. Please try again.');
     }
   };
 
-  const handleDeleteSubject = async (subjectId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this subject? This action cannot be undone.')) return;
-
+  const handleDeleteSubject = async (subjectId: string) => {
     try {
       // Simulated API call
       await new Promise(resolve => setTimeout(resolve, 500));
       setSubjects(prev => prev.filter(s => s.id !== subjectId));
-      showBanner('success', 'Subject deleted successfully');
+      showToast('success', 'Subject deleted successfully');
     } catch (err) {
       console.error('Failed to delete subject:', err);
-      showBanner('error', 'Failed to delete subject. Please try again.');
+      showToast('error', 'Failed to delete subject. Please try again.');
     }
   };
 
@@ -317,28 +262,6 @@ export default function SubjectsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Banner */}
-      {banner && (
-        <div className={`rounded-lg border px-4 py-3 flex items-center gap-3 ${
-          banner.type === 'success'
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-            : 'bg-red-50 border-red-200 text-red-800'
-        }`}>
-          {banner.type === 'success' ? (
-            <CheckCircle className="w-5 h-5 text-emerald-600" />
-          ) : (
-            <AlertCircle className="w-5 h-5 text-red-600" />
-          )}
-          <span className="text-sm font-medium">{banner.message}</span>
-          <button
-            onClick={() => setBanner(null)}
-            className="ml-auto p-1 hover:bg-white/50 rounded"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
       {/* Error */}
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
@@ -358,8 +281,8 @@ export default function SubjectsPage() {
             Export
           </button>
           <button
-            onClick={() => setShowFormSheet(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
+            onClick={() => setShowFormModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
           >
             <Plus className="w-4 h-4" />
             Add Subject
@@ -369,10 +292,30 @@ export default function SubjectsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Subjects" value={stats.totalSubjects} icon={BookOpen} />
-        <StatCard title="Active Subjects" value={stats.activeSubjects} icon={CheckCircle} variant="green" />
-        <StatCard title="Teachers" value={stats.totalTeachers} icon={GraduationCap} variant="blue" />
-        <StatCard title="Total Students" value={stats.totalStudents} icon={Users} variant="purple" />
+        <SchoolStatCard
+          icon={<BookOpen className="w-5 h-5" />}
+          color="blue"
+          label="Total Subjects"
+          value={stats.totalSubjects}
+        />
+        <SchoolStatCard
+          icon={<CheckCircle className="w-5 h-5" />}
+          color="green"
+          label="Active"
+          value={stats.activeSubjects}
+        />
+        <SchoolStatCard
+          icon={<XCircle className="w-5 h-5" />}
+          color="slate"
+          label="Inactive"
+          value={stats.inactiveSubjects}
+        />
+        <SchoolStatCard
+          icon={<Users className="w-5 h-5" />}
+          color="purple"
+          label="Teachers Assigned"
+          value={stats.totalTeachers}
+        />
       </div>
 
       {/* Filters */}
@@ -394,7 +337,7 @@ export default function SubjectsPage() {
                   onClick={() => setCategoryFilter(option.value)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     categoryFilter === option.value
-                      ? 'bg-primary text-white'
+                      ? 'bg-[#824ef2] text-white'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -417,7 +360,7 @@ export default function SubjectsPage() {
                   onClick={() => setStatusFilter(option.value)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     statusFilter === option.value
-                      ? 'bg-primary text-white'
+                      ? 'bg-[#824ef2] text-white'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -450,7 +393,7 @@ export default function SubjectsPage() {
               {loading ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-16 text-center">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto" />
+                    <Loader2 className="w-8 h-8 text-[#824ef2] animate-spin mx-auto" />
                     <p className="mt-3 text-sm text-slate-500">Loading subjects...</p>
                   </td>
                 </tr>
@@ -467,8 +410,8 @@ export default function SubjectsPage() {
                       </p>
                       {subjects.length === 0 && (
                         <button
-                          onClick={() => setShowFormSheet(true)}
-                          className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
+                          onClick={() => setShowFormModal(true)}
+                          className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
                         >
                           <Plus className="w-4 h-4" />
                           Add Subject
@@ -484,7 +427,7 @@ export default function SubjectsPage() {
                     <tr
                       key={subject.id}
                       className="hover:bg-slate-50 cursor-pointer transition-colors"
-                      onClick={() => setShowDetailsSheet(subject)}
+                      onClick={() => setShowDetailsModal(subject)}
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -506,7 +449,7 @@ export default function SubjectsPage() {
                         <CategoryBadge category={subject.category} />
                       </td>
                       <td className="px-4 py-3 text-slate-600">
-                        {subject.credits || '—'}
+                        {subject.credits || '\u2014'}
                       </td>
                       <td className="px-4 py-3 text-slate-600">
                         {subject.teachersAssigned}
@@ -515,7 +458,7 @@ export default function SubjectsPage() {
                         {subject.totalStudents}
                       </td>
                       <td className="px-4 py-3">
-                        <StatusBadge status={subject.status} />
+                        <SchoolStatusBadge value={subject.status} />
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="inline-flex items-center gap-1">
@@ -524,7 +467,7 @@ export default function SubjectsPage() {
                             className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setShowDetailsSheet(subject);
+                              setShowDetailsModal(subject);
                             }}
                           >
                             <Eye className="w-4 h-4" />
@@ -542,7 +485,10 @@ export default function SubjectsPage() {
                           <button
                             title="Delete"
                             className="p-1.5 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors"
-                            onClick={(e) => handleDeleteSubject(subject.id, e)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteTarget({ id: subject.id, name: subject.name });
+                            }}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -560,7 +506,7 @@ export default function SubjectsPage() {
         <div className="md:hidden divide-y divide-slate-100">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <Loader2 className="w-8 h-8 text-[#824ef2] animate-spin" />
               <p className="mt-3 text-sm text-slate-500">Loading subjects...</p>
             </div>
           ) : filteredSubjects.length === 0 ? (
@@ -571,8 +517,8 @@ export default function SubjectsPage() {
               <p className="text-sm font-medium">{subjects.length === 0 ? 'No subjects added yet' : 'No subjects found'}</p>
               {subjects.length === 0 && (
                 <button
-                  onClick={() => setShowFormSheet(true)}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg"
+                  onClick={() => setShowFormModal(true)}
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg"
                 >
                   <Plus className="w-4 h-4" />
                   Add Subject
@@ -586,7 +532,7 @@ export default function SubjectsPage() {
                 <div
                   key={subject.id}
                   className="p-4 hover:bg-slate-50 cursor-pointer"
-                  onClick={() => setShowDetailsSheet(subject)}
+                  onClick={() => setShowDetailsModal(subject)}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
@@ -611,7 +557,7 @@ export default function SubjectsPage() {
                     </div>
                     <div>
                       <p className="text-slate-500">Status</p>
-                      <StatusBadge status={subject.status} />
+                      <SchoolStatusBadge value={subject.status} />
                     </div>
                   </div>
                 </div>
@@ -628,19 +574,18 @@ export default function SubjectsPage() {
         )}
       </div>
 
-      {/* Subject Details Sheet */}
-      {showDetailsSheet && (
-        <SlideSheet
-          isOpen={!!showDetailsSheet}
-          onClose={() => setShowDetailsSheet(null)}
+      {/* Subject Details Modal */}
+      {showDetailsModal && (
+        <FormModal
+          open={!!showDetailsModal}
+          onClose={() => setShowDetailsModal(null)}
           title="Subject Details"
-          subtitle={showDetailsSheet.code}
-          size="md"
+          size="lg"
           footer={
-            <div className="flex gap-3">
+            <>
               <button
-                onClick={() => setShowDetailsSheet(null)}
-                className="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                onClick={() => setShowDetailsModal(null)}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
               >
                 Close
               </button>
@@ -648,188 +593,243 @@ export default function SubjectsPage() {
                 onClick={() => {
                   // Handle edit
                 }}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
               >
                 <Edit className="w-4 h-4" />
                 Edit Subject
               </button>
-            </div>
+            </>
           }
         >
-          <div className="flex items-center gap-4 mb-6">
-            {(() => {
-              const CategoryIcon = getCategoryIcon(showDetailsSheet.category);
-              return (
-                <div className="w-14 h-14 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
-                  <CategoryIcon className="w-7 h-7" />
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              {(() => {
+                const CategoryIcon = getCategoryIcon(showDetailsModal.category);
+                return (
+                  <div className="w-14 h-14 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
+                    <CategoryIcon className="w-7 h-7" />
+                  </div>
+                );
+              })()}
+              <div>
+                <h4 className="text-xl font-semibold text-slate-900">{showDetailsModal.name}</h4>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-sm text-slate-500 font-mono">{showDetailsModal.code}</span>
+                  <CategoryBadge category={showDetailsModal.category} />
+                  <SchoolStatusBadge value={showDetailsModal.status} />
                 </div>
-              );
-            })()}
+              </div>
+            </div>
+
+            {showDetailsModal.description && (
+              <div className="p-4 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-600">{showDetailsModal.description}</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white rounded-lg border border-slate-200 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <GraduationCap className="w-4 h-4 text-slate-400" />
+                  <span className="text-xs text-slate-500 uppercase tracking-wider">Teachers</span>
+                </div>
+                <p className="text-2xl font-semibold text-slate-900">{showDetailsModal.teachersAssigned}</p>
+                <p className="text-xs text-slate-500 mt-1">Assigned teachers</p>
+              </div>
+
+              <div className="bg-white rounded-lg border border-slate-200 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-4 h-4 text-slate-400" />
+                  <span className="text-xs text-slate-500 uppercase tracking-wider">Students</span>
+                </div>
+                <p className="text-2xl font-semibold text-slate-900">{showDetailsModal.totalStudents}</p>
+                <p className="text-xs text-slate-500 mt-1">Enrolled students</p>
+              </div>
+
+              <div className="bg-white rounded-lg border border-slate-200 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <BookOpen className="w-4 h-4 text-slate-400" />
+                  <span className="text-xs text-slate-500 uppercase tracking-wider">Classes</span>
+                </div>
+                <p className="text-2xl font-semibold text-slate-900">{showDetailsModal.classesAssigned}</p>
+                <p className="text-xs text-slate-500 mt-1">Active classes</p>
+              </div>
+
+              <div className="bg-white rounded-lg border border-slate-200 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  <span className="text-xs text-slate-500 uppercase tracking-wider">Hours/Week</span>
+                </div>
+                <p className="text-2xl font-semibold text-slate-900">{showDetailsModal.hoursPerWeek}</p>
+                <p className="text-xs text-slate-500 mt-1">Teaching hours</p>
+              </div>
+            </div>
+
             <div>
-              <h4 className="text-xl font-semibold text-slate-900">{showDetailsSheet.name}</h4>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-sm text-slate-500 font-mono">{showDetailsSheet.code}</span>
-                <CategoryBadge category={showDetailsSheet.category} />
-                <StatusBadge status={showDetailsSheet.status} />
+              <h3 className="text-sm font-semibold text-slate-900 mb-3">Subject Information</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+                  <span className="text-sm text-slate-500">Subject Code</span>
+                  <span className="text-sm font-medium text-slate-900">{showDetailsModal.code}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+                  <span className="text-sm text-slate-500">Category</span>
+                  <span className="text-sm font-medium text-slate-900 capitalize">{showDetailsModal.category}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+                  <span className="text-sm text-slate-500">Credits</span>
+                  <span className="text-sm font-medium text-slate-900">{showDetailsModal.credits?.toString() || '\u2014'}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+                  <span className="text-sm text-slate-500">Status</span>
+                  <SchoolStatusBadge value={showDetailsModal.status} />
+                </div>
               </div>
             </div>
           </div>
-
-          {showDetailsSheet.description && (
-            <div className="mb-6 p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-600">{showDetailsSheet.description}</p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <GraduationCap className="w-4 h-4 text-slate-400" />
-                <span className="text-xs text-slate-500 uppercase tracking-wider">Teachers</span>
-              </div>
-              <p className="text-2xl font-semibold text-slate-900">{showDetailsSheet.teachersAssigned}</p>
-              <p className="text-xs text-slate-500 mt-1">Assigned teachers</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="w-4 h-4 text-slate-400" />
-                <span className="text-xs text-slate-500 uppercase tracking-wider">Students</span>
-              </div>
-              <p className="text-2xl font-semibold text-slate-900">{showDetailsSheet.totalStudents}</p>
-              <p className="text-xs text-slate-500 mt-1">Enrolled students</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="w-4 h-4 text-slate-400" />
-                <span className="text-xs text-slate-500 uppercase tracking-wider">Classes</span>
-              </div>
-              <p className="text-2xl font-semibold text-slate-900">{showDetailsSheet.classesAssigned}</p>
-              <p className="text-xs text-slate-500 mt-1">Active classes</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-4 h-4 text-slate-400" />
-                <span className="text-xs text-slate-500 uppercase tracking-wider">Hours/Week</span>
-              </div>
-              <p className="text-2xl font-semibold text-slate-900">{showDetailsSheet.hoursPerWeek}</p>
-              <p className="text-xs text-slate-500 mt-1">Teaching hours</p>
-            </div>
-          </div>
-
-          <SheetSection title="Subject Information">
-            <SheetDetailRow label="Subject Code" value={showDetailsSheet.code} />
-            <SheetDetailRow label="Category" value={showDetailsSheet.category} className="capitalize" />
-            <SheetDetailRow label="Credits" value={showDetailsSheet.credits?.toString() || '—'} />
-            <SheetDetailRow label="Status" value={showDetailsSheet.status} className="capitalize" />
-          </SheetSection>
-        </SlideSheet>
+        </FormModal>
       )}
 
-      {/* Create Subject Sheet */}
-      <SlideSheet
-        isOpen={showFormSheet}
-        onClose={() => setShowFormSheet(false)}
+      {/* Create Subject Modal */}
+      <FormModal
+        open={showFormModal}
+        onClose={() => setShowFormModal(false)}
         title="Add New Subject"
-        subtitle="Create a new subject in the curriculum"
         size="lg"
       >
         <form onSubmit={handleCreateSubject} className="space-y-6">
-          <SheetSection title="Basic Information">
-            <SheetField label="Subject Name" required>
-              <input
-                type="text"
-                required
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900"
-                placeholder="e.g., Mathematics"
-              />
-            </SheetField>
-
-            <SheetField label="Subject Code" required>
-              <input
-                type="text"
-                required
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900 font-mono"
-                placeholder="e.g., MATH-101"
-              />
-            </SheetField>
-
-            <SheetField label="Category" required>
-              <select
-                required
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900"
-              >
-                <option value="">Select category</option>
-                <option value="core">Core</option>
-                <option value="elective">Elective</option>
-                <option value="language">Language</option>
-                <option value="sports">Sports</option>
-                <option value="arts">Arts</option>
-              </select>
-            </SheetField>
-
-            <SheetField label="Description">
-              <textarea
-                rows={3}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900"
-                placeholder="Brief description of the subject"
-              />
-            </SheetField>
-          </SheetSection>
-
-          <SheetSection title="Course Details">
-            <div className="grid grid-cols-2 gap-4">
-              <SheetField label="Credits">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3">Basic Information</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Subject Name <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="number"
-                  min="0"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900"
-                  placeholder="e.g., 4"
-                />
-              </SheetField>
-
-              <SheetField label="Hours/Week" required>
-                <input
-                  type="number"
-                  min="0"
+                  type="text"
                   required
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900"
-                  placeholder="e.g., 6"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900"
+                  placeholder="e.g., Mathematics"
                 />
-              </SheetField>
-            </div>
+              </div>
 
-            <SheetField label="Status" required>
-              <select
-                required
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900"
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </SheetField>
-          </SheetSection>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Subject Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 font-mono"
+                  placeholder="e.g., MATH-101"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900"
+                >
+                  <option value="">Select category</option>
+                  <option value="core">Core</option>
+                  <option value="elective">Elective</option>
+                  <option value="language">Language</option>
+                  <option value="sports">Sports</option>
+                  <option value="arts">Arts</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
+                <textarea
+                  rows={3}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900"
+                  placeholder="Brief description of the subject"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3">Course Details</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Credits</label>
+                  <input
+                    type="number"
+                    min="0"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900"
+                    placeholder="e.g., 4"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Hours/Week <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900"
+                    placeholder="e.g., 6"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+          </div>
 
           <div className="flex gap-3 pt-4">
             <button
               type="button"
-              onClick={() => setShowFormSheet(false)}
+              onClick={() => setShowFormModal(false)}
               className="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add Subject
             </button>
           </div>
         </form>
-      </SlideSheet>
+      </FormModal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete Subject"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        confirmColor="red"
+        onConfirm={() => {
+          if (deleteTarget) {
+            handleDeleteSubject(deleteTarget.id);
+            setDeleteTarget(null);
+          }
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

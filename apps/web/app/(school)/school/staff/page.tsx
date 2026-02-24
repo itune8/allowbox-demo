@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Button } from '@repo/ui/button';
 import { userService, type User } from '../../../../lib/services/user.service';
 import { classService, type Class } from '../../../../lib/services/class.service';
 import { subjectService, type Subject } from '../../../../lib/services/subject.service';
-import { SlideSheet, SheetSection, SheetField, SheetDetailRow } from '../../../../components/ui/slide-sheet';
+import { leaveRequestService, type LeaveRequest, LeaveStatus } from '../../../../lib/services/leave-request.service';
+import { SchoolStatCard, SchoolStatusBadge, FormModal, ConfirmModal, useToast, Pagination } from '../../../../components/school';
 import {
   UserPlus,
   Users,
@@ -18,24 +18,25 @@ import {
   Loader2,
   Download,
   Eye,
-  CheckCircle,
   AlertCircle,
   Briefcase,
   User as UserIcon,
   Mail,
-  Lock,
   Phone,
   Calendar,
-  Award,
   BookOpen,
   Layers,
   Check,
   UserCheck,
-  ChevronDown,
+  CalendarX,
+  CalendarCheck,
+  Search,
+  ChevronRight,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 
-// Types
-export interface UserFormData {
+interface UserFormData {
   email: string;
   firstName: string;
   lastName: string;
@@ -53,82 +54,42 @@ interface TeacherAssignment {
   subjectIds: string[];
 }
 
-// Professional Stat Card
-function StatCard({
-  title,
-  value,
-  icon: Icon,
-  variant = 'default',
-}: {
-  title: string;
-  value: number;
-  icon: React.ElementType;
-  variant?: 'default' | 'blue' | 'purple' | 'green';
-}) {
-  const variantStyles = {
-    default: 'bg-slate-100 text-slate-600',
-    blue: 'bg-blue-100 text-blue-600',
-    purple: 'bg-purple-100 text-purple-600',
-    green: 'bg-emerald-100 text-emerald-600',
-  };
+type TabKey = 'teachers' | 'leave-requests' | 'attendance';
 
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-500">{title}</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900">{value}</p>
-        </div>
-        <div className={`p-2.5 rounded-lg ${variantStyles[variant]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-      </div>
-    </div>
-  );
-}
+const tabs: { key: TabKey; label: string }[] = [
+  { key: 'teachers', label: 'All Teachers' },
+  { key: 'leave-requests', label: 'Leave Requests' },
+  { key: 'attendance', label: 'Attendance Report' },
+];
 
-// Role Badge
-function RoleBadge({ role }: { role: string }) {
-  const styles: Record<string, string> = {
-    teacher: 'bg-blue-50 text-blue-700 border-blue-200',
-    tenant_admin: 'bg-purple-50 text-purple-700 border-purple-200',
-    accountant: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  };
-
-  const labels: Record<string, string> = {
-    teacher: 'Teacher',
-    tenant_admin: 'Admin',
-    accountant: 'Accountant',
-  };
-
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${styles[role] || 'bg-slate-50 text-slate-700 border-slate-200'}`}>
-      {labels[role] || role}
-    </span>
-  );
-}
+const PER_PAGE = 10;
 
 export default function StaffPage() {
+  const { showToast } = useToast();
+  const [activeTab, setActiveTab] = useState<TabKey>('teachers');
   const [staff, setStaff] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+
+  // Modals
   const [showStaffModal, setShowStaffModal] = useState<User | null>(null);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const [assignTeacher, setAssignTeacher] = useState<User | null>(null);
-  const [banner, setBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    color: 'red' | 'green' | 'purple';
+  }>({ open: false, title: '', message: '', onConfirm: () => {}, color: 'red' });
 
-  // Form state for create/edit staff
+  // Form state
   const [formData, setFormData] = useState<UserFormData>({
-    email: '',
-    firstName: '',
-    lastName: '',
-    password: '',
-    role: 'teacher',
-    phoneNumber: '',
-    employeeId: '',
-    joiningDate: '',
-    qualification: '',
+    email: '', firstName: '', lastName: '', password: '',
+    role: 'teacher', phoneNumber: '', employeeId: '', joiningDate: '', qualification: '',
   });
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
@@ -139,21 +100,26 @@ export default function StaffPage() {
   const [loadingData, setLoadingData] = useState(false);
   const [assignments, setAssignments] = useState<TeacherAssignment[]>([]);
   const [currentAssignment, setCurrentAssignment] = useState<TeacherAssignment>({
-    classId: '',
-    sections: [],
-    subjectIds: [],
+    classId: '', sections: [], subjectIds: [],
   });
   const [assignError, setAssignError] = useState('');
   const [assignLoading, setAssignLoading] = useState(false);
 
-  useEffect(() => {
-    fetchStaff();
-  }, []);
+  // Leave requests state
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [loadingLeaves, setLoadingLeaves] = useState(false);
+  const [leaveFilter, setLeaveFilter] = useState<string>('all');
+
+  useEffect(() => { fetchStaff(); }, []);
 
   useEffect(() => {
-    if (assignTeacher) {
-      fetchClassesAndSubjects();
+    if (activeTab === 'leave-requests' && leaveRequests.length === 0) {
+      fetchLeaveRequests();
     }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (assignTeacher) fetchClassesAndSubjects();
   }, [assignTeacher]);
 
   const fetchStaff = async () => {
@@ -170,6 +136,19 @@ export default function StaffPage() {
       setError('Failed to load staff. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLeaveRequests = async () => {
+    setLoadingLeaves(true);
+    try {
+      const data = await leaveRequestService.getAll();
+      setLeaveRequests(data);
+    } catch (err) {
+      console.error('Failed to fetch leave requests:', err);
+      showToast('error', 'Failed to load leave requests');
+    } finally {
+      setLoadingLeaves(false);
     }
   };
 
@@ -191,49 +170,61 @@ export default function StaffPage() {
   };
 
   const filteredStaff = useMemo(() => {
-    if (!roleFilter) return staff;
-    return staff.filter(s => {
-      if (roleFilter === 'teacher') return s.role === 'teacher';
-      if (roleFilter === 'tenant_admin') return s.role === 'tenant_admin';
-      if (roleFilter === 'accountant') return s.role === 'accountant';
-      return true;
-    });
-  }, [staff, roleFilter]);
+    let list = staff;
+    if (roleFilter) {
+      list = list.filter(s => s.role === roleFilter);
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(s =>
+        `${s.firstName} ${s.lastName}`.toLowerCase().includes(q) ||
+        s.email?.toLowerCase().includes(q) ||
+        s.employeeId?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [staff, roleFilter, searchQuery]);
 
-  // Stats
+  const paginatedStaff = useMemo(() => {
+    const start = (page - 1) * PER_PAGE;
+    return filteredStaff.slice(start, start + PER_PAGE);
+  }, [filteredStaff, page]);
+
   const stats = useMemo(() => {
     const total = staff.length;
     const teachers = staff.filter(s => s.role === 'teacher').length;
     const admins = staff.filter(s => s.role === 'tenant_admin').length;
-    const accountants = staff.filter(s => s.role === 'accountant').length;
-    return { total, teachers, admins, accountants };
-  }, [staff]);
+    const onLeave = leaveRequests.filter(
+      lr => lr.status === LeaveStatus.APPROVED &&
+        new Date(lr.startDate) <= new Date() &&
+        new Date(lr.endDate) >= new Date()
+    ).length;
+    return { total, teachers, admins, onLeave };
+  }, [staff, leaveRequests]);
 
-  const showBanner = (type: 'success' | 'error', message: string) => {
-    setBanner({ type, message });
-    setTimeout(() => setBanner(null), 4000);
-  };
+  const filteredLeaveRequests = useMemo(() => {
+    if (leaveFilter === 'all') return leaveRequests;
+    return leaveRequests.filter(lr => lr.status === leaveFilter);
+  }, [leaveRequests, leaveFilter]);
+
+  const leaveStats = useMemo(() => {
+    const pending = leaveRequests.filter(lr => lr.status === LeaveStatus.PENDING).length;
+    const approved = leaveRequests.filter(lr => lr.status === LeaveStatus.APPROVED).length;
+    const rejected = leaveRequests.filter(lr => lr.status === LeaveStatus.REJECTED).length;
+    return { pending, approved, rejected };
+  }, [leaveRequests]);
 
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
     setFormLoading(true);
-
     try {
       await userService.createUser(formData);
-      showBanner('success', 'Staff member created successfully');
+      showToast('success', 'Staff member created successfully');
       setIsStaffModalOpen(false);
-      // Reset form
       setFormData({
-        email: '',
-        firstName: '',
-        lastName: '',
-        password: '',
-        role: 'teacher',
-        phoneNumber: '',
-        employeeId: '',
-        joiningDate: '',
-        qualification: '',
+        email: '', firstName: '', lastName: '', password: '',
+        role: 'teacher', phoneNumber: '', employeeId: '', joiningDate: '', qualification: '',
       });
       await fetchStaff();
     } catch (err) {
@@ -243,30 +234,56 @@ export default function StaffPage() {
     }
   };
 
-  const handleDeleteStaff = async (staffId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this staff member? This action cannot be undone.')) return;
+  const handleDeleteStaff = (staffId: string, staffName: string) => {
+    setConfirmModal({
+      open: true,
+      title: 'Delete Staff Member',
+      message: `Are you sure you want to delete ${staffName}? This action cannot be undone.`,
+      color: 'red',
+      onConfirm: async () => {
+        try {
+          await userService.deleteUser(staffId);
+          setStaff(prev => prev.filter(s => s.id !== staffId));
+          showToast('success', 'Staff member deleted successfully');
+        } catch (err) {
+          console.error('Failed to delete staff:', err);
+          showToast('error', 'Failed to delete staff member');
+        }
+        setConfirmModal(prev => ({ ...prev, open: false }));
+      },
+    });
+  };
 
+  const handleApproveLeave = async (leaveId: string) => {
     try {
-      await userService.deleteUser(staffId);
-      setStaff(prev => prev.filter(s => s.id !== staffId));
-      showBanner('success', 'Staff member deleted successfully');
+      await leaveRequestService.approve(leaveId, { status: LeaveStatus.APPROVED });
+      setLeaveRequests(prev => prev.map(lr =>
+        (lr._id === leaveId) ? { ...lr, status: LeaveStatus.APPROVED } : lr
+      ));
+      showToast('success', 'Leave request approved');
     } catch (err) {
-      console.error('Failed to delete staff:', err);
-      showBanner('error', 'Failed to delete staff member. Please try again.');
+      showToast('error', 'Failed to approve leave request');
+    }
+  };
+
+  const handleRejectLeave = async (leaveId: string) => {
+    try {
+      await leaveRequestService.approve(leaveId, { status: LeaveStatus.REJECTED });
+      setLeaveRequests(prev => prev.map(lr =>
+        (lr._id === leaveId) ? { ...lr, status: LeaveStatus.REJECTED } : lr
+      ));
+      showToast('success', 'Leave request rejected');
+    } catch (err) {
+      showToast('error', 'Failed to reject leave request');
     }
   };
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
-  };
+  const getInitials = (firstName: string, lastName: string) =>
+    `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
 
   // Assign teacher handlers
   const handleAddAssignment = () => {
@@ -274,24 +291,16 @@ export default function StaffPage() {
       setAssignError('Please select class, at least one section, and at least one subject');
       return;
     }
-
-    // Check for duplicate
     const isDuplicate = assignments.some(
       a => a.classId === currentAssignment.classId &&
            a.sections.some(s => currentAssignment.sections.includes(s))
     );
-
     if (isDuplicate) {
       setAssignError('This class and section combination is already assigned');
       return;
     }
-
     setAssignments([...assignments, { ...currentAssignment }]);
-    setCurrentAssignment({
-      classId: '',
-      sections: [],
-      subjectIds: [],
-    });
+    setCurrentAssignment({ classId: '', sections: [], subjectIds: [] });
     setAssignError('');
   };
 
@@ -321,21 +330,11 @@ export default function StaffPage() {
     e.preventDefault();
     setAssignError('');
     setAssignLoading(true);
-
     try {
       if (!assignTeacher) return;
-
-      // Collect all unique subject IDs from all assignments
-      const allSubjectIds = Array.from(
-        new Set(assignments.flatMap(a => a.subjectIds))
-      );
-
-      // Update teacher with assigned subjects
-      await userService.updateUser(assignTeacher.id, {
-        subjects: allSubjectIds,
-      });
-
-      showBanner('success', 'Teacher assignments saved successfully');
+      const allSubjectIds = Array.from(new Set(assignments.flatMap(a => a.subjectIds)));
+      await userService.updateUser(assignTeacher.id, { subjects: allSubjectIds });
+      showToast('success', 'Teacher assignments saved successfully');
       setAssignTeacher(null);
       setAssignments([]);
       setCurrentAssignment({ classId: '', sections: [], subjectIds: [] });
@@ -351,281 +350,424 @@ export default function StaffPage() {
   const getClassName = (classId: string) => classes.find(c => c._id === classId)?.name || 'Unknown';
   const getSubjectName = (subjectId: string) => subjects.find(s => s._id === subjectId)?.name || 'Unknown';
 
+  const inputClasses = 'w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]';
+
   return (
     <div className="space-y-6">
-      {/* Banner */}
-      {banner && (
-        <div className={`rounded-lg border px-4 py-3 flex items-center gap-3 ${
-          banner.type === 'success'
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-            : 'bg-red-50 border-red-200 text-red-800'
-        }`}>
-          {banner.type === 'success' ? (
-            <CheckCircle className="w-5 h-5 text-emerald-600" />
-          ) : (
-            <AlertCircle className="w-5 h-5 text-red-600" />
-          )}
-          <span className="text-sm font-medium">{banner.message}</span>
-          <button
-            onClick={() => setBanner(null)}
-            className="ml-auto p-1 hover:bg-white/50 rounded"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
       {/* Error */}
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {error}
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Staff & Teachers</h1>
-          <p className="mt-1 text-sm text-slate-500">Manage your school staff members</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-            <Download className="w-4 h-4" />
-            Export
-          </button>
-          <button
-            onClick={() => setIsStaffModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Staff
-          </button>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
+      {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Staff" value={stats.total} icon={Users} />
-        <StatCard title="Teachers" value={stats.teachers} icon={GraduationCap} variant="blue" />
-        <StatCard title="Admins" value={stats.admins} icon={Shield} variant="purple" />
-        <StatCard title="Accountants" value={stats.accountants} icon={Calculator} variant="green" />
+        <SchoolStatCard
+          icon={<Users className="w-5 h-5" />}
+          color="purple"
+          label="Total Teachers"
+          value={stats.total}
+        />
+        <SchoolStatCard
+          icon={<GraduationCap className="w-5 h-5" />}
+          color="blue"
+          label="Class Teachers"
+          value={stats.teachers}
+        />
+        <SchoolStatCard
+          icon={<Shield className="w-5 h-5" />}
+          color="green"
+          label="Admins"
+          value={stats.admins}
+        />
+        <SchoolStatCard
+          icon={<CalendarX className="w-5 h-5" />}
+          color="orange"
+          label="On Leave Today"
+          value={stats.onLeave}
+        />
       </div>
 
-      {/* Filter */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm text-slate-600">Filter by role:</span>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { value: '', label: 'All' },
-              { value: 'teacher', label: 'Teachers' },
-              { value: 'tenant_admin', label: 'Admins' },
-              { value: 'accountant', label: 'Accountants' },
-            ].map((option) => (
+      {/* Tabs */}
+      <div className="border-b border-slate-200">
+        <nav className="flex gap-6">
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`relative pb-3 text-sm font-medium transition-colors ${
+                activeTab === tab.key
+                  ? 'text-[#824ef2]'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                {tab.label}
+                {tab.key === 'leave-requests' && leaveStats.pending > 0 && (
+                  <span className="px-1.5 py-0.5 text-xs font-bold bg-red-500 text-white rounded-full min-w-[18px] text-center">
+                    {leaveStats.pending}
+                  </span>
+                )}
+              </span>
+              {activeTab === tab.key && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#824ef2] rounded-t" />
+              )}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'teachers' && (
+        <div className="space-y-4">
+          {/* Toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
+                  placeholder="Search staff..."
+                  className="pl-10 pr-4 py-2 text-sm border border-slate-200 rounded-lg w-64 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all placeholder:text-slate-400"
+                />
+              </div>
+              <div className="flex gap-1.5">
+                {[
+                  { value: '', label: 'All' },
+                  { value: 'teacher', label: 'Teachers' },
+                  { value: 'tenant_admin', label: 'Admins' },
+                  { value: 'accountant', label: 'Accountants' },
+                ].map(option => (
+                  <button
+                    key={option.value}
+                    onClick={() => { setRoleFilter(option.value); setPage(1); }}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      roleFilter === option.value
+                        ? 'bg-[#824ef2] text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                <Download className="w-4 h-4" />
+                Export
+              </button>
               <button
-                key={option.value}
-                onClick={() => setRoleFilter(option.value)}
+                onClick={() => setIsStaffModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg hover:opacity-90 transition-colors"
+                style={{ backgroundColor: '#824ef2' }}
+              >
+                <Plus className="w-4 h-4" />
+                Add Staff
+              </button>
+            </div>
+          </div>
+
+          {/* Staff Table */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Teacher</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Employee ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Department</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-16 text-center">
+                        <Loader2 className="w-8 h-8 text-[#824ef2] animate-spin mx-auto" />
+                        <p className="mt-3 text-sm text-slate-500">Loading staff...</p>
+                      </td>
+                    </tr>
+                  ) : paginatedStaff.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-16">
+                        <div className="flex flex-col items-center justify-center text-slate-500">
+                          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                            <Briefcase className="w-8 h-8 text-slate-400" />
+                          </div>
+                          <p className="text-sm font-medium">
+                            {staff.length === 0 ? 'No staff members added yet' : 'No staff found'}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            {staff.length === 0 ? 'Add your first staff member to get started' : 'Try adjusting your search or filters'}
+                          </p>
+                          {staff.length === 0 && (
+                            <button
+                              onClick={() => setIsStaffModalOpen(true)}
+                              className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg"
+                              style={{ backgroundColor: '#824ef2' }}
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add Staff
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedStaff.map(member => (
+                      <tr
+                        key={member.id}
+                        className="hover:bg-slate-50 cursor-pointer transition-colors"
+                        onClick={() => setShowStaffModal(member)}
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 text-sm font-medium">
+                              {getInitials(member.firstName, member.lastName)}
+                            </div>
+                            <div>
+                              <span className="font-medium text-slate-900">
+                                {member.firstName} {member.lastName}
+                              </span>
+                              {member.email && (
+                                <p className="text-xs text-slate-500">{member.email}</p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 font-mono text-xs">
+                          {member.employeeId || '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <SchoolStatusBadge
+                            value={member.role === 'teacher' ? 'class_teacher' : member.role === 'tenant_admin' ? 'approved' : 'active'}
+                            showDot={false}
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 text-sm">
+                          {member.qualification || '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <SchoolStatusBadge value={member.isActive !== false ? 'active' : 'inactive'} />
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="inline-flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                            <button
+                              title="View Details"
+                              className="p-1.5 rounded-lg hover:bg-purple-50 text-[#824ef2] transition-colors"
+                              onClick={() => setShowStaffModal(member)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            {member.role === 'teacher' && (
+                              <button
+                                title="Assign Classes"
+                                className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
+                                onClick={() => setAssignTeacher(member)}
+                              >
+                                <CalendarCheck className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              title="Delete"
+                              className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
+                              onClick={() => handleDeleteStaff(member.id, `${member.firstName} ${member.lastName}`)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {filteredStaff.length > PER_PAGE && (
+              <div className="border-t border-slate-200 px-4">
+                <Pagination
+                  total={filteredStaff.length}
+                  page={page}
+                  perPage={PER_PAGE}
+                  onPageChange={setPage}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'leave-requests' && (
+        <div className="space-y-4">
+          {/* Leave Stats Mini Cards */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+              <p className="text-2xl font-bold text-amber-700">{leaveStats.pending}</p>
+              <p className="text-sm text-amber-600 font-medium">Pending</p>
+            </div>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+              <p className="text-2xl font-bold text-emerald-700">{leaveStats.approved}</p>
+              <p className="text-sm text-emerald-600 font-medium">Approved</p>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+              <p className="text-2xl font-bold text-red-700">{leaveStats.rejected}</p>
+              <p className="text-sm text-red-600 font-medium">Rejected</p>
+            </div>
+          </div>
+
+          {/* Leave Filter */}
+          <div className="flex gap-2">
+            {[
+              { value: 'all', label: 'All' },
+              { value: LeaveStatus.PENDING, label: 'Pending' },
+              { value: LeaveStatus.APPROVED, label: 'Approved' },
+              { value: LeaveStatus.REJECTED, label: 'Rejected' },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setLeaveFilter(opt.value)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  roleFilter === option.value
-                    ? 'bg-primary text-white'
+                  leaveFilter === opt.value
+                    ? 'bg-[#824ef2] text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                {option.label}
+                {opt.label}
               </button>
             ))}
           </div>
-        </div>
-      </div>
 
-      {/* Staff Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        {/* Desktop Table */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm hidden md:table">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Staff Member</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Employee ID</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Role</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Contact</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Qualification</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-16 text-center">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto" />
-                    <p className="mt-3 text-sm text-slate-500">Loading staff...</p>
-                  </td>
-                </tr>
-              ) : filteredStaff.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-16">
-                    <div className="flex flex-col items-center justify-center text-slate-500">
-                      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                        <Briefcase className="w-8 h-8 text-slate-400" />
-                      </div>
-                      <p className="text-sm font-medium">{staff.length === 0 ? 'No staff members added yet' : 'No staff found with selected filter'}</p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        {staff.length === 0 ? 'Add your first staff member to get started' : 'Try selecting a different filter'}
-                      </p>
-                      {staff.length === 0 && (
-                        <button
-                          onClick={() => setIsStaffModalOpen(true)}
-                          className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Add Staff
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredStaff.map((member) => (
-                  <tr
-                    key={member.id}
-                    className="hover:bg-slate-50 cursor-pointer transition-colors"
-                    onClick={() => setShowStaffModal(member)}
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 text-sm font-medium">
-                          {getInitials(member.firstName, member.lastName)}
-                        </div>
-                        <div>
-                          <span className="font-medium text-slate-900">
-                            {member.firstName} {member.lastName}
-                          </span>
-                          {member.email && (
-                            <p className="text-xs text-slate-500">{member.email}</p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600 font-mono text-xs">
-                      {member.employeeId || '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <RoleBadge role={member.role} />
-                    </td>
-                    <td className="px-4 py-3 text-slate-600 text-xs">
-                      {member.phoneNumber || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {member.qualification || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        <button
-                          title="View"
-                          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowStaffModal(member);
-                          }}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        {member.role === 'teacher' && (
-                          <button
-                            title="Assign Classes"
-                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setAssignTeacher(member);
-                            }}
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button
-                          title="Delete"
-                          className="p-1.5 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors"
-                          onClick={(e) => handleDeleteStaff(member.id, e)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile Cards */}
-        <div className="md:hidden divide-y divide-slate-100">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              <p className="mt-3 text-sm text-slate-500">Loading staff...</p>
-            </div>
-          ) : filteredStaff.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-slate-500 py-16 px-4">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                <Briefcase className="w-8 h-8 text-slate-400" />
+          {/* Leave Requests List */}
+          <div className="space-y-3">
+            {loadingLeaves ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <Loader2 className="w-8 h-8 text-[#824ef2] animate-spin" />
+                <p className="mt-3 text-sm text-slate-500">Loading leave requests...</p>
               </div>
-              <p className="text-sm font-medium">{staff.length === 0 ? 'No staff members added yet' : 'No staff found'}</p>
-              {staff.length === 0 && (
-                <button
-                  onClick={() => setIsStaffModalOpen(true)}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Staff
-                </button>
-              )}
-            </div>
-          ) : (
-            filteredStaff.map((member) => (
-              <div
-                key={member.id}
-                className="p-4 hover:bg-slate-50 cursor-pointer"
-                onClick={() => setShowStaffModal(member)}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 text-sm font-medium">
-                      {getInitials(member.firstName, member.lastName)}
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">
-                        {member.firstName} {member.lastName}
-                      </p>
-                      <p className="text-xs text-slate-500">{member.email}</p>
-                    </div>
-                  </div>
-                  <RoleBadge role={member.role} />
+            ) : filteredLeaveRequests.length === 0 ? (
+              <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Calendar className="w-8 h-8 text-slate-400" />
                 </div>
-                {member.employeeId && (
-                  <div className="mt-2 text-xs text-slate-500 font-mono">
-                    ID: {member.employeeId}
-                  </div>
-                )}
+                <p className="text-sm font-medium text-slate-600">No leave requests found</p>
+                <p className="text-xs text-slate-400 mt-1">Leave requests from staff will appear here</p>
               </div>
-            ))
-          )}
-        </div>
-
-        {/* Table Footer */}
-        {filteredStaff.length > 0 && (
-          <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 text-sm text-slate-600">
-            Showing {filteredStaff.length} of {staff.length} staff members
+            ) : (
+              filteredLeaveRequests.map(lr => (
+                <div key={lr._id} className="bg-white rounded-xl border border-slate-200 p-4 hover:border-slate-300 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 text-sm font-medium">
+                        {getInitials(lr.userId?.firstName || '', lr.userId?.lastName || '')}
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-900">
+                          {lr.userId?.firstName} {lr.userId?.lastName}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {lr.userId?.employeeId && `ID: ${lr.userId.employeeId} · `}
+                          {lr.userId?.role === 'teacher' ? 'Teacher' : lr.userId?.role === 'tenant_admin' ? 'Admin' : lr.userId?.role}
+                        </p>
+                      </div>
+                    </div>
+                    <SchoolStatusBadge value={lr.status.toLowerCase()} />
+                  </div>
+                  <div className="mt-3 ml-13 pl-[52px]">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="font-medium">Type:</span>
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                          {lr.leaveType.replace(/_/g, ' ')}
+                        </span>
+                      </span>
+                      <span>
+                        <span className="font-medium">Duration:</span>{' '}
+                        {lr.numberOfDays} day{lr.numberOfDays !== 1 ? 's' : ''}
+                        {lr.isHalfDay && ' (Half Day)'}
+                      </span>
+                      <span>
+                        <span className="font-medium">Dates:</span>{' '}
+                        {new Date(lr.startDate).toLocaleDateString()} - {new Date(lr.endDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {lr.reason && (
+                      <p className="text-sm text-slate-500 mt-1">
+                        <span className="font-medium text-slate-600">Reason:</span> {lr.reason}
+                      </p>
+                    )}
+                    {lr.status === LeaveStatus.PENDING && (
+                      <div className="flex items-center gap-2 mt-3">
+                        <button
+                          onClick={() => handleApproveLeave(lr._id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleRejectLeave(lr._id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Staff Details SlideSheet */}
-      <SlideSheet
-        isOpen={!!showStaffModal}
-        onClose={() => setShowStaffModal(null)}
+      {activeTab === 'attendance' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
+            <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CalendarCheck className="w-8 h-8 text-[#824ef2]" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900">Staff Attendance Report</h3>
+            <p className="text-sm text-slate-500 mt-2 max-w-md mx-auto">
+              View detailed attendance reports for all staff members. Track present, absent, and late records.
+            </p>
+            <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-2xl mx-auto">
+              <div className="bg-emerald-50 rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-emerald-700">{stats.total - stats.onLeave}</p>
+                <p className="text-xs text-emerald-600 font-medium mt-1">Present Today</p>
+              </div>
+              <div className="bg-amber-50 rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-amber-700">{stats.onLeave}</p>
+                <p className="text-xs text-amber-600 font-medium mt-1">On Leave</p>
+              </div>
+              <div className="bg-red-50 rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-red-700">0</p>
+                <p className="text-xs text-red-600 font-medium mt-1">Absent</p>
+              </div>
+              <div className="bg-blue-50 rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-blue-700">
+                  {stats.total > 0 ? Math.round(((stats.total - stats.onLeave) / stats.total) * 100) : 0}%
+                </p>
+                <p className="text-xs text-blue-600 font-medium mt-1">Attendance Rate</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Staff Details Modal */}
+      <FormModal
+        open={!!showStaffModal}
         title="Staff Details"
-        size="md"
+        onClose={() => setShowStaffModal(null)}
+        size="lg"
         footer={
           <div className="flex gap-3">
             {showStaffModal?.role === 'teacher' && (
@@ -642,7 +784,8 @@ export default function StaffPage() {
             )}
             <button
               onClick={() => setShowStaffModal(null)}
-              className="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
+              className="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white rounded-lg hover:opacity-90 transition-colors"
+              style={{ backgroundColor: '#824ef2' }}
             >
               Close
             </button>
@@ -651,37 +794,72 @@ export default function StaffPage() {
       >
         {showStaffModal && (
           <div className="space-y-6">
-            <div className="flex items-center gap-4 pb-4 border-b border-slate-100">
-              <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 text-lg font-medium">
+            {/* Header: Avatar + Name + Role + Status + Employee ID */}
+            <div className="flex items-start gap-4 pb-5 border-b border-slate-200">
+              <div className="w-20 h-20 rounded-full bg-purple-50 flex items-center justify-center text-[#824ef2] text-2xl font-bold flex-shrink-0">
                 {getInitials(showStaffModal.firstName, showStaffModal.lastName)}
               </div>
-              <div>
-                <h4 className="text-xl font-semibold text-slate-900">
+              <div className="flex-1 min-w-0 pt-1">
+                <h3 className="text-xl font-bold text-slate-900">
                   {showStaffModal.firstName} {showStaffModal.lastName}
-                </h4>
-                <RoleBadge role={showStaffModal.role} />
+                </h3>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  {showStaffModal.role === 'teacher' ? 'Class Teacher' : showStaffModal.role === 'tenant_admin' ? 'School Admin' : 'Accountant'}
+                  {showStaffModal.qualification ? ` - ${showStaffModal.qualification}` : ''}
+                </p>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <SchoolStatusBadge value={showStaffModal.isActive !== false ? 'active' : 'inactive'} />
+                  {showStaffModal.employeeId && (
+                    <span className="text-xs text-slate-500">Employee ID: {showStaffModal.employeeId}</span>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="space-y-1">
-              <SheetDetailRow label="Employee ID" value={showStaffModal.employeeId} />
-              <SheetDetailRow label="Email" value={showStaffModal.email} />
-              <SheetDetailRow label="Phone" value={showStaffModal.phoneNumber} />
-              <SheetDetailRow label="Qualification" value={showStaffModal.qualification} />
-              <SheetDetailRow
-                label="Joining Date"
-                value={showStaffModal.joiningDate ? new Date(showStaffModal.joiningDate).toLocaleDateString() : '—'}
-              />
+            {/* Two-column: Personal Information + Professional Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 mb-4">Personal Information</h4>
+                <div className="space-y-3">
+                  {[
+                    { label: 'Email', value: showStaffModal.email || '—' },
+                    { label: 'Phone', value: showStaffModal.phoneNumber || '—' },
+                    { label: 'Date of Birth', value: showStaffModal.dateOfBirth ? new Date(showStaffModal.dateOfBirth).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—' },
+                    { label: 'Gender', value: showStaffModal.gender || '—' },
+                  ].map(item => (
+                    <div key={item.label} className="flex items-center justify-between py-1.5">
+                      <span className="text-sm text-slate-500">{item.label}:</span>
+                      <span className="text-sm font-semibold text-slate-900">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 mb-4">Professional Details</h4>
+                <div className="space-y-3">
+                  {[
+                    { label: 'Qualification', value: showStaffModal.qualification || '—' },
+                    { label: 'Subject', value: showStaffModal.subjects && showStaffModal.subjects.length > 0 ? showStaffModal.subjects.map((s: any) => s.name || s).join(', ') : '—' },
+                    { label: 'Joining Date', value: showStaffModal.joiningDate ? new Date(showStaffModal.joiningDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—' },
+                  ].map(item => (
+                    <div key={item.label} className="flex items-center justify-between py-1.5">
+                      <span className="text-sm text-slate-500">{item.label}:</span>
+                      <span className="text-sm font-semibold text-slate-900">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
+            {/* Assigned Subjects as pills */}
             {showStaffModal.role === 'teacher' && showStaffModal.subjects && showStaffModal.subjects.length > 0 && (
-              <div className="pt-4 border-t border-slate-100">
-                <p className="text-sm font-medium text-slate-700 mb-2">Assigned Subjects</p>
+              <div className="pt-4 border-t border-slate-200">
+                <h4 className="text-sm font-bold text-slate-900 mb-3">Assigned Subjects</h4>
                 <div className="flex flex-wrap gap-2">
                   {showStaffModal.subjects.map((subject: any) => (
                     <span
                       key={subject._id || subject}
-                      className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded text-xs font-medium"
+                      className="px-3 py-1.5 bg-purple-50 text-[#824ef2] rounded-lg text-sm font-medium border border-purple-100"
                     >
                       {subject.name || subject}
                     </span>
@@ -689,23 +867,107 @@ export default function StaffPage() {
                 </div>
               </div>
             )}
+
+            {/* Attendance Summary */}
+            <div className="pt-4 border-t border-slate-200">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-bold text-slate-900">Attendance Summary</h4>
+                <div className="flex items-center gap-2">
+                  <input type="date" defaultValue="2024-01-01" className="px-2 py-1 border border-slate-200 rounded-lg text-xs text-slate-600 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]" />
+                  <span className="text-xs text-slate-400">to</span>
+                  <input type="date" defaultValue="2024-12-31" className="px-2 py-1 border border-slate-200 rounded-lg text-xs text-slate-600 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]" />
+                  <button className="px-3 py-1 text-xs font-medium text-white rounded-lg" style={{ backgroundColor: '#824ef2' }}>
+                    Filter
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-3">
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-emerald-600">186</p>
+                  <p className="text-xs text-emerald-600 font-medium mt-1">Present Days</p>
+                </div>
+                <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-amber-600">12</p>
+                  <p className="text-xs text-amber-600 font-medium mt-1">Leave Days</p>
+                </div>
+                <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-red-600">2</p>
+                  <p className="text-xs text-red-600 font-medium mt-1">Absent Days</p>
+                </div>
+                <div className="bg-purple-50 border border-purple-100 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-[#824ef2]">93%</p>
+                  <p className="text-xs text-[#824ef2] font-medium mt-1">Attendance Rate</p>
+                </div>
+              </div>
+            </div>
+
+            {/* This Month Overview */}
+            <div className="pt-4 border-t border-slate-200">
+              <h4 className="text-sm font-bold text-slate-900 mb-3">This Month Overview</h4>
+              <div className="grid grid-cols-7 gap-1.5">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                  <div key={day} className="text-center text-[10px] font-semibold text-slate-400 uppercase pb-1">{day}</div>
+                ))}
+                {/* Empty cells for offset (month starts on Wednesday) */}
+                {[0, 1].map(i => (
+                  <div key={`empty-${i}`} />
+                ))}
+                {/* Days of the month with attendance status */}
+                {Array.from({ length: 28 }, (_, i) => {
+                  const day = i + 1;
+                  const isWeekend = ((i + 2) % 7 === 5) || ((i + 2) % 7 === 6); // Sat, Sun
+                  const isAbsent = day === 8;
+                  const isLeave = day === 15 || day === 16;
+                  const isToday = day === 24;
+                  const isFuture = day > 24;
+
+                  let bgColor = 'bg-emerald-100 text-emerald-700'; // Present
+                  if (isFuture) bgColor = 'bg-slate-50 text-slate-300';
+                  else if (isWeekend) bgColor = 'bg-slate-100 text-slate-400';
+                  else if (isAbsent) bgColor = 'bg-red-100 text-red-700';
+                  else if (isLeave) bgColor = 'bg-amber-100 text-amber-700';
+
+                  return (
+                    <div
+                      key={day}
+                      className={`h-8 rounded-md flex items-center justify-center text-xs font-semibold ${bgColor} ${isToday ? 'ring-2 ring-[#824ef2] ring-offset-1' : ''}`}
+                    >
+                      {day}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-4 mt-3 pt-2">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-emerald-100 border border-emerald-200" />
+                  <span className="text-[10px] text-slate-500">Present</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-amber-100 border border-amber-200" />
+                  <span className="text-[10px] text-slate-500">Leave</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-red-100 border border-red-200" />
+                  <span className="text-[10px] text-slate-500">Absent</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-slate-100 border border-slate-200" />
+                  <span className="text-[10px] text-slate-500">Weekend</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
-      </SlideSheet>
+      </FormModal>
 
-      {/* Create Staff SlideSheet */}
-      <SlideSheet
-        isOpen={isStaffModalOpen}
-        onClose={() => {
-          setIsStaffModalOpen(false);
-          setFormError('');
-        }}
+      {/* Create Staff Modal */}
+      <FormModal
+        open={isStaffModalOpen}
         title="Add New Staff Member"
-        subtitle="Fill in the staff details below"
+        onClose={() => { setIsStaffModalOpen(false); setFormError(''); }}
         size="lg"
       >
         <form onSubmit={handleCreateStaff} className="space-y-6">
-          {/* Error message */}
           {formError && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
               <p className="text-sm text-red-700 flex items-center gap-2">
@@ -715,170 +977,184 @@ export default function StaffPage() {
             </div>
           )}
 
-          {/* Role Selection Section */}
-          <SheetSection title="Role Selection" icon={<Shield className="w-4 h-4 text-slate-600" />}>
-            <SheetField label="Role" required>
+          {/* Role Selection */}
+          <div>
+            <h5 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-slate-500" />
+              Role Selection
+            </h5>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Role <span className="text-red-500">*</span>
+              </label>
               <select
                 name="role"
                 value={formData.role}
                 onChange={handleFormChange}
                 required
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className={inputClasses}
               >
                 <option value="teacher">Teacher</option>
                 <option value="tenant_admin">School Admin</option>
                 <option value="accountant">Accountant</option>
               </select>
-            </SheetField>
-          </SheetSection>
-
-          {/* Personal Information Section */}
-          <SheetSection title="Personal Information" icon={<UserIcon className="w-4 h-4 text-slate-600" />}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SheetField label="First Name" required>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleFormChange}
-                  required
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
-              </SheetField>
-              <SheetField label="Last Name" required>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleFormChange}
-                  required
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
-              </SheetField>
-              <SheetField label="Phone Number">
-                <input
-                  type="tel"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleFormChange}
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
-              </SheetField>
             </div>
-          </SheetSection>
+          </div>
 
-          {/* Account Credentials Section */}
-          <SheetSection title="Account Credentials" icon={<Mail className="w-4 h-4 text-slate-600" />}>
+          {/* Personal Information */}
+          <div>
+            <h5 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+              <UserIcon className="w-4 h-4 text-slate-500" />
+              Personal Information
+            </h5>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SheetField label="Email" required>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  First Name <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleFormChange}
-                  required
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  type="text" name="firstName" value={formData.firstName}
+                  onChange={handleFormChange} required className={inputClasses}
                 />
-              </SheetField>
-              <SheetField label="Password" required>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Last Name <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleFormChange}
-                  required
-                  minLength={8}
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  type="text" name="lastName" value={formData.lastName}
+                  onChange={handleFormChange} required className={inputClasses}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone Number</label>
+                <input
+                  type="tel" name="phoneNumber" value={formData.phoneNumber}
+                  onChange={handleFormChange} className={inputClasses}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Account Credentials */}
+          <div>
+            <h5 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+              <Mail className="w-4 h-4 text-slate-500" />
+              Account Credentials
+            </h5>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email" name="email" value={formData.email}
+                  onChange={handleFormChange} required className={inputClasses}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password" name="password" value={formData.password}
+                  onChange={handleFormChange} required minLength={8} className={inputClasses}
                 />
                 <p className="mt-1 text-xs text-slate-500">Minimum 8 characters</p>
-              </SheetField>
+              </div>
             </div>
-          </SheetSection>
+          </div>
 
-          {/* Employment Details Section (for teachers/admins) */}
+          {/* Employment Details */}
           {(formData.role === 'teacher' || formData.role === 'tenant_admin') && (
-            <SheetSection title="Employment Details" icon={<Briefcase className="w-4 h-4 text-slate-600" />}>
+            <div>
+              <h5 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-slate-500" />
+                Employment Details
+              </h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <SheetField label="Employee ID">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Employee ID</label>
                   <input
-                    type="text"
-                    name="employeeId"
-                    value={formData.employeeId}
-                    onChange={handleFormChange}
-                    placeholder="Auto-generated if empty"
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    type="text" name="employeeId" value={formData.employeeId}
+                    onChange={handleFormChange} placeholder="Auto-generated if empty" className={inputClasses}
                   />
-                </SheetField>
-                <SheetField label="Joining Date">
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Joining Date</label>
                   <input
-                    type="date"
-                    name="joiningDate"
-                    value={formData.joiningDate}
-                    onChange={handleFormChange}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    type="date" name="joiningDate" value={formData.joiningDate}
+                    onChange={handleFormChange} className={inputClasses}
                   />
-                </SheetField>
+                </div>
                 <div className="md:col-span-2">
-                  <SheetField label="Qualification">
-                    <input
-                      type="text"
-                      name="qualification"
-                      value={formData.qualification}
-                      onChange={handleFormChange}
-                      placeholder="e.g., M.Ed, B.Sc, etc."
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    />
-                  </SheetField>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Qualification</label>
+                  <input
+                    type="text" name="qualification" value={formData.qualification}
+                    onChange={handleFormChange} placeholder="e.g., M.Ed, B.Sc, etc." className={inputClasses}
+                  />
                 </div>
               </div>
-            </SheetSection>
+            </div>
           )}
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button
+            <button
               type="button"
               onClick={() => setIsStaffModalOpen(false)}
-              variant="outline"
               disabled={formLoading}
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               type="submit"
               disabled={formLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg hover:opacity-90 transition-colors disabled:opacity-50"
+              style={{ backgroundColor: '#824ef2' }}
             >
               {formLoading ? (
-                <span className="flex items-center gap-2">
+                <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Creating...
-                </span>
+                </>
               ) : (
-                <span className="flex items-center gap-2">
+                <>
                   <UserPlus className="w-4 h-4" />
                   Create User
-                </span>
+                </>
               )}
-            </Button>
+            </button>
           </div>
         </form>
-      </SlideSheet>
+      </FormModal>
 
-      {/* Assign Teacher SlideSheet */}
-      <SlideSheet
-        isOpen={!!assignTeacher}
+      {/* Assign Teacher Modal */}
+      <FormModal
+        open={!!assignTeacher}
+        title="Assign Classes & Subjects"
         onClose={() => {
           setAssignTeacher(null);
           setAssignments([]);
           setCurrentAssignment({ classId: '', sections: [], subjectIds: [] });
           setAssignError('');
         }}
-        title="Assign Classes & Subjects"
-        subtitle={assignTeacher ? `${assignTeacher.firstName} ${assignTeacher.lastName}` : ''}
         size="xl"
       >
         <form onSubmit={handleAssignSubmit} className="space-y-6">
-          {/* Error message */}
+          {assignTeacher && (
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+              <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-[#824ef2] text-sm font-bold">
+                {getInitials(assignTeacher.firstName, assignTeacher.lastName)}
+              </div>
+              <div>
+                <p className="font-medium text-slate-900">{assignTeacher.firstName} {assignTeacher.lastName}</p>
+                <p className="text-xs text-slate-500">Teacher</p>
+              </div>
+            </div>
+          )}
+
           {assignError && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
               <p className="text-sm text-red-700 flex items-center gap-2">
@@ -890,17 +1166,18 @@ export default function StaffPage() {
 
           {loadingData ? (
             <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="w-12 h-12 text-primary animate-spin" />
+              <Loader2 className="w-12 h-12 text-[#824ef2] animate-spin" />
               <p className="mt-4 text-slate-500 text-sm">Loading classes and subjects...</p>
             </div>
           ) : (
             <>
-              {/* Current Assignments Section */}
+              {/* Current Assignments */}
               {assignments.length > 0 && (
-                <SheetSection
-                  title={`Current Assignments (${assignments.length})`}
-                  icon={<Check className="w-4 h-4 text-slate-600" />}
-                >
+                <div>
+                  <h5 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                    <Check className="w-4 h-4 text-slate-500" />
+                    Current Assignments ({assignments.length})
+                  </h5>
                   <div className="space-y-3">
                     {assignments.map((assignment, index) => (
                       <div
@@ -910,7 +1187,7 @@ export default function StaffPage() {
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">
+                              <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-[#824ef2] text-sm font-bold">
                                 {index + 1}
                               </div>
                               <span className="font-semibold text-slate-900">{getClassName(assignment.classId)}</span>
@@ -951,17 +1228,20 @@ export default function StaffPage() {
                       </div>
                     ))}
                   </div>
-                </SheetSection>
+                </div>
               )}
 
-              {/* Add New Assignment Section */}
-              <SheetSection
-                title="Add New Assignment"
-                icon={<Plus className="w-4 h-4 text-slate-600" />}
-              >
+              {/* Add New Assignment */}
+              <div>
+                <h5 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-slate-500" />
+                  Add New Assignment
+                </h5>
                 <div className="space-y-4">
-                  {/* Select Class */}
-                  <SheetField label="Select Class" required>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                      Select Class <span className="text-red-500">*</span>
+                    </label>
                     <select
                       value={currentAssignment.classId}
                       onChange={(e) => {
@@ -971,7 +1251,7 @@ export default function StaffPage() {
                           subjectIds: currentAssignment.subjectIds,
                         });
                       }}
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      className={inputClasses}
                     >
                       <option value="">Choose a class...</option>
                       {classes.map(cls => (
@@ -980,23 +1260,22 @@ export default function StaffPage() {
                         </option>
                       ))}
                     </select>
-                  </SheetField>
+                  </div>
 
-                  {/* Select Sections */}
                   {selectedClass && (
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
                         Select Sections <span className="text-red-500">*</span>
                       </label>
                       <div className="flex flex-wrap gap-2">
-                        {selectedClass.sections.map((section) => (
+                        {selectedClass.sections.map(section => (
                           <button
                             key={section}
                             type="button"
                             onClick={() => handleSectionToggle(section)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                               currentAssignment.sections.includes(section)
-                                ? 'bg-primary text-white'
+                                ? 'bg-[#824ef2] text-white'
                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                             }`}
                           >
@@ -1010,7 +1289,6 @@ export default function StaffPage() {
                     </div>
                   )}
 
-                  {/* Select Subjects */}
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
                       Select Subjects <span className="text-red-500">*</span>
@@ -1018,24 +1296,22 @@ export default function StaffPage() {
                     {subjects.length === 0 ? (
                       <div className="p-4 bg-slate-50 rounded-lg text-center">
                         <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                        <p className="text-sm text-slate-500">
-                          No subjects available. Please create subjects first.
-                        </p>
+                        <p className="text-sm text-slate-500">No subjects available. Please create subjects first.</p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 bg-slate-50 rounded-lg border border-slate-200">
-                        {subjects.map((subject) => (
+                        {subjects.map(subject => (
                           <label
                             key={subject._id}
                             className={`flex items-center space-x-3 cursor-pointer p-3 rounded-lg transition-all ${
                               currentAssignment.subjectIds.includes(subject._id)
-                                ? 'bg-primary/10 border border-primary/30'
+                                ? 'bg-purple-50 border border-purple-200'
                                 : 'bg-white hover:bg-slate-100 border border-transparent'
                             }`}
                           >
                             <div className={`w-5 h-5 rounded flex items-center justify-center transition-all ${
                               currentAssignment.subjectIds.includes(subject._id)
-                                ? 'bg-primary'
+                                ? 'bg-[#824ef2]'
                                 : 'border-2 border-slate-300 bg-white'
                             }`}>
                               {currentAssignment.subjectIds.includes(subject._id) && (
@@ -1050,7 +1326,7 @@ export default function StaffPage() {
                             />
                             <span className={`text-sm font-medium ${
                               currentAssignment.subjectIds.includes(subject._id)
-                                ? 'text-primary'
+                                ? 'text-[#824ef2]'
                                 : 'text-slate-700'
                             }`}>
                               {subject.name} <span className="text-slate-400">({subject.code})</span>
@@ -1061,57 +1337,69 @@ export default function StaffPage() {
                     )}
                   </div>
 
-                  {/* Add Assignment Button */}
                   <button
                     type="button"
                     onClick={handleAddAssignment}
                     disabled={!currentAssignment.classId || currentAssignment.sections.length === 0 || currentAssignment.subjectIds.length === 0}
-                    className="w-full py-3 px-4 rounded-lg text-sm font-medium border-2 border-dashed border-primary/30 text-primary
-                      hover:bg-primary/5 hover:border-primary/50 transition-all duration-200
-                      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-primary/30
+                    className="w-full py-3 px-4 rounded-lg text-sm font-medium border-2 border-dashed border-[#824ef2]/30 text-[#824ef2]
+                      hover:bg-purple-50 hover:border-[#824ef2]/50 transition-all duration-200
+                      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-[#824ef2]/30
                       flex items-center justify-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     Add This Assignment
                   </button>
                 </div>
-              </SheetSection>
+              </div>
 
               {/* Action Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                <Button
+                <button
                   type="button"
                   onClick={() => {
                     setAssignTeacher(null);
                     setAssignments([]);
                     setCurrentAssignment({ classId: '', sections: [], subjectIds: [] });
                   }}
-                  variant="outline"
                   disabled={assignLoading}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
                 >
                   Cancel
-                </Button>
-                <Button
+                </button>
+                <button
                   type="submit"
                   disabled={assignLoading || assignments.length === 0}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg hover:opacity-90 transition-colors disabled:opacity-50"
+                  style={{ backgroundColor: '#824ef2' }}
                 >
                   {assignLoading ? (
-                    <span className="flex items-center gap-2">
+                    <>
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Saving...
-                    </span>
+                    </>
                   ) : (
-                    <span className="flex items-center gap-2">
+                    <>
                       <UserCheck className="w-4 h-4" />
                       Save Assignments ({assignments.length})
-                    </span>
+                    </>
                   )}
-                </Button>
+                </button>
               </div>
             </>
           )}
         </form>
-      </SlideSheet>
+      </FormModal>
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel="Delete"
+        confirmColor={confirmModal.color}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

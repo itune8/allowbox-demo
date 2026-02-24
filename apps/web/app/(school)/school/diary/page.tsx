@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@repo/ui/button';
 import {
   BookMarked,
   Plus,
@@ -19,7 +18,7 @@ import {
   ChevronRight,
   Loader2,
 } from 'lucide-react';
-import { SlideSheet, SheetSection, SheetField, SheetDetailRow } from '@/components/ui';
+import { SchoolStatCard, SchoolStatusBadge, FormModal, ConfirmModal, useToast, Pagination } from '../../../../components/school';
 import {
   dailyDiaryService,
   DailyDiary,
@@ -56,6 +55,7 @@ const initialFormData: FormData = {
 };
 
 export default function SchoolDiaryPage() {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'student' | 'class'>('class');
@@ -70,17 +70,23 @@ export default function SchoolDiaryPage() {
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<DiaryEntryType | ''>('');
 
-  // Sheet states
-  const [showFormSheet, setShowFormSheet] = useState(false);
-  const [showBulkSheet, setShowBulkSheet] = useState(false);
-  const [showDetailsSheet, setShowDetailsSheet] = useState(false);
+  // Modal states
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // Detail sheet
+  // Detail/edit
   const [selectedDiary, setSelectedDiary] = useState<DailyDiary | ClassDiary | null>(null);
   const [editingDiary, setEditingDiary] = useState<DailyDiary | ClassDiary | null>(null);
+
+  // Confirm modal
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; diary: DailyDiary | ClassDiary | null }>({
+    open: false,
+    diary: null,
+  });
 
   useEffect(() => {
     loadClasses();
@@ -166,6 +172,18 @@ export default function SchoolDiaryPage() {
     [DiaryEntryType.GENERAL]: 'General',
   };
 
+  // Stats
+  const allEntries = activeTab === 'class' ? classDiaries : studentDiaries;
+  const totalEntries = allEntries.length;
+  const thisWeek = allEntries.filter(d => {
+    const date = new Date(d.date);
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return date >= weekAgo;
+  }).length;
+  const publishedCount = allEntries.length; // All entries are published once created
+  const draftCount = 0; // No draft concept in diary
+
   function resetForm() {
     setFormData({
       ...initialFormData,
@@ -185,13 +203,13 @@ export default function SchoolDiaryPage() {
       content: diary.content,
       date: diary.date.split('T')[0] ?? '',
     });
-    setShowFormSheet(true);
+    setShowFormModal(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!formData.title || !formData.content || !formData.classId) {
-      alert('Please fill in all required fields');
+      showToast('error', 'Please fill in all required fields');
       return;
     }
 
@@ -203,6 +221,7 @@ export default function SchoolDiaryPage() {
             title: formData.title,
             content: formData.content,
           });
+          showToast('success', 'Announcement updated successfully');
         } else {
           await dailyDiaryService.createClassDiary({
             classId: formData.classId,
@@ -210,10 +229,11 @@ export default function SchoolDiaryPage() {
             title: formData.title,
             content: formData.content,
           });
+          showToast('success', 'Announcement created successfully');
         }
       } else {
         if (!formData.studentId || !formData.type) {
-          alert('Please select a student and entry type');
+          showToast('error', 'Please select a student and entry type');
           setSubmitting(false);
           return;
         }
@@ -223,6 +243,7 @@ export default function SchoolDiaryPage() {
             content: formData.content,
             type: formData.type as DiaryEntryType,
           });
+          showToast('success', 'Entry updated successfully');
         } else {
           await dailyDiaryService.createStudentDiary({
             studentId: formData.studentId,
@@ -232,15 +253,16 @@ export default function SchoolDiaryPage() {
             title: formData.title,
             content: formData.content,
           });
+          showToast('success', 'Entry created successfully');
         }
       }
 
-      setShowFormSheet(false);
+      setShowFormModal(false);
       resetForm();
       await loadDiaries();
     } catch (err) {
       console.error('Failed to save diary entry:', err);
-      alert('Failed to save diary entry');
+      showToast('error', 'Failed to save diary entry');
     } finally {
       setSubmitting(false);
     }
@@ -249,11 +271,11 @@ export default function SchoolDiaryPage() {
   async function handleBulkSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!formData.title || !formData.content || !formData.classId || !formData.type) {
-      alert('Please fill in all required fields');
+      showToast('error', 'Please fill in all required fields');
       return;
     }
     if (selectedStudents.length === 0) {
-      alert('Please select at least one student');
+      showToast('error', 'Please select at least one student');
       return;
     }
 
@@ -268,31 +290,39 @@ export default function SchoolDiaryPage() {
         content: formData.content,
       });
 
-      setShowBulkSheet(false);
+      setShowBulkModal(false);
       resetForm();
+      showToast('success', `Entries sent to ${selectedStudents.length} student(s)`);
       await loadDiaries();
     } catch (err) {
       console.error('Failed to create bulk entries:', err);
-      alert('Failed to create bulk entries');
+      showToast('error', 'Failed to create bulk entries');
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function handleDelete(diary: DailyDiary | ClassDiary) {
-    if (!confirm('Are you sure you want to delete this diary entry?')) return;
+  function handleDeleteClick(diary: DailyDiary | ClassDiary) {
+    setConfirmModal({ open: true, diary });
+  }
+
+  async function handleDeleteConfirm() {
+    if (!confirmModal.diary) return;
     try {
-      if ('studentId' in diary) {
-        await dailyDiaryService.deleteStudentDiary(diary._id);
+      if ('studentId' in confirmModal.diary) {
+        await dailyDiaryService.deleteStudentDiary(confirmModal.diary._id);
       } else {
-        await dailyDiaryService.deleteClassDiary(diary._id);
+        await dailyDiaryService.deleteClassDiary(confirmModal.diary._id);
       }
+      showToast('success', 'Diary entry deleted successfully');
       await loadDiaries();
       setSelectedDiary(null);
-      setShowDetailsSheet(false);
+      setShowDetailsModal(false);
     } catch (err) {
       console.error('Failed to delete diary:', err);
-      alert('Failed to delete diary entry');
+      showToast('error', 'Failed to delete diary entry');
+    } finally {
+      setConfirmModal({ open: false, diary: null });
     }
   }
 
@@ -315,7 +345,7 @@ export default function SchoolDiaryPage() {
   if (loading && classes.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-slate-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#824ef2] animate-spin" />
       </div>
     );
   }
@@ -325,8 +355,8 @@ export default function SchoolDiaryPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100">
-            <BookMarked className="w-6 h-6 text-blue-600" />
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-purple-100">
+            <BookMarked className="w-6 h-6 text-[#824ef2]" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Daily Diary</h1>
@@ -337,41 +367,71 @@ export default function SchoolDiaryPage() {
         </div>
         <div className="flex gap-2">
           {activeTab === 'student' && selectedClassId && (
-            <Button
-              variant="outline"
+            <button
               onClick={() => {
                 resetForm();
                 setFormData(prev => ({ ...prev, classId: selectedClassId }));
-                setShowBulkSheet(true);
+                setShowBulkModal(true);
               }}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
             >
-              <Users className="w-4 h-4 mr-2" />
+              <Users className="w-4 h-4" />
               Bulk Entry
-            </Button>
+            </button>
           )}
-          <Button
+          <button
             onClick={() => {
               resetForm();
               setFormData(prev => ({ ...prev, classId: selectedClassId }));
-              setShowFormSheet(true);
+              setShowFormModal(true);
             }}
             disabled={!selectedClassId}
-            className="bg-primary hover:bg-primary-dark"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors disabled:opacity-50"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4" />
             {activeTab === 'class' ? 'Class Announcement' : 'Student Entry'}
-          </Button>
+          </button>
         </div>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <SchoolStatCard
+          icon={<FileText className="w-5 h-5" />}
+          color="blue"
+          label="Total Entries"
+          value={totalEntries}
+        />
+        <SchoolStatCard
+          icon={<Calendar className="w-5 h-5" />}
+          color="purple"
+          label="This Week"
+          value={thisWeek}
+        />
+        <SchoolStatCard
+          icon={<CheckCircle className="w-5 h-5" />}
+          color="green"
+          label="Published"
+          value={publishedCount}
+        />
+        <SchoolStatCard
+          icon={<Clock className="w-5 h-5" />}
+          color="slate"
+          label="Draft"
+          value={draftCount}
+        />
       </div>
 
       {/* Error Banner */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h3 className="text-sm font-medium text-red-900">Error</h3>
-            <p className="text-sm text-red-700 mt-1">{error}</p>
+          <div className="flex-1">
+            <p className="text-sm text-red-700">{error}</p>
           </div>
+          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-700">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -381,7 +441,7 @@ export default function SchoolDiaryPage() {
           onClick={() => setActiveTab('class')}
           className={`px-4 py-3 font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 ${
             activeTab === 'class'
-              ? 'border-blue-600 text-blue-600'
+              ? 'border-[#824ef2] text-[#824ef2]'
               : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
           }`}
         >
@@ -392,7 +452,7 @@ export default function SchoolDiaryPage() {
           onClick={() => setActiveTab('student')}
           className={`px-4 py-3 font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 ${
             activeTab === 'student'
-              ? 'border-blue-600 text-blue-600'
+              ? 'border-[#824ef2] text-[#824ef2]'
               : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
           }`}
         >
@@ -406,7 +466,7 @@ export default function SchoolDiaryPage() {
         {/* Sidebar */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 h-fit">
           <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-blue-600" />
+            <Calendar className="w-4 h-4 text-[#824ef2]" />
             Select Class
           </h3>
           <div className="space-y-2">
@@ -419,13 +479,13 @@ export default function SchoolDiaryPage() {
                   onClick={() => setSelectedClassId(cls._id)}
                   className={`w-full text-left px-4 py-3 rounded-lg text-sm flex items-center justify-between transition-colors ${
                     selectedClassId === cls._id
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      ? 'bg-purple-50 text-[#824ef2] border border-purple-200'
                       : 'hover:bg-slate-50 border border-transparent'
                   }`}
                 >
                   <span className="font-medium">{cls.name} ({cls.grade})</span>
                   {selectedClassId === cls._id && (
-                    <ChevronRight className="w-4 h-4 text-blue-600" />
+                    <ChevronRight className="w-4 h-4 text-[#824ef2]" />
                   )}
                 </button>
               ))
@@ -435,7 +495,7 @@ export default function SchoolDiaryPage() {
           {activeTab === 'student' && (
             <>
               <h3 className="font-semibold text-slate-900 mb-4 mt-6 flex items-center gap-2">
-                <Filter className="w-4 h-4 text-blue-600" />
+                <Filter className="w-4 h-4 text-[#824ef2]" />
                 Filter by Type
               </h3>
               <div className="space-y-2">
@@ -443,7 +503,7 @@ export default function SchoolDiaryPage() {
                   onClick={() => setSelectedTypeFilter('')}
                   className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                     selectedTypeFilter === ''
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      ? 'bg-purple-50 text-[#824ef2] border border-purple-200'
                       : 'hover:bg-slate-50 border border-transparent'
                   }`}
                 >
@@ -455,7 +515,7 @@ export default function SchoolDiaryPage() {
                     onClick={() => setSelectedTypeFilter(type as DiaryEntryType)}
                     className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-colors ${
                       selectedTypeFilter === type
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                        ? 'bg-purple-50 text-[#824ef2] border border-purple-200'
                         : 'hover:bg-slate-50 border border-transparent'
                     }`}
                   >
@@ -472,9 +532,9 @@ export default function SchoolDiaryPage() {
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-semibold text-slate-900 flex items-center gap-2">
               {activeTab === 'class' ? (
-                <Megaphone className="w-5 h-5 text-blue-600" />
+                <Megaphone className="w-5 h-5 text-[#824ef2]" />
               ) : (
-                <FileText className="w-5 h-5 text-blue-600" />
+                <FileText className="w-5 h-5 text-[#824ef2]" />
               )}
               {activeTab === 'class' ? 'Class Announcements' : 'Student Diary Entries'}
             </h3>
@@ -494,7 +554,7 @@ export default function SchoolDiaryPage() {
             </div>
           ) : loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 text-slate-600 animate-spin" />
+              <Loader2 className="w-8 h-8 text-[#824ef2] animate-spin" />
             </div>
           ) : activeTab === 'class' ? (
             classDiaries.length === 0 ? (
@@ -504,17 +564,17 @@ export default function SchoolDiaryPage() {
                 </div>
                 <h3 className="text-lg font-medium text-slate-900 mb-2">No class announcements yet</h3>
                 <p className="text-sm text-slate-600 mb-6">Create your first announcement to send to all parents</p>
-                <Button
+                <button
                   onClick={() => {
                     resetForm();
                     setFormData(prev => ({ ...prev, classId: selectedClassId }));
-                    setShowFormSheet(true);
+                    setShowFormModal(true);
                   }}
-                  className="bg-primary hover:bg-primary-dark"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-4 h-4" />
                   Create Announcement
-                </Button>
+                </button>
               </div>
             ) : (
               <div className="space-y-3">
@@ -524,7 +584,7 @@ export default function SchoolDiaryPage() {
                     className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 hover:border-slate-300 cursor-pointer transition-all"
                     onClick={() => {
                       setSelectedDiary(diary);
-                      setShowDetailsSheet(true);
+                      setShowDetailsModal(true);
                     }}
                   >
                     <div className="flex items-start justify-between mb-3">
@@ -534,22 +594,26 @@ export default function SchoolDiaryPage() {
                         {new Date(diary.date).toLocaleDateString()}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-600 line-clamp-2 mb-3">
-                      {diary.content}
-                    </p>
+                    <p className="text-sm text-slate-600 line-clamp-2 mb-3">{diary.content}</p>
                     <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                       <span className="text-xs text-slate-500">
                         By {diary.createdBy.firstName} {diary.createdBy.lastName}
                       </span>
                       <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(diary)}>
-                          <Edit className="w-3 h-3 mr-1" />
+                        <button
+                          onClick={() => handleEdit(diary)}
+                          className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1"
+                        >
+                          <Edit className="w-3 h-3" />
                           Edit
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDelete(diary)}>
-                          <Trash2 className="w-3 h-3 mr-1" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(diary)}
+                          className="px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
                           Delete
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -564,17 +628,17 @@ export default function SchoolDiaryPage() {
                 </div>
                 <h3 className="text-lg font-medium text-slate-900 mb-2">No student diary entries yet</h3>
                 <p className="text-sm text-slate-600 mb-6">Create individual entries for student communications</p>
-                <Button
+                <button
                   onClick={() => {
                     resetForm();
                     setFormData(prev => ({ ...prev, classId: selectedClassId }));
-                    setShowFormSheet(true);
+                    setShowFormModal(true);
                   }}
-                  className="bg-primary hover:bg-primary-dark"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-4 h-4" />
                   Create Entry
-                </Button>
+                </button>
               </div>
             ) : (
               <div className="space-y-3">
@@ -584,7 +648,7 @@ export default function SchoolDiaryPage() {
                     className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 hover:border-slate-300 cursor-pointer transition-all"
                     onClick={() => {
                       setSelectedDiary(diary);
-                      setShowDetailsSheet(true);
+                      setShowDetailsModal(true);
                     }}
                   >
                     <div className="flex items-start justify-between mb-3">
@@ -615,31 +679,26 @@ export default function SchoolDiaryPage() {
                         </p>
                       </div>
                     </div>
-                    <p className="text-sm text-slate-600 line-clamp-2 mb-3">
-                      {diary.content}
-                    </p>
+                    <p className="text-sm text-slate-600 line-clamp-2 mb-3">{diary.content}</p>
                     <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md font-medium ${
-                        diary.acknowledgementStatus === AcknowledgementStatus.ACKNOWLEDGED
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-amber-50 text-amber-700 border border-amber-200'
-                      }`}>
-                        {diary.acknowledgementStatus === AcknowledgementStatus.ACKNOWLEDGED ? (
-                          <CheckCircle className="w-3 h-3" />
-                        ) : (
-                          <Clock className="w-3 h-3" />
-                        )}
-                        {diary.acknowledgementStatus === AcknowledgementStatus.ACKNOWLEDGED ? 'Acknowledged' : 'Pending'}
-                      </span>
+                      <SchoolStatusBadge
+                        value={diary.acknowledgementStatus === AcknowledgementStatus.ACKNOWLEDGED ? 'acknowledged' : 'pending'}
+                      />
                       <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(diary)}>
-                          <Edit className="w-3 h-3 mr-1" />
+                        <button
+                          onClick={() => handleEdit(diary)}
+                          className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1"
+                        >
+                          <Edit className="w-3 h-3" />
                           Edit
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDelete(diary)}>
-                          <Trash2 className="w-3 h-3 mr-1" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(diary)}
+                          className="px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
                           Delete
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -650,328 +709,280 @@ export default function SchoolDiaryPage() {
         </div>
       </div>
 
-      {/* Create/Edit Form Sheet */}
-      <SlideSheet
-        isOpen={showFormSheet}
-        onClose={() => {
-          setShowFormSheet(false);
-          resetForm();
-        }}
+      {/* Create/Edit Form Modal */}
+      <FormModal
+        open={showFormModal}
+        onClose={() => { setShowFormModal(false); resetForm(); }}
         title={editingDiary ? 'Edit Entry' : activeTab === 'class' ? 'New Class Announcement' : 'New Student Entry'}
-        subtitle={activeTab === 'class' ? 'Send announcement to all parents in the class' : 'Create individual student diary entry'}
         size="lg"
         footer={
-          <div className="flex justify-end gap-3">
-            <Button
+          <>
+            <button
               type="button"
-              variant="outline"
-              onClick={() => {
-                setShowFormSheet(false);
-                resetForm();
-              }}
+              onClick={() => { setShowFormModal(false); resetForm(); }}
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
             >
               Cancel
-            </Button>
-            <Button
-              type="button"
+            </button>
+            <button
+              type="submit"
+              form="diary-form"
               disabled={submitting}
-              className="bg-primary hover:bg-primary-dark"
-              onClick={handleSubmit}
+              className="px-6 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
               ) : (
                 <>{editingDiary ? 'Update' : 'Send to Parents'}</>
               )}
-            </Button>
-          </div>
+            </button>
+          </>
         }
       >
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <SheetSection title="Basic Information">
-            <SheetField label="Class" required>
-              <select
-                value={formData.classId}
-                onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
-                required
-              >
-                <option value="">Select Class</option>
-                {classes.map((cls) => (
-                  <option key={cls._id} value={cls._id}>
-                    {cls.name} ({cls.grade})
-                  </option>
-                ))}
-              </select>
-            </SheetField>
-
-            {activeTab === 'student' && (
-              <>
-                <SheetField label="Student" required>
-                  <select
-                    value={formData.studentId}
-                    onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
-                    required
-                  >
-                    <option value="">Select Student</option>
-                    {students.map((student) => (
-                      <option key={student._id} value={student._id}>
-                        {student.firstName} {student.lastName}
-                      </option>
-                    ))}
-                  </select>
-                </SheetField>
-
-                <SheetField label="Entry Type" required>
-                  <select
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as DiaryEntryType })}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
-                    required
-                  >
-                    <option value="">Select Type</option>
-                    {Object.entries(typeNames).map(([type, name]) => (
-                      <option key={type} value={type}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                </SheetField>
-              </>
-            )}
-
-            <SheetField label="Date">
-              <input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
-              />
-            </SheetField>
-          </SheetSection>
-
-          <SheetSection title="Message Details">
-            <SheetField label="Title" required>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
-                placeholder="Enter a clear, descriptive title"
-                required
-              />
-            </SheetField>
-
-            <SheetField label="Content" required>
-              <textarea
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
-                rows={4}
-                placeholder="Write your message here..."
-                required
-              />
-            </SheetField>
-          </SheetSection>
-        </form>
-      </SlideSheet>
-
-      {/* Bulk Entry Sheet */}
-      <SlideSheet
-        isOpen={showBulkSheet}
-        onClose={() => {
-          setShowBulkSheet(false);
-          resetForm();
-        }}
-        title="Bulk Student Entry"
-        subtitle="Send the same diary entry to multiple students"
-        size="lg"
-        footer={
-          <div className="flex justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowBulkSheet(false);
-                resetForm();
-              }}
+        <form id="diary-form" onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Class <span className="text-red-500">*</span></label>
+            <select
+              value={formData.classId}
+              onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all"
+              required
             >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={submitting || selectedStudents.length === 0}
-              className="bg-primary hover:bg-primary-dark"
-              onClick={handleBulkSubmit}
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>{`Send to ${selectedStudents.length} Student${selectedStudents.length !== 1 ? 's' : ''}`}</>
-              )}
-            </Button>
+              <option value="">Select Class</option>
+              {classes.map((cls) => (
+                <option key={cls._id} value={cls._id}>{cls.name} ({cls.grade})</option>
+              ))}
+            </select>
           </div>
-        }
-      >
-        <form onSubmit={handleBulkSubmit} className="space-y-6">
-          <SheetSection title="Basic Information">
-            <div className="grid grid-cols-2 gap-4">
-              <SheetField label="Class" required>
+
+          {activeTab === 'student' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Student <span className="text-red-500">*</span></label>
                 <select
-                  value={formData.classId}
-                  onChange={(e) => {
-                    setFormData({ ...formData, classId: e.target.value });
-                    setSelectedStudents([]);
-                  }}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                  value={formData.studentId}
+                  onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all"
                   required
                 >
-                  <option value="">Select Class</option>
-                  {classes.map((cls) => (
-                    <option key={cls._id} value={cls._id}>
-                      {cls.name} ({cls.grade})
-                    </option>
+                  <option value="">Select Student</option>
+                  {students.map((student) => (
+                    <option key={student._id} value={student._id}>{student.firstName} {student.lastName}</option>
                   ))}
                 </select>
-              </SheetField>
-
-              <SheetField label="Entry Type" required>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Entry Type <span className="text-red-500">*</span></label>
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as DiaryEntryType })}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all"
                   required
                 >
                   <option value="">Select Type</option>
                   {Object.entries(typeNames).map(([type, name]) => (
-                    <option key={type} value={type}>
-                      {name}
-                    </option>
+                    <option key={type} value={type}>{name}</option>
                   ))}
                 </select>
-              </SheetField>
-            </div>
-          </SheetSection>
-
-          <SheetSection title="Student Selection">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-slate-700 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-blue-600" />
-                  Select Students ({selectedStudents.length} selected)
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={selectAllStudents}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Select All
-                  </button>
-                  <button
-                    type="button"
-                    onClick={deselectAllStudents}
-                    className="text-xs text-slate-500 hover:text-slate-700"
-                  >
-                    Clear
-                  </button>
-                </div>
               </div>
-              <div className="border border-slate-300 rounded-lg max-h-40 overflow-y-auto bg-white">
-                {students.length === 0 ? (
-                  <p className="p-4 text-sm text-slate-500 text-center">No students in selected class</p>
-                ) : (
-                  students.map((student) => (
-                    <label
-                      key={student._id}
-                      className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedStudents.includes(student._id)}
-                        onChange={() => toggleStudentSelection(student._id)}
-                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-slate-900">
-                        {student.firstName} {student.lastName}
-                      </span>
-                    </label>
-                  ))
-                )}
-              </div>
-            </div>
-          </SheetSection>
+            </>
+          )}
 
-          <SheetSection title="Message Details">
-            <SheetField label="Title" required>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
-                placeholder="Enter a clear, descriptive title"
-                required
-              />
-            </SheetField>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Date</label>
+            <input
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all"
+            />
+          </div>
 
-            <SheetField label="Content" required>
-              <textarea
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
-                rows={4}
-                placeholder="Write your message here..."
-                required
-              />
-            </SheetField>
-          </SheetSection>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Title <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all"
+              placeholder="Enter a clear, descriptive title"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Content <span className="text-red-500">*</span></label>
+            <textarea
+              value={formData.content}
+              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all resize-none"
+              rows={4}
+              placeholder="Write your message here..."
+              required
+            />
+          </div>
         </form>
-      </SlideSheet>
+      </FormModal>
 
-      {/* Detail Sheet */}
+      {/* Bulk Entry Modal */}
+      <FormModal
+        open={showBulkModal}
+        onClose={() => { setShowBulkModal(false); resetForm(); }}
+        title="Bulk Student Entry"
+        size="lg"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => { setShowBulkModal(false); resetForm(); }}
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="bulk-diary-form"
+              disabled={submitting || selectedStudents.length === 0}
+              className="px-6 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              {submitting ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
+              ) : (
+                <>Send to {selectedStudents.length} Student{selectedStudents.length !== 1 ? 's' : ''}</>
+              )}
+            </button>
+          </>
+        }
+      >
+        <form id="bulk-diary-form" onSubmit={handleBulkSubmit} className="space-y-5">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Class <span className="text-red-500">*</span></label>
+              <select
+                value={formData.classId}
+                onChange={(e) => {
+                  setFormData({ ...formData, classId: e.target.value });
+                  setSelectedStudents([]);
+                }}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all"
+                required
+              >
+                <option value="">Select Class</option>
+                {classes.map((cls) => (
+                  <option key={cls._id} value={cls._id}>{cls.name} ({cls.grade})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Entry Type <span className="text-red-500">*</span></label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as DiaryEntryType })}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all"
+                required
+              >
+                <option value="">Select Type</option>
+                {Object.entries(typeNames).map(([type, name]) => (
+                  <option key={type} value={type}>{name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Student Selection */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#824ef2]" />
+                Select Students ({selectedStudents.length} selected)
+              </label>
+              <div className="flex gap-2">
+                <button type="button" onClick={selectAllStudents} className="text-xs text-[#824ef2] hover:text-[#6b3fd4] font-medium">
+                  Select All
+                </button>
+                <button type="button" onClick={deselectAllStudents} className="text-xs text-slate-500 hover:text-slate-700">
+                  Clear
+                </button>
+              </div>
+            </div>
+            <div className="border border-slate-200 rounded-lg max-h-40 overflow-y-auto bg-white">
+              {students.length === 0 ? (
+                <p className="p-4 text-sm text-slate-500 text-center">No students in selected class</p>
+              ) : (
+                students.map((student) => (
+                  <label
+                    key={student._id}
+                    className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedStudents.includes(student._id)}
+                      onChange={() => toggleStudentSelection(student._id)}
+                      className="rounded border-slate-300 text-[#824ef2] focus:ring-[#824ef2]/20"
+                    />
+                    <span className="text-sm text-slate-900">{student.firstName} {student.lastName}</span>
+                  </label>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Title <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all"
+              placeholder="Enter a clear, descriptive title"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Content <span className="text-red-500">*</span></label>
+            <textarea
+              value={formData.content}
+              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all resize-none"
+              rows={4}
+              placeholder="Write your message here..."
+              required
+            />
+          </div>
+        </form>
+      </FormModal>
+
+      {/* Detail Modal */}
       {selectedDiary && (
-        <SlideSheet
-          isOpen={showDetailsSheet}
-          onClose={() => {
-            setSelectedDiary(null);
-            setShowDetailsSheet(false);
-          }}
+        <FormModal
+          open={showDetailsModal}
+          onClose={() => { setSelectedDiary(null); setShowDetailsModal(false); }}
           title="Diary Entry Details"
-          subtitle={'type' in selectedDiary ? `${typeNames[selectedDiary.type]} Entry` : 'Class Announcement'}
           size="md"
           footer={
-            <div className="flex justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSelectedDiary(null);
-                  setShowDetailsSheet(false);
-                }}
+            <>
+              <button
+                onClick={() => { setSelectedDiary(null); setShowDetailsModal(false); }}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
               >
                 Close
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={() => {
                   handleEdit(selectedDiary);
                   setSelectedDiary(null);
-                  setShowDetailsSheet(false);
+                  setShowDetailsModal(false);
                 }}
-                className="bg-primary hover:bg-primary-dark"
+                className="px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors flex items-center gap-2"
               >
-                <Edit className="w-4 h-4 mr-2" />
+                <Edit className="w-4 h-4" />
                 Edit
-              </Button>
-            </div>
+              </button>
+            </>
           }
         >
-          <div className="space-y-6">
+          <div className="space-y-5">
             {'type' in selectedDiary && (
               <div className="flex items-center gap-2">
                 <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${typeIconColors[selectedDiary.type]}`}>
@@ -989,77 +1000,78 @@ export default function SchoolDiaryPage() {
               </div>
             )}
 
-            <SheetSection title="Entry Information">
-              <SheetDetailRow label="Title" value={selectedDiary.title} />
-              <SheetDetailRow
-                label="Date"
-                value={new Date(selectedDiary.date).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              />
-              {'studentId' in selectedDiary && (
-                <SheetDetailRow
-                  label="Student"
-                  value={`${selectedDiary.studentId.firstName} ${selectedDiary.studentId.lastName}`}
-                />
-              )}
-              <SheetDetailRow label="Class" value={selectedDiary.classId.name} />
-            </SheetSection>
-
-            <SheetSection title="Content">
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                <p className="text-slate-900 whitespace-pre-wrap leading-relaxed">
-                  {selectedDiary.content}
-                </p>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Title</span>
+                <span className="font-medium text-slate-900">{selectedDiary.title}</span>
               </div>
-            </SheetSection>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Date</span>
+                <span className="font-medium text-slate-900">
+                  {new Date(selectedDiary.date).toLocaleDateString('en-US', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                  })}
+                </span>
+              </div>
+              {'studentId' in selectedDiary && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Student</span>
+                  <span className="font-medium text-slate-900">{selectedDiary.studentId.firstName} {selectedDiary.studentId.lastName}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Class</span>
+                <span className="font-medium text-slate-900">{selectedDiary.classId.name}</span>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold text-slate-900 mb-2">Content</h4>
+              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                <p className="text-slate-900 whitespace-pre-wrap leading-relaxed text-sm">{selectedDiary.content}</p>
+              </div>
+            </div>
 
             {'acknowledgementStatus' in selectedDiary && (
-              <SheetSection title="Acknowledgement">
-                <div className="flex items-start gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-slate-600">Status:</span>
-                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md font-medium ${
-                      selectedDiary.acknowledgementStatus === AcknowledgementStatus.ACKNOWLEDGED
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-amber-50 text-amber-700 border border-amber-200'
-                    }`}>
-                      {selectedDiary.acknowledgementStatus === AcknowledgementStatus.ACKNOWLEDGED ? (
-                        <CheckCircle className="w-3 h-3" />
-                      ) : (
-                        <Clock className="w-3 h-3" />
-                      )}
-                      {selectedDiary.acknowledgementStatus === AcknowledgementStatus.ACKNOWLEDGED ? 'Acknowledged' : 'Pending'}
-                    </span>
-                  </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-2">Acknowledgement</h4>
+                <div className="flex items-center gap-2">
+                  <SchoolStatusBadge
+                    value={selectedDiary.acknowledgementStatus === AcknowledgementStatus.ACKNOWLEDGED ? 'acknowledged' : 'pending'}
+                  />
                   {selectedDiary.acknowledgedAt && (
-                    <span className="text-xs text-slate-500">
-                      on {new Date(selectedDiary.acknowledgedAt).toLocaleDateString()}
-                    </span>
+                    <span className="text-xs text-slate-500">on {new Date(selectedDiary.acknowledgedAt).toLocaleDateString()}</span>
                   )}
                 </div>
-              </SheetSection>
+              </div>
             )}
 
             {'parentComment' in selectedDiary && selectedDiary.parentComment && (
-              <SheetSection title="Parent Comment">
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-2">Parent Comment</h4>
                 <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
-                  <p className="text-sm text-blue-800 leading-relaxed">
-                    {selectedDiary.parentComment}
-                  </p>
+                  <p className="text-sm text-blue-800 leading-relaxed">{selectedDiary.parentComment}</p>
                 </div>
-              </SheetSection>
+              </div>
             )}
 
             <div className="text-xs text-slate-500 pt-2 border-t border-slate-200">
               Created by {selectedDiary.createdBy.firstName} {selectedDiary.createdBy.lastName}
             </div>
           </div>
-        </SlideSheet>
+        </FormModal>
       )}
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title="Delete Diary Entry"
+        message="Are you sure you want to delete this diary entry? This action cannot be undone."
+        confirmLabel="Delete"
+        confirmColor="red"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setConfirmModal({ open: false, diary: null })}
+      />
     </section>
   );
 }

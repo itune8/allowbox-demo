@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@repo/ui/button';
 import {
   messageService,
   Message,
@@ -11,7 +10,6 @@ import {
   CreateMessageDto,
 } from '../../../../lib/services/message.service';
 import { classService, Class } from '../../../../lib/services/class.service';
-import { SlideSheet, SheetSection, SheetField, SheetDetailRow } from '@/components/ui';
 import {
   MessageSquare,
   Send,
@@ -22,22 +20,29 @@ import {
   Clock,
   Trash2,
   AlertCircle,
-  CheckCircle,
   Loader2,
+  FileText,
+  Bell,
 } from 'lucide-react';
+import { SchoolStatCard, SchoolStatusBadge, FormModal, ConfirmModal, useToast, Pagination } from '../../../../components/school';
 
 export default function SchoolMessagesPage() {
+  const { showToast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [sentMessages, setSentMessages] = useState<Message[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showFormSheet, setShowFormSheet] = useState(false);
-  const [showDetailsSheet, setShowDetailsSheet] = useState(false);
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [activeTab, setActiveTab] = useState<'inbox' | 'sent'>('sent');
   const [submitting, setSubmitting] = useState(false);
-  const [banner, setBanner] = useState<string | null>(null);
+
+  // Confirm modal
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({
+    open: false, title: '', message: '', onConfirm: () => {},
+  });
 
   // Form state
   const [formData, setFormData] = useState<CreateMessageDto>({
@@ -80,28 +85,34 @@ export default function SchoolMessagesPage() {
       await messageService.create(formData);
       await loadData();
       resetForm();
-      setShowFormSheet(false);
-      setBanner('Message sent successfully!');
-      setTimeout(() => setBanner(null), 3000);
+      setShowFormModal(false);
+      showToast('success', 'Message sent successfully!');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to send message');
+      showToast('error', err.response?.data?.message || 'Failed to send message');
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this message?')) return;
-    try {
-      await messageService.delete(id);
-      await loadData();
-      setSelectedMessage(null);
-      setShowDetailsSheet(false);
-      setBanner('Message deleted successfully');
-      setTimeout(() => setBanner(null), 3000);
-    } catch (err) {
-      console.error(err);
-    }
+  function handleDelete(id: string) {
+    setConfirmModal({
+      open: true,
+      title: 'Delete Message',
+      message: 'Are you sure you want to delete this message? This action cannot be undone.',
+      onConfirm: async () => {
+        try {
+          await messageService.delete(id);
+          await loadData();
+          setSelectedMessage(null);
+          setShowDetailsModal(false);
+          showToast('success', 'Message deleted successfully');
+        } catch (err) {
+          showToast('error', 'Failed to delete message');
+          console.error(err);
+        }
+        setConfirmModal(prev => ({ ...prev, open: false }));
+      },
+    });
   }
 
   function resetForm() {
@@ -113,13 +124,6 @@ export default function SchoolMessagesPage() {
       priority: MessagePriority.NORMAL,
     });
   }
-
-  const priorityColors: Record<MessagePriority, string> = {
-    [MessagePriority.LOW]: 'bg-slate-100 text-slate-700',
-    [MessagePriority.NORMAL]: 'bg-blue-100 text-blue-700',
-    [MessagePriority.HIGH]: 'bg-amber-100 text-amber-700',
-    [MessagePriority.URGENT]: 'bg-red-100 text-red-700',
-  };
 
   const recipientGroupLabels: Record<RecipientGroup, string> = {
     [RecipientGroup.ALL_PARENTS]: 'All Parents',
@@ -139,24 +143,22 @@ export default function SchoolMessagesPage() {
 
   const displayMessages = activeTab === 'inbox' ? messages : sentMessages;
 
+  // Stats
+  const totalMessages = messages.length + sentMessages.length;
+  const sentCount = sentMessages.length;
+  const drafts = 0;
+  const unreadCount = messages.filter((m) => !m.readBy || m.readBy.length === 0).length;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#824ef2] animate-spin" />
       </div>
     );
   }
 
   return (
     <section className="space-y-6">
-      {/* Banner */}
-      {banner && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 flex items-center gap-3">
-          <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-          <span className="text-emerald-800 font-medium">{banner}</span>
-        </div>
-      )}
-
       {/* Error */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center justify-between">
@@ -164,10 +166,7 @@ export default function SchoolMessagesPage() {
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
             <span className="text-red-700">{error}</span>
           </div>
-          <button
-            onClick={() => setError(null)}
-            className="text-red-500 hover:text-red-700 transition-colors"
-          >
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -176,8 +175,8 @@ export default function SchoolMessagesPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center text-white">
-            <MessageSquare className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+            <MessageSquare className="w-6 h-6 text-blue-600" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Messages</h1>
@@ -186,36 +185,41 @@ export default function SchoolMessagesPage() {
             </p>
           </div>
         </div>
-        <Button onClick={() => setShowFormSheet(true)} className="bg-primary hover:bg-primary-dark">
-          <Plus className="w-4 h-4 mr-2" />
+        <button
+          onClick={() => setShowFormModal(true)}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors"
+        >
+          <Plus className="w-4 h-4" />
           New Message
-        </Button>
+        </button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <Send className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">Sent Messages</p>
-              <p className="text-2xl font-bold text-slate-900">{sentMessages.length}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-              <Inbox className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">Inbox</p>
-              <p className="text-2xl font-bold text-slate-900">{messages.length}</p>
-            </div>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SchoolStatCard
+          icon={<MessageSquare className="w-5 h-5" />}
+          color="blue"
+          label="Total Messages"
+          value={totalMessages}
+        />
+        <SchoolStatCard
+          icon={<Send className="w-5 h-5" />}
+          color="green"
+          label="Sent"
+          value={sentCount}
+        />
+        <SchoolStatCard
+          icon={<FileText className="w-5 h-5" />}
+          color="slate"
+          label="Drafts"
+          value={drafts}
+        />
+        <SchoolStatCard
+          icon={<Bell className="w-5 h-5" />}
+          color="orange"
+          label="Unread"
+          value={unreadCount}
+        />
       </div>
 
       {/* Tabs */}
@@ -224,7 +228,7 @@ export default function SchoolMessagesPage() {
           <button
             className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
               activeTab === 'sent'
-                ? 'bg-primary text-white'
+                ? 'bg-[#824ef2] text-white'
                 : 'text-slate-600 hover:bg-slate-50'
             }`}
             onClick={() => setActiveTab('sent')}
@@ -235,7 +239,7 @@ export default function SchoolMessagesPage() {
           <button
             className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
               activeTab === 'inbox'
-                ? 'bg-primary text-white'
+                ? 'bg-[#824ef2] text-white'
                 : 'text-slate-600 hover:bg-slate-50'
             }`}
             onClick={() => setActiveTab('inbox')}
@@ -257,10 +261,13 @@ export default function SchoolMessagesPage() {
             </p>
             {activeTab === 'sent' && (
               <div className="mt-6">
-                <Button onClick={() => setShowFormSheet(true)} className="bg-primary hover:bg-primary-dark">
-                  <Plus className="w-4 h-4 mr-2" />
+                <button
+                  onClick={() => setShowFormModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors mx-auto"
+                >
+                  <Plus className="w-4 h-4" />
                   New Message
-                </Button>
+                </button>
               </div>
             )}
           </div>
@@ -272,21 +279,19 @@ export default function SchoolMessagesPage() {
                 className="p-4 cursor-pointer transition-colors hover:bg-slate-50"
                 onClick={() => {
                   setSelectedMessage(message);
-                  setShowDetailsSheet(true);
+                  setShowDetailsModal(true);
                 }}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-semibold">
+                      <div className="w-8 h-8 rounded-full bg-[#824ef2] flex items-center justify-center text-white text-sm font-semibold">
                         {message.subject?.charAt(0)?.toUpperCase() || 'M'}
                       </div>
                       <span className="font-medium text-slate-900">
                         {message.subject}
                       </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${priorityColors[message.priority]}`}>
-                        {message.priority}
-                      </span>
+                      <SchoolStatusBadge value={message.priority} showDot={false} />
                     </div>
                     <div className="text-sm text-slate-600 ml-10">
                       {activeTab === 'inbox' ? (
@@ -313,199 +318,211 @@ export default function SchoolMessagesPage() {
         )}
       </div>
 
-      {/* Compose Message Sheet */}
-      <SlideSheet
-        isOpen={showFormSheet}
-        onClose={() => setShowFormSheet(false)}
+      {/* Compose Message Modal */}
+      <FormModal
+        open={showFormModal}
+        onClose={() => setShowFormModal(false)}
         title="Compose Message"
-        subtitle="Send a new message or announcement"
         size="lg"
         footer={
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => setShowFormSheet(false)}>
+          <>
+            <button
+              type="button"
+              onClick={() => setShowFormModal(false)}
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+            >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               type="submit"
               form="compose-message-form"
               disabled={submitting}
-              className="bg-primary hover:bg-primary-dark"
+              className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Sending...
-                </>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
               ) : (
-                <>
-                  <Send className="w-4 h-4 mr-2" />
-                  Send Message
-                </>
+                <><Send className="w-4 h-4" /> Send Message</>
               )}
-            </Button>
-          </div>
+            </button>
+          </>
         }
       >
         <form id="compose-message-form" onSubmit={handleSubmit} className="space-y-6">
-          <SheetSection title="Message Details">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3">Message Details</h3>
             <div className="grid grid-cols-2 gap-4">
-              <SheetField label="Message Type" required>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Message Type <span className="text-red-500">*</span></label>
                 <select
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all"
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as MessageType })}
                 >
                   {Object.entries(typeLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
+                    <option key={value} value={value}>{label}</option>
                   ))}
                 </select>
-              </SheetField>
-              <SheetField label="Recipients" required>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Recipients <span className="text-red-500">*</span></label>
                 <select
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all"
                   value={formData.recipientGroup}
-                  onChange={(e) =>
-                    setFormData({ ...formData, recipientGroup: e.target.value as RecipientGroup })
-                  }
+                  onChange={(e) => setFormData({ ...formData, recipientGroup: e.target.value as RecipientGroup })}
                 >
                   {Object.entries(recipientGroupLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
+                    <option key={value} value={value}>{label}</option>
                   ))}
                 </select>
-              </SheetField>
+              </div>
             </div>
 
             {formData.recipientGroup === RecipientGroup.CLASS && (
-              <SheetField label="Select Class" required>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Select Class <span className="text-red-500">*</span></label>
                 <select
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all"
                   value={formData.classId || ''}
                   onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
                 >
                   <option value="">Select a class</option>
                   {classes.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name} ({c.grade})
-                    </option>
+                    <option key={c._id} value={c._id}>{c.name} ({c.grade})</option>
                   ))}
                 </select>
-              </SheetField>
+              </div>
             )}
 
-            <SheetField label="Priority" required>
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Priority <span className="text-red-500">*</span></label>
               <select
-                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all"
                 value={formData.priority}
-                onChange={(e) =>
-                  setFormData({ ...formData, priority: e.target.value as MessagePriority })
-                }
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value as MessagePriority })}
               >
                 {Object.values(MessagePriority).map((priority) => (
-                  <option key={priority} value={priority}>
-                    {priority}
-                  </option>
+                  <option key={priority} value={priority}>{priority}</option>
                 ))}
               </select>
-            </SheetField>
-          </SheetSection>
+            </div>
+          </div>
 
-          <SheetSection title="Content">
-            <SheetField label="Subject" required>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3">Content</h3>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Subject <span className="text-red-500">*</span></label>
               <input
                 type="text"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all"
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                 placeholder="Enter subject..."
                 required
               />
-            </SheetField>
-
-            <SheetField label="Message" required>
+            </div>
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Message <span className="text-red-500">*</span></label>
               <textarea
-                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all resize-none"
                 rows={6}
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 placeholder="Write your message..."
                 required
               />
-            </SheetField>
-          </SheetSection>
+            </div>
+          </div>
         </form>
-      </SlideSheet>
+      </FormModal>
 
-      {/* View Message Sheet */}
+      {/* View Message Modal */}
       {selectedMessage && (
-        <SlideSheet
-          isOpen={showDetailsSheet}
+        <FormModal
+          open={showDetailsModal}
           onClose={() => {
-            setShowDetailsSheet(false);
+            setShowDetailsModal(false);
             setSelectedMessage(null);
           }}
           title={selectedMessage.subject}
-          subtitle={`${typeLabels[selectedMessage.type]} - ${selectedMessage.priority} Priority`}
           size="md"
           footer={
-            <div className="flex justify-between gap-3 w-full">
-              <Button
-                variant="outline"
+            <>
+              <button
                 onClick={() => handleDelete(selectedMessage._id)}
-                className="text-red-600 hover:bg-red-50 border-red-200"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
               >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
-              </Button>
-              <Button variant="outline" onClick={() => {
-                setShowDetailsSheet(false);
-                setSelectedMessage(null);
-              }}>
+                <Trash2 className="w-4 h-4" /> Delete
+              </button>
+              <button
+                onClick={() => {
+                  setShowDetailsModal(false);
+                  setSelectedMessage(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+              >
                 Close
-              </Button>
-            </div>
+              </button>
+            </>
           }
         >
           <div className="space-y-6">
-            <SheetSection title="Message Information">
-              <SheetDetailRow label="From">
-                {selectedMessage.senderId?.firstName} {selectedMessage.senderId?.lastName}
-              </SheetDetailRow>
-              <SheetDetailRow label="To">
-                {recipientGroupLabels[selectedMessage.recipientGroup]}
-                {selectedMessage.classId && ` (${selectedMessage.classId.name})`}
-              </SheetDetailRow>
-              <SheetDetailRow label="Sent">
-                {new Date(selectedMessage.createdAt).toLocaleString()}
-              </SheetDetailRow>
-              <SheetDetailRow label="Priority">
-                <span className={`text-xs px-2.5 py-0.5 rounded-full ${priorityColors[selectedMessage.priority]}`}>
-                  {selectedMessage.priority}
-                </span>
-              </SheetDetailRow>
-              {selectedMessage.readBy && selectedMessage.readBy.length > 0 && (
-                <SheetDetailRow label="Read Status">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span>Read by {selectedMessage.readBy.length} recipient(s)</span>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-3">Message Information</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                  <span className="text-sm text-slate-500">From</span>
+                  <span className="text-sm font-medium text-slate-900">{selectedMessage.senderId?.firstName} {selectedMessage.senderId?.lastName}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                  <span className="text-sm text-slate-500">To</span>
+                  <span className="text-sm font-medium text-slate-900">
+                    {recipientGroupLabels[selectedMessage.recipientGroup]}
+                    {selectedMessage.classId && ` (${selectedMessage.classId.name})`}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                  <span className="text-sm text-slate-500">Sent</span>
+                  <span className="text-sm font-medium text-slate-900">{new Date(selectedMessage.createdAt).toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                  <span className="text-sm text-slate-500">Priority</span>
+                  <SchoolStatusBadge value={selectedMessage.priority} />
+                </div>
+                {selectedMessage.readBy && selectedMessage.readBy.length > 0 && (
+                  <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span className="text-sm text-slate-500">Read Status</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="text-sm font-medium text-slate-900">Read by {selectedMessage.readBy.length} recipient(s)</span>
+                    </div>
                   </div>
-                </SheetDetailRow>
-              )}
-            </SheetSection>
+                )}
+              </div>
+            </div>
 
-            <SheetSection title="Message Content">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-3">Message Content</h3>
               <div className="bg-slate-50 rounded-lg border border-slate-200 p-5">
                 <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">
                   {selectedMessage.content}
                 </p>
               </div>
-            </SheetSection>
+            </div>
           </div>
-        </SlideSheet>
+        </FormModal>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel="Delete"
+        confirmColor="red"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+      />
     </section>
   );
 }

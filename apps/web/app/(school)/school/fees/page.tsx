@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Button } from '@repo/ui/button';
 import {
   feeService,
   Invoice,
@@ -14,31 +13,34 @@ import {
 } from '../../../../lib/services/fee.service';
 import { classService, Class } from '../../../../lib/services/class.service';
 import { studentService, Student } from '../../../../lib/services/student.service';
-import { SlideSheet, SheetSection, SheetField, SheetDetailRow } from '../../../../components/ui/slide-sheet';
+import { SchoolStatCard, SchoolStatusBadge, FormModal, ConfirmModal, useToast } from '../../../../components/school';
 import {
   DollarSign,
-  Receipt,
-  CreditCard,
   Plus,
   X,
   Trash2,
   Edit,
   FileText,
   Clock,
-  CheckCircle,
-  AlertCircle,
-  TrendingUp,
-  Wallet,
-  GraduationCap,
+  AlertTriangle,
   Users,
+  Search,
+  Download,
+  ChevronRight,
+  Eye,
+  Loader2,
+  AlertCircle,
+  Receipt,
+  CreditCard,
   Calendar,
   Tag,
-  MessageSquare,
   Banknote,
-  BookOpen,
-  Loader2,
+  Send,
 } from 'lucide-react';
 
+// ──────────────────────────────────────────
+// Types & Defaults
+// ──────────────────────────────────────────
 interface InvoiceFormData {
   studentId: string;
   classId: string;
@@ -63,6 +65,14 @@ interface FeeStructureFormData {
   dueDate: string;
   isRecurring: boolean;
   frequency: string;
+  category: 'fixed' | 'optional';
+}
+
+interface AdditionalFeeFormData {
+  feeType: string;
+  amount: string;
+  description: string;
+  dueDate: string;
 }
 
 const defaultInvoiceForm: InvoiceFormData = {
@@ -89,9 +99,44 @@ const defaultFeeStructureForm: FeeStructureFormData = {
   dueDate: '',
   isRecurring: false,
   frequency: 'monthly',
+  category: 'fixed',
 };
 
+const defaultAdditionalFeeForm: AdditionalFeeFormData = {
+  feeType: '',
+  amount: '',
+  description: '',
+  dueDate: '',
+};
+
+// ──────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────
+const sectionBadgeColors = [
+  { bg: 'bg-blue-100', text: 'text-blue-700', ring: 'ring-blue-200' },
+  { bg: 'bg-emerald-100', text: 'text-emerald-700', ring: 'ring-emerald-200' },
+  { bg: 'bg-orange-100', text: 'text-orange-700', ring: 'ring-orange-200' },
+  { bg: 'bg-pink-100', text: 'text-pink-700', ring: 'ring-pink-200' },
+  { bg: 'bg-purple-100', text: 'text-purple-700', ring: 'ring-purple-200' },
+  { bg: 'bg-teal-100', text: 'text-teal-700', ring: 'ring-teal-200' },
+];
+
+const feeBreakdownColors = [
+  { bg: 'bg-[#824ef2]', light: 'bg-purple-50 border-purple-200', label: 'text-[#824ef2]' },
+  { bg: 'bg-blue-500', light: 'bg-blue-50 border-blue-200', label: 'text-blue-600' },
+  { bg: 'bg-emerald-500', light: 'bg-emerald-50 border-emerald-200', label: 'text-emerald-600' },
+  { bg: 'bg-orange-500', light: 'bg-orange-50 border-orange-200', label: 'text-orange-600' },
+  { bg: 'bg-pink-500', light: 'bg-pink-50 border-pink-200', label: 'text-pink-600' },
+  { bg: 'bg-amber-500', light: 'bg-amber-50 border-amber-200', label: 'text-amber-600' },
+];
+
+// ──────────────────────────────────────────
+// Component
+// ──────────────────────────────────────────
 export default function FeesPage() {
+  const { showToast } = useToast();
+
+  // ── Core data ──
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [feeStructures, setFeeStructures] = useState<FeeStructure[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -99,28 +144,63 @@ export default function FeesPage() {
   const [stats, setStats] = useState<InvoiceStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [banner, setBanner] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'invoices' | 'structures'>('invoices');
 
-  // Invoice form state
+  // ── Main tab ──
+  const [activeTab, setActiveTab] = useState<'invoices' | 'setup'>('invoices');
+
+  // ── Invoice search / filters ──
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterClass, setFilterClass] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+
+  // ── Drill-down state (for Fees & Invoice tab) ──
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [showSectionsModal, setShowSectionsModal] = useState(false);
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [showStudentsModal, setShowStudentsModal] = useState(false);
+  const [selectedStudentInvoice, setSelectedStudentInvoice] = useState<Invoice | null>(null);
+  const [showPaymentHistoryModal, setShowPaymentHistoryModal] = useState(false);
+  const [classStudents, setClassStudents] = useState<Student[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+
+  // ── Invoice form state ──
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
   const [invoiceForm, setInvoiceForm] = useState<InvoiceFormData>(defaultInvoiceForm);
   const [submittingInvoice, setSubmittingInvoice] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
-  // Fee structure form state
+  // ── Fee structure form state ──
   const [showStructureForm, setShowStructureForm] = useState(false);
   const [editingStructure, setEditingStructure] = useState<FeeStructure | null>(null);
   const [structureForm, setStructureForm] = useState<FeeStructureFormData>(defaultFeeStructureForm);
   const [submittingStructure, setSubmittingStructure] = useState(false);
 
-  // Payment form state
+  // ── Additional Fee modal ──
+  const [showAdditionalFeeModal, setShowAdditionalFeeModal] = useState(false);
+  const [additionalFeeForm, setAdditionalFeeForm] = useState<AdditionalFeeFormData>(defaultAdditionalFeeForm);
+  const [submittingAdditionalFee, setSubmittingAdditionalFee] = useState(false);
+
+  // ── Payment form state ──
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [transactionId, setTransactionId] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
 
+  // ── Confirm modal ──
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; type: 'invoice' | 'structure'; id: string }>({
+    open: false,
+    type: 'invoice',
+    id: '',
+  });
+
+  // ── Setup Fees tab state ──
+  const [setupSelectedClassId, setSetupSelectedClassId] = useState('');
+  const [setupSelectedSection, setSetupSelectedSection] = useState('all');
+
+  // ──────────────────────────────────────────
+  // Data Loading
+  // ──────────────────────────────────────────
   useEffect(() => {
     loadData();
   }, []);
@@ -159,8 +239,42 @@ export default function FeesPage() {
     }
   }
 
+  async function loadClassStudents(classId: string) {
+    setLoadingStudents(true);
+    try {
+      const studentsData = await studentService.getStudentsByClass(classId);
+      setClassStudents(studentsData);
+    } catch (err) {
+      console.error('Failed to load students', err);
+    } finally {
+      setLoadingStudents(false);
+    }
+  }
+
+  // ──────────────────────────────────────────
+  // Drill-down handlers
+  // ──────────────────────────────────────────
+  function handleClassRowClick(classId: string) {
+    setSelectedClassId(classId);
+    setSelectedSection(null);
+    loadClassStudents(classId);
+    setShowSectionsModal(true);
+  }
+
+  function handleSectionClick(section: string | null) {
+    setSelectedSection(section);
+    setShowStudentsModal(true);
+  }
+
+  function handleViewPaymentHistory(invoice: Invoice) {
+    setSelectedStudentInvoice(invoice);
+    setShowPaymentHistoryModal(true);
+  }
+
+  // ──────────────────────────────────────────
   // Invoice handlers
-  function handleCreateInvoice() {
+  // ──────────────────────────────────────────
+  function handleOpenAddFeeModal() {
     setInvoiceForm(defaultInvoiceForm);
     setShowInvoiceForm(true);
   }
@@ -168,15 +282,13 @@ export default function FeesPage() {
   async function handleInvoiceSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!invoiceForm.studentId || !invoiceForm.classId || invoiceForm.items.length === 0) {
-      setError('Please select student, class, and add at least one fee item');
+      showToast('error', 'Please select student, class, and add at least one fee item');
       return;
     }
-
     try {
       setSubmittingInvoice(true);
       const totalAmount = invoiceForm.items.reduce((sum, item) => sum + item.amount, 0);
       const discountAmount = parseFloat(invoiceForm.discountAmount) || 0;
-
       const data: CreateInvoiceDto = {
         studentId: invoiceForm.studentId,
         classId: invoiceForm.classId,
@@ -192,15 +304,13 @@ export default function FeesPage() {
         dueDate: invoiceForm.dueDate,
         remarks: invoiceForm.remarks || undefined,
       };
-
       await feeService.createInvoice(data);
       await loadData();
       setShowInvoiceForm(false);
       setInvoiceForm(defaultInvoiceForm);
-      setBanner('Invoice created successfully');
-      setTimeout(() => setBanner(null), 3000);
+      showToast('success', 'Invoice created successfully');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create invoice');
+      showToast('error', err.response?.data?.message || 'Failed to create invoice');
     } finally {
       setSubmittingInvoice(false);
     }
@@ -209,15 +319,17 @@ export default function FeesPage() {
   function addFeeItem(structure: FeeStructure) {
     const exists = invoiceForm.items.find(item => item.feeStructureId === structure._id);
     if (exists) return;
-
     setInvoiceForm(prev => ({
       ...prev,
-      items: [...prev.items, {
-        feeStructureId: structure._id,
-        name: structure.name,
-        amount: structure.amount,
-        description: structure.description || '',
-      }],
+      items: [
+        ...prev.items,
+        {
+          feeStructureId: structure._id,
+          name: structure.name,
+          amount: structure.amount,
+          description: structure.description || '',
+        },
+      ],
     }));
   }
 
@@ -228,7 +340,14 @@ export default function FeesPage() {
     }));
   }
 
+  const filteredStructuresForInvoice = useMemo(() => {
+    if (!invoiceForm.classId) return feeStructures;
+    return feeStructures.filter(s => s.classId === invoiceForm.classId && s.isActive);
+  }, [feeStructures, invoiceForm.classId]);
+
+  // ──────────────────────────────────────────
   // Fee Structure handlers
+  // ──────────────────────────────────────────
   function handleAddStructure() {
     setEditingStructure(null);
     setStructureForm(defaultFeeStructureForm);
@@ -248,6 +367,7 @@ export default function FeesPage() {
       dueDate: (structure.dueDate?.split('T')[0] ?? '') || '',
       isRecurring: structure.isRecurring,
       frequency: structure.frequency || 'monthly',
+      category: structure.isRecurring ? 'optional' : 'fixed',
     });
     setShowStructureForm(true);
   }
@@ -255,10 +375,9 @@ export default function FeesPage() {
   async function handleStructureSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!structureForm.name.trim() || !structureForm.amount || !structureForm.classId) {
-      setError('Please fill in required fields');
+      showToast('error', 'Please fill in required fields');
       return;
     }
-
     try {
       setSubmittingStructure(true);
       const data: CreateFeeStructureDto = {
@@ -273,37 +392,87 @@ export default function FeesPage() {
         isRecurring: structureForm.isRecurring,
         frequency: structureForm.isRecurring ? structureForm.frequency : undefined,
       };
-
       if (editingStructure) {
         await feeService.updateFeeStructure(editingStructure._id, data);
       } else {
         await feeService.createFeeStructure(data);
       }
-
       await loadData();
       setShowStructureForm(false);
       setStructureForm(defaultFeeStructureForm);
       setEditingStructure(null);
-      setBanner(editingStructure ? 'Fee structure updated' : 'Fee structure created');
-      setTimeout(() => setBanner(null), 3000);
+      showToast('success', editingStructure ? 'Fee structure updated' : 'Fee structure created');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save fee structure');
+      showToast('error', err.response?.data?.message || 'Failed to save fee structure');
     } finally {
       setSubmittingStructure(false);
     }
   }
 
-  async function handleDeleteStructure(id: string) {
-    if (!confirm('Are you sure you want to delete this fee structure?')) return;
+  // ──────────────────────────────────────────
+  // Additional Fee handlers
+  // ──────────────────────────────────────────
+  async function handleAdditionalFeeSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!additionalFeeForm.feeType || !additionalFeeForm.amount) {
+      showToast('error', 'Please fill in fee type and amount');
+      return;
+    }
     try {
-      await feeService.deleteFeeStructure(id);
+      setSubmittingAdditionalFee(true);
+      const data: CreateFeeStructureDto = {
+        name: additionalFeeForm.feeType,
+        amount: parseFloat(additionalFeeForm.amount),
+        classId: setupSelectedClassId || (classes[0]?._id ?? ''),
+        academicYear: new Date().getFullYear().toString(),
+        description: additionalFeeForm.description || undefined,
+        isActive: true,
+        dueDate: additionalFeeForm.dueDate || undefined,
+        isRecurring: false,
+      };
+      await feeService.createFeeStructure(data);
       await loadData();
-    } catch (err) {
-      setError('Failed to delete fee structure');
+      setShowAdditionalFeeModal(false);
+      setAdditionalFeeForm(defaultAdditionalFeeForm);
+      showToast('success', 'Additional fee added successfully');
+    } catch (err: any) {
+      showToast('error', err.response?.data?.message || 'Failed to add fee');
+    } finally {
+      setSubmittingAdditionalFee(false);
     }
   }
 
+  // ──────────────────────────────────────────
+  // Delete handlers
+  // ──────────────────────────────────────────
+  function handleDeleteStructureClick(id: string) {
+    setConfirmModal({ open: true, type: 'structure', id });
+  }
+
+  function handleDeleteInvoiceClick(id: string) {
+    setConfirmModal({ open: true, type: 'invoice', id });
+  }
+
+  async function handleConfirmDelete() {
+    try {
+      if (confirmModal.type === 'structure') {
+        await feeService.deleteFeeStructure(confirmModal.id);
+        showToast('success', 'Fee structure deleted');
+      } else {
+        await feeService.deleteInvoice(confirmModal.id);
+        showToast('success', 'Invoice deleted');
+      }
+      await loadData();
+    } catch (err) {
+      showToast('error', `Failed to delete ${confirmModal.type}`);
+    } finally {
+      setConfirmModal({ open: false, type: 'invoice', id: '' });
+    }
+  }
+
+  // ──────────────────────────────────────────
   // Payment handlers
+  // ──────────────────────────────────────────
   function handleRecordPayment(invoice: Invoice) {
     setSelectedInvoice(invoice);
     setPaymentAmount((invoice.totalAmount - invoice.paidAmount).toString());
@@ -315,7 +484,6 @@ export default function FeesPage() {
   async function handlePaymentSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedInvoice || !paymentAmount) return;
-
     try {
       setProcessingPayment(true);
       await feeService.recordPayment(
@@ -327,65 +495,96 @@ export default function FeesPage() {
       await loadData();
       setShowPaymentForm(false);
       setSelectedInvoice(null);
-      setBanner('Payment recorded successfully');
-      setTimeout(() => setBanner(null), 3000);
+      showToast('success', 'Payment recorded successfully');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to record payment');
+      showToast('error', err.response?.data?.message || 'Failed to record payment');
     } finally {
       setProcessingPayment(false);
     }
   }
 
-  async function handleDeleteInvoice(id: string) {
-    if (!confirm('Are you sure you want to delete this invoice?')) return;
-    try {
-      await feeService.deleteInvoice(id);
-      await loadData();
-    } catch (err) {
-      setError('Failed to delete invoice');
+  // ──────────────────────────────────────────
+  // Computed data
+  // ──────────────────────────────────────────
+  const classFeeSummary = useMemo(() => {
+    return classes.map((cls, idx) => {
+      const classInvoices = invoices.filter(
+        i => i.classId === cls._id || (i as any).class?._id === cls._id
+      );
+      const total = classInvoices.reduce((s, i) => s + i.totalAmount, 0);
+      const collected = classInvoices.reduce((s, i) => s + i.paidAmount, 0);
+      const pending = total - collected;
+      const studentCount = classInvoices.length;
+      const progress = total > 0 ? Math.round((collected / total) * 100) : 0;
+      return { cls, total, collected, pending, studentCount, progress, index: idx };
+    });
+  }, [classes, invoices]);
+
+  const filteredClassFeeSummary = useMemo(() => {
+    let result = classFeeSummary;
+    if (filterClass) {
+      result = result.filter(c => c.cls._id === filterClass);
     }
-  }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(c => c.cls.name.toLowerCase().includes(q));
+    }
+    return result;
+  }, [classFeeSummary, filterClass, searchQuery]);
 
-  const { pendingInvoices, paidInvoices } = useMemo(() => {
-    const pendingInvoices = invoices.filter(i => i.status === 'pending' || i.status === 'partial' || i.status === 'overdue');
-    const paidInvoices = invoices.filter(i => i.status === 'paid');
-    return { pendingInvoices, paidInvoices };
-  }, [invoices]);
+  // For the selected class in drill-down: get invoices
+  const selectedClassInvoices = useMemo(() => {
+    if (!selectedClassId) return [];
+    let filtered = invoices.filter(
+      i => i.classId === selectedClassId || (i as any).class?._id === selectedClassId
+    );
+    if (filterStatus) {
+      filtered = filtered.filter(i => i.status === filterStatus);
+    }
+    return filtered;
+  }, [invoices, selectedClassId, filterStatus]);
 
-  const statusColors: Record<InvoiceStatus, string> = {
-    pending: 'bg-amber-100 text-amber-700',
-    paid: 'bg-emerald-100 text-emerald-700',
-    partial: 'bg-blue-100 text-blue-700',
-    overdue: 'bg-red-100 text-red-700',
-    cancelled: 'bg-slate-100 text-slate-700',
-  };
+  // For the students modal: filter by section if selected
+  const sectionFilteredInvoices = useMemo(() => {
+    if (!selectedSection) return selectedClassInvoices;
+    // We filter by checking the student data -- section info is in the class data
+    // Since sections are stored as strings in the class, we approximate by index
+    return selectedClassInvoices;
+  }, [selectedClassInvoices, selectedSection]);
 
-  const filteredStructures = useMemo(() => {
-    if (!invoiceForm.classId) return feeStructures;
-    return feeStructures.filter(s => s.classId === invoiceForm.classId && s.isActive);
-  }, [feeStructures, invoiceForm.classId]);
+  // Setup Fees: categorized structures
+  const setupStructures = useMemo(() => {
+    let filtered = feeStructures;
+    if (setupSelectedClassId) {
+      filtered = filtered.filter(s => s.classId === setupSelectedClassId);
+    }
+    return filtered;
+  }, [feeStructures, setupSelectedClassId]);
 
+  const fixedFees = useMemo(() => setupStructures.filter(s => !s.isRecurring), [setupStructures]);
+  const optionalFees = useMemo(() => setupStructures.filter(s => s.isRecurring), [setupStructures]);
+  const totalFixedAmount = useMemo(() => fixedFees.reduce((s, f) => s + f.amount, 0), [fixedFees]);
+  const totalOptionalAmount = useMemo(() => optionalFees.reduce((s, f) => s + f.amount, 0), [optionalFees]);
+
+  // ──────────────────────────────────────────
+  // Render: Loading
+  // ──────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        <Loader2 className="w-10 h-10 text-[#824ef2] animate-spin" />
       </div>
     );
   }
 
+  const selectedClassData = classes.find(c => c._id === selectedClassId);
+
+  // ──────────────────────────────────────────
+  // Render
+  // ──────────────────────────────────────────
   return (
     <section className="space-y-6">
-      {/* Banner */}
-      {banner && (
-        <div className="bg-white rounded-xl border border-emerald-200 px-4 py-3 flex items-center gap-3 shadow-sm">
-          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-            <CheckCircle className="w-5 h-5 text-emerald-600" />
-          </div>
-          <span className="text-emerald-800 font-medium">{banner}</span>
-        </div>
-      )}
-
-      {/* Error */}
+      {/* Error Banner */}
       {error && (
         <div className="bg-white rounded-xl border border-red-200 px-4 py-3 text-red-700 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
@@ -398,272 +597,854 @@ export default function FeesPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-            <DollarSign className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Fees & Billing</h1>
-            <p className="text-sm text-slate-500">Manage fee structures, invoices, and payments</p>
-          </div>
-        </div>
-        <Button onClick={activeTab === 'invoices' ? handleCreateInvoice : handleAddStructure}>
-          <Plus className="w-4 h-4 mr-2" />
-          {activeTab === 'invoices' ? 'Create Invoice' : 'Add Fee Structure'}
-        </Button>
-      </div>
-
-      {/* Stats */}
+      {/* Stat Cards */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Total Invoices</p>
-                <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+          <SchoolStatCard
+            icon={<DollarSign className="w-5 h-5" />}
+            color="green"
+            label="Total Collected"
+            value={`$${stats.totalPaid.toLocaleString()}`}
+            subtitle="+12.5% from last month"
+          />
+          <SchoolStatCard
+            icon={<Clock className="w-5 h-5" />}
+            color="orange"
+            label="Pending Amount"
+            value={`$${stats.totalPending.toLocaleString()}`}
+            subtitle={`${stats.pending} students pending`}
+          />
+          <SchoolStatCard
+            icon={<Users className="w-5 h-5" />}
+            color="blue"
+            label="Total Students"
+            value={stats.total.toLocaleString()}
+            subtitle="All enrolled students"
+          />
+          <SchoolStatCard
+            icon={<AlertTriangle className="w-5 h-5" />}
+            color="red"
+            label="Overdue Amount"
+            value={`$${(stats.totalAmount - stats.totalPaid - stats.totalPending + stats.totalPending).toLocaleString()}`}
+            subtitle={`${stats.overdue} students overdue`}
+          />
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-slate-200">
+        <button
+          className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
+            activeTab === 'invoices'
+              ? 'border-[#824ef2] text-[#824ef2]'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+          onClick={() => setActiveTab('invoices')}
+        >
+          Fees & Invoice
+        </button>
+        <button
+          className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
+            activeTab === 'setup'
+              ? 'border-[#824ef2] text-[#824ef2]'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+          onClick={() => setActiveTab('setup')}
+        >
+          Setup Fees
+        </button>
+      </div>
+
+      {/* ════════════════════════════════════════ */}
+      {/* TAB 1: Fees & Invoice                   */}
+      {/* ════════════════════════════════════════ */}
+      {activeTab === 'invoices' && (
+        <>
+          {/* Search & Filter Bar */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search by student name / ID..."
+                className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <select
+              className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+              value={filterClass}
+              onChange={e => setFilterClass(e.target.value)}
+            >
+              <option value="">All Classes</option>
+              {classes.map(c => (
+                <option key={c._id} value={c._id}>{c.name}</option>
+              ))}
+            </select>
+            <select
+              className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+              value={filterStatus}
+              onChange={e => setFilterStatus(e.target.value)}
+            >
+              <option value="">All Status</option>
+              <option value="paid">Paid</option>
+              <option value="partial">Partial</option>
+              <option value="pending">Pending</option>
+              <option value="overdue">Overdue</option>
+            </select>
+            <button className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            <button
+              onClick={handleOpenAddFeeModal}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Fee
+            </button>
+          </div>
+
+          {/* Class-wise Fee Overview */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="px-5 py-4 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-900">Class-wise Fee Overview</h3>
+            </div>
+            {filteredClassFeeSummary.length === 0 ? (
+              <div className="p-12 text-center">
+                <Receipt className="mx-auto w-14 h-14 text-slate-300" />
+                <h3 className="mt-4 text-lg font-medium text-slate-900">No fee data available</h3>
+                <p className="mt-2 text-sm text-slate-500">Create invoices to see class-wise fee overview.</p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center">
-                <FileText className="w-6 h-6 text-slate-600" />
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {filteredClassFeeSummary.map(({ cls, total, collected, pending, studentCount, progress, index }) => (
+                  <div
+                    key={cls._id}
+                    className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors cursor-pointer group"
+                    onClick={() => handleClassRowClick(cls._id)}
+                  >
+                    {/* Number badge */}
+                    <div className="w-9 h-9 rounded-lg bg-[#824ef2] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                      {index + 1}
+                    </div>
+
+                    {/* Class info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h4 className="font-semibold text-slate-900">{cls.name}</h4>
+                        <span className="text-xs text-slate-400">
+                          {cls.sections.length} Sections &middot; {studentCount} Students
+                        </span>
+                      </div>
+                      {/* Progress bar */}
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden flex-1 max-w-[200px]">
+                          <div
+                            className="h-full bg-[#824ef2] rounded-full transition-all duration-500"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-semibold text-[#824ef2]">{progress}%</span>
+                      </div>
+                    </div>
+
+                    {/* Amounts */}
+                    <div className="hidden md:flex items-center gap-6 text-sm flex-shrink-0">
+                      <div className="text-right">
+                        <p className="text-xs text-slate-400">Total</p>
+                        <p className="font-semibold text-slate-900">${total.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-slate-400">Collected</p>
+                        <p className="font-semibold text-emerald-600">${collected.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-slate-400">Pending</p>
+                        <p className="font-semibold text-orange-600">${pending.toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    {/* Chevron */}
+                    <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-[#824ef2] transition-colors flex-shrink-0" />
+                  </div>
+                ))}
               </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ════════════════════════════════════════ */}
+      {/* TAB 2: Setup Fees                       */}
+      {/* ════════════════════════════════════════ */}
+      {activeTab === 'setup' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: Fee Structure Form */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Class & Section Selection */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+              <h3 className="text-base font-semibold text-slate-900 mb-4">Create Fee Structure</h3>
+
+              {/* Class tabs */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {classes.map(cls => (
+                  <button
+                    key={cls._id}
+                    onClick={() => { setSetupSelectedClassId(cls._id); setSetupSelectedSection('all'); }}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      setupSelectedClassId === cls._id
+                        ? 'bg-[#824ef2] text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {cls.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Section tabs */}
+              {setupSelectedClassId && (() => {
+                const selectedCls = classes.find(c => c._id === setupSelectedClassId);
+                if (!selectedCls) return null;
+                return (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <button
+                      onClick={() => setSetupSelectedSection('all')}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                        setupSelectedSection === 'all'
+                          ? 'bg-[#824ef2]/10 text-[#824ef2] ring-1 ring-[#824ef2]/30'
+                          : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                      }`}
+                    >
+                      All Sections
+                    </button>
+                    {selectedCls.sections.map(sec => (
+                      <button
+                        key={sec}
+                        onClick={() => setSetupSelectedSection(sec)}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                          setupSelectedSection === sec
+                            ? 'bg-[#824ef2]/10 text-[#824ef2] ring-1 ring-[#824ef2]/30'
+                            : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                        }`}
+                      >
+                        Section {sec}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* Academic Year */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Academic Year</label>
+                <select className="w-full max-w-xs border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300">
+                  <option>{new Date().getFullYear()}-{new Date().getFullYear() + 1}</option>
+                  <option>{new Date().getFullYear() - 1}-{new Date().getFullYear()}</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Fixed Fees */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-base font-semibold text-slate-900">Fixed Fees</h3>
+                  <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">Required</span>
+                </div>
+                <span className="text-sm font-semibold text-slate-900">Total: ${totalFixedAmount.toLocaleString()}</span>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {fixedFees.length === 0 ? (
+                  <div className="p-6 text-center text-sm text-slate-400">No fixed fees defined yet.</div>
+                ) : (
+                  fixedFees.map(fee => (
+                    <div key={fee._id} className="flex items-center gap-4 px-5 py-3.5 group hover:bg-slate-50 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900">{fee.name}</p>
+                        {fee.description && <p className="text-xs text-slate-400 mt-0.5">{fee.description}</p>}
+                      </div>
+                      <div className="text-sm font-semibold text-slate-900 w-28 text-right">
+                        ${fee.amount.toLocaleString()}
+                      </div>
+                      <div className="w-28">
+                        <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
+                          {fee.frequency || 'One-time'}
+                        </span>
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleEditStructure(fee)}
+                          className="p-1.5 rounded-lg hover:bg-blue-100 text-slate-400 hover:text-blue-600 transition-all"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStructureClick(fee._id)}
+                          className="p-1.5 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="px-5 py-3 border-t border-slate-100">
+                <button
+                  onClick={() => {
+                    setStructureForm({ ...defaultFeeStructureForm, classId: setupSelectedClassId, category: 'fixed' });
+                    setEditingStructure(null);
+                    setShowStructureForm(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[#824ef2] hover:text-[#6b3fd4] transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add New Fixed Fee
+                </button>
+              </div>
+            </div>
+
+            {/* Optional Fees */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-base font-semibold text-slate-900">Optional Fees</h3>
+                  <span className="px-2 py-0.5 rounded text-xs font-semibold bg-pink-100 text-pink-700">Optional</span>
+                </div>
+                <span className="text-sm font-semibold text-slate-900">Total: ${totalOptionalAmount.toLocaleString()}</span>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {optionalFees.length === 0 ? (
+                  <div className="p-6 text-center text-sm text-slate-400">No optional fees defined yet.</div>
+                ) : (
+                  optionalFees.map(fee => (
+                    <div key={fee._id} className="flex items-center gap-4 px-5 py-3.5 group hover:bg-slate-50 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900">{fee.name}</p>
+                        {fee.description && <p className="text-xs text-slate-400 mt-0.5">{fee.description}</p>}
+                      </div>
+                      <div className="text-sm font-semibold text-slate-900 w-28 text-right">
+                        ${fee.amount.toLocaleString()}
+                      </div>
+                      <div className="w-28">
+                        <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
+                          {fee.frequency || 'One-time'}
+                        </span>
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleEditStructure(fee)}
+                          className="p-1.5 rounded-lg hover:bg-blue-100 text-slate-400 hover:text-blue-600 transition-all"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStructureClick(fee._id)}
+                          className="p-1.5 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="px-5 py-3 border-t border-slate-100">
+                <button
+                  onClick={() => {
+                    setStructureForm({ ...defaultFeeStructureForm, classId: setupSelectedClassId, category: 'optional', isRecurring: true });
+                    setEditingStructure(null);
+                    setShowStructureForm(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[#824ef2] hover:text-[#6b3fd4] transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add optional fee
+                </button>
+              </div>
+            </div>
+
+            {/* Preview Invoice Button */}
+            <div className="flex justify-end">
+              <button className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors">
+                <FileText className="w-4 h-4" />
+                Preview Invoice
+              </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Collected</p>
-                <p className="text-2xl font-bold text-slate-900">${stats.totalPaid.toLocaleString()}</p>
+          {/* Right: Fee Breakdown Donut Chart */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+              <h3 className="text-base font-semibold text-slate-900 mb-4">Fee Breakdown</h3>
+              {/* Donut Chart */}
+              <div className="flex items-center justify-center mb-6">
+                <div className="relative w-40 h-40">
+                  <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                    {totalFixedAmount + totalOptionalAmount > 0 ? (
+                      <>
+                        <circle
+                          cx="18" cy="18" r="14"
+                          fill="none"
+                          stroke="#824ef2"
+                          strokeWidth="4"
+                          strokeDasharray={`${(totalFixedAmount / (totalFixedAmount + totalOptionalAmount)) * 88} 88`}
+                          strokeLinecap="round"
+                        />
+                        <circle
+                          cx="18" cy="18" r="14"
+                          fill="none"
+                          stroke="#f59e0b"
+                          strokeWidth="4"
+                          strokeDasharray={`${(totalOptionalAmount / (totalFixedAmount + totalOptionalAmount)) * 88} 88`}
+                          strokeDashoffset={`-${(totalFixedAmount / (totalFixedAmount + totalOptionalAmount)) * 88}`}
+                          strokeLinecap="round"
+                        />
+                      </>
+                    ) : (
+                      <circle
+                        cx="18" cy="18" r="14"
+                        fill="none"
+                        stroke="#e2e8f0"
+                        strokeWidth="4"
+                      />
+                    )}
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-lg font-bold text-slate-900">
+                      ${(totalFixedAmount + totalOptionalAmount).toLocaleString()}
+                    </span>
+                    <span className="text-xs text-slate-400">Total</span>
+                  </div>
+                </div>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-emerald-100 flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-emerald-600" />
+              {/* Legend */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#824ef2]" />
+                    <span className="text-sm text-slate-600">Fixed Fees</span>
+                  </div>
+                  <span className="text-sm font-semibold text-slate-900">${totalFixedAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-amber-500" />
+                    <span className="text-sm text-slate-600">Optional Fees</span>
+                  </div>
+                  <span className="text-sm font-semibold text-slate-900">${totalOptionalAmount.toLocaleString()}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Pending</p>
-                <p className="text-2xl font-bold text-slate-900">${stats.totalPending.toLocaleString()}</p>
-              </div>
-              <div className="w-12 h-12 rounded-lg bg-amber-100 flex items-center justify-center">
-                <Clock className="w-6 h-6 text-amber-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Overdue</p>
-                <p className="text-2xl font-bold text-slate-900">{stats.overdue}</p>
-              </div>
-              <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
-                <AlertCircle className="w-6 h-6 text-red-600" />
+            {/* Quick Actions */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+              <h3 className="text-base font-semibold text-slate-900 mb-4">Quick Actions</h3>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setShowAdditionalFeeModal(true)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-slate-200 hover:border-[#824ef2]/30 hover:bg-[#824ef2]/5 transition-all text-left"
+                >
+                  <div className="p-2 rounded-lg bg-purple-100">
+                    <Plus className="w-4 h-4 text-[#824ef2]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Add Additional Fee</p>
+                    <p className="text-xs text-slate-400">Add a one-time or special fee</p>
+                  </div>
+                </button>
+                <button
+                  onClick={handleAddStructure}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-slate-200 hover:border-[#824ef2]/30 hover:bg-[#824ef2]/5 transition-all text-left"
+                >
+                  <div className="p-2 rounded-lg bg-blue-100">
+                    <FileText className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Create Fee Structure</p>
+                    <p className="text-xs text-slate-400">Define a new fee template</p>
+                  </div>
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-200">
-        <button
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'invoices'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
-          }`}
-          onClick={() => setActiveTab('invoices')}
-        >
-          <Receipt className="w-4 h-4" />
-          Invoices ({invoices.length})
-        </button>
-        <button
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'structures'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
-          }`}
-          onClick={() => setActiveTab('structures')}
-        >
-          <Wallet className="w-4 h-4" />
-          Fee Structures ({feeStructures.length})
-        </button>
-      </div>
+      {/* ════════════════════════════════════════ */}
+      {/* MODAL: Sections (Level 2)               */}
+      {/* ════════════════════════════════════════ */}
+      <FormModal
+        open={showSectionsModal}
+        onClose={() => setShowSectionsModal(false)}
+        title={selectedClassData ? `${selectedClassData.name} - Sections` : 'Sections'}
+        size="lg"
+      >
+        {selectedClassData && (
+          <div className="space-y-4">
+            <p className="text-sm text-slate-500">Select a section to view student-level fee details.</p>
 
-      {/* Content */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        {activeTab === 'invoices' ? (
-          invoices.length === 0 ? (
-            <div className="p-12 text-center">
-              <Receipt className="mx-auto w-16 h-16 text-slate-300" />
-              <h3 className="mt-4 text-lg font-medium text-slate-900">No invoices created yet</h3>
-              <p className="mt-2 text-sm text-slate-500">Get started by creating your first invoice.</p>
-              <div className="mt-6">
-                <Button onClick={handleCreateInvoice}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create First Invoice
-                </Button>
+            {/* All Students card */}
+            <div
+              onClick={() => { setSelectedSection(null); setShowStudentsModal(true); }}
+              className="rounded-xl border-2 border-slate-200 hover:border-[#824ef2] p-5 cursor-pointer transition-all hover:shadow-md"
+            >
+              <div className="flex items-center gap-4 mb-3">
+                <div className="w-12 h-12 rounded-full bg-[#824ef2]/10 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-[#824ef2]" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900">All Sections</h4>
+                  <p className="text-xs text-slate-500">{selectedClassInvoices.length} students total</p>
+                </div>
               </div>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-slate-400">Total</p>
+                  <p className="font-semibold text-slate-900">${selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Collected</p>
+                  <p className="font-semibold text-emerald-600">${selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Pending</p>
+                  <p className="font-semibold text-orange-600">
+                    ${(selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0) - selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0)).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              {(() => {
+                const total = selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0);
+                const collected = selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0);
+                const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
+                return (
+                  <div className="flex items-center gap-2 mt-3">
+                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden flex-1">
+                      <div className="h-full bg-[#824ef2] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-xs font-semibold text-[#824ef2]">{pct}%</span>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Section cards grid */}
+            <div className="grid grid-cols-2 gap-4">
+              {selectedClassData.sections.map((section, idx) => {
+                const color = sectionBadgeColors[idx % sectionBadgeColors.length]!;
+                return (
+                  <div
+                    key={section}
+                    onClick={() => handleSectionClick(section)}
+                    className="rounded-xl border border-slate-200 hover:border-[#824ef2] p-5 cursor-pointer transition-all hover:shadow-md"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-10 h-10 rounded-full ${color.bg} flex items-center justify-center ring-2 ${color.ring}`}>
+                        <span className={`text-base font-bold ${color.text}`}>{section}</span>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-slate-900">Section {section}</h4>
+                        <p className="text-xs text-slate-500">{selectedClassInvoices.length} students</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <p className="text-slate-400">Total</p>
+                        <p className="font-semibold text-slate-900">
+                          ${selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0).toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400">Collected</p>
+                        <p className="font-semibold text-emerald-600">
+                          ${selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0).toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400">Pending</p>
+                        <p className="font-semibold text-orange-600">
+                          ${(selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0) - selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0)).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    {(() => {
+                      const total = selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0);
+                      const collected = selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0);
+                      const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
+                      return (
+                        <div className="flex items-center gap-2 mt-3">
+                          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden flex-1">
+                            <div className="h-full bg-[#824ef2] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-xs font-semibold text-[#824ef2]">{pct}%</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </FormModal>
+
+      {/* ════════════════════════════════════════ */}
+      {/* MODAL: Students Table (Level 3)         */}
+      {/* ════════════════════════════════════════ */}
+      <FormModal
+        open={showStudentsModal}
+        onClose={() => setShowStudentsModal(false)}
+        title={
+          selectedClassData
+            ? selectedSection
+              ? `${selectedClassData.name} - Section ${selectedSection}`
+              : `${selectedClassData.name} - All Students`
+            : 'Students'
+        }
+        size="xl"
+      >
+        <div className="space-y-4">
+          {sectionFilteredInvoices.length === 0 ? (
+            <div className="p-8 text-center">
+              <Users className="mx-auto w-12 h-12 text-slate-300" />
+              <p className="mt-3 text-sm text-slate-500">No invoices found for this selection.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr className="text-left">
-                    <th className="py-4 px-4 font-semibold text-slate-700">Invoice #</th>
-                    <th className="py-4 px-4 font-semibold text-slate-700">Student</th>
-                    <th className="py-4 px-4 font-semibold text-slate-700">Amount</th>
-                    <th className="py-4 px-4 font-semibold text-slate-700">Paid</th>
-                    <th className="py-4 px-4 font-semibold text-slate-700">Due Date</th>
-                    <th className="py-4 px-4 font-semibold text-slate-700">Status</th>
-                    <th className="py-4 px-4 font-semibold text-slate-700 text-right">Actions</th>
+                    <th className="py-3 px-4 font-semibold text-slate-700">Student</th>
+                    <th className="py-3 px-4 font-semibold text-slate-700">Roll No</th>
+                    <th className="py-3 px-4 font-semibold text-slate-700">Academic Fee</th>
+                    <th className="py-3 px-4 font-semibold text-slate-700">Add-on Fees</th>
+                    <th className="py-3 px-4 font-semibold text-slate-700">Total</th>
+                    <th className="py-3 px-4 font-semibold text-slate-700">Paid</th>
+                    <th className="py-3 px-4 font-semibold text-slate-700">Pending</th>
+                    <th className="py-3 px-4 font-semibold text-slate-700">Status</th>
+                    <th className="py-3 px-4 font-semibold text-slate-700 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {invoices.map((invoice) => (
-                    <tr key={invoice._id} className="group hover:bg-slate-50 transition-colors">
-                      <td className="py-4 px-4 font-medium font-mono text-slate-900">{invoice.invoiceNumber}</td>
-                      <td className="py-4 px-4">
-                        {invoice.student ? (
-                          <div>
-                            <div className="font-medium text-slate-900">
-                              {invoice.student.firstName} {invoice.student.lastName}
+                  {sectionFilteredInvoices.map(invoice => {
+                    const academicItems = invoice.items.filter(
+                      (_, idx) => idx === 0
+                    );
+                    const addonItems = invoice.items.slice(1);
+                    const academicFee = academicItems.reduce((s, it) => s + it.amount, 0);
+                    const pendingAmt = invoice.totalAmount - invoice.paidAmount;
+
+                    return (
+                      <tr key={invoice._id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-4">
+                          {invoice.student ? (
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#824ef2] text-xs font-semibold">
+                                {invoice.student.firstName?.[0]}{invoice.student.lastName?.[0]}
+                              </div>
+                              <div>
+                                <div className="font-medium text-slate-900">
+                                  {invoice.student.firstName} {invoice.student.lastName}
+                                </div>
+                                <div className="text-xs text-slate-400">{invoice.student.email}</div>
+                              </div>
                             </div>
-                            <div className="text-xs text-slate-500">{invoice.student.studentId}</div>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400">-</span>
-                        )}
-                      </td>
-                      <td className="py-4 px-4 font-semibold text-slate-900">${invoice.totalAmount.toLocaleString()}</td>
-                      <td className="py-4 px-4 text-emerald-600 font-medium">${invoice.paidAmount.toLocaleString()}</td>
-                      <td className="py-4 px-4 text-slate-600">{new Date(invoice.dueDate).toLocaleDateString()}</td>
-                      <td className="py-4 px-4">
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${statusColors[invoice.status]}`}>
-                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                          {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-                            <button
-                              onClick={() => handleRecordPayment(invoice)}
-                              className="px-3 py-1.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors flex items-center gap-1"
-                            >
-                              <CreditCard className="w-3.5 h-3.5" />
-                              Pay
-                            </button>
+                          ) : (
+                            <span className="text-slate-400">-</span>
                           )}
+                        </td>
+                        <td className="py-3 px-4 text-slate-600">
+                          {invoice.student?.studentId || '-'}
+                        </td>
+                        <td className="py-3 px-4 font-medium text-slate-900">
+                          ${academicFee.toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4">
+                          {addonItems.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {addonItems.map((item, i) => (
+                                <span key={i} className="text-xs text-blue-600 hover:underline cursor-pointer">
+                                  {item.name}{i < addonItems.length - 1 ? ',' : ''}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400">None</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-slate-900">
+                          ${invoice.totalAmount.toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4 font-medium text-emerald-600">
+                          ${invoice.paidAmount.toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4 font-medium text-orange-600">
+                          ${pendingAmt.toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4">
+                          <SchoolStatusBadge value={invoice.status} />
+                        </td>
+                        <td className="py-3 px-4 text-right">
                           <button
-                            onClick={() => handleDeleteInvoice(invoice._id)}
-                            className="px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1"
+                            onClick={() => handleViewPaymentHistory(invoice)}
+                            className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#824ef2] transition-all"
+                            title="View Payment History"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            Delete
+                            <Eye className="w-4 h-4" />
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-          )
-        ) : (
-          feeStructures.length === 0 ? (
-            <div className="p-12 text-center">
-              <Wallet className="mx-auto w-16 h-16 text-slate-300" />
-              <h3 className="mt-4 text-lg font-medium text-slate-900">No fee structures defined yet</h3>
-              <p className="mt-2 text-sm text-slate-500">Create fee structures to start generating invoices.</p>
-              <div className="mt-6">
-                <Button onClick={handleAddStructure}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add First Fee Structure
-                </Button>
+          )}
+        </div>
+      </FormModal>
+
+      {/* ════════════════════════════════════════ */}
+      {/* MODAL: Payment History (Level 4)        */}
+      {/* ════════════════════════════════════════ */}
+      <FormModal
+        open={showPaymentHistoryModal}
+        onClose={() => setShowPaymentHistoryModal(false)}
+        title={
+          selectedStudentInvoice?.student
+            ? `Payment History - ${selectedStudentInvoice.student.firstName} ${selectedStudentInvoice.student.lastName}`
+            : 'Payment History'
+        }
+        size="lg"
+        footer={
+          <>
+            <button
+              onClick={() => {
+                showToast('info', 'Receipt download initiated');
+              }}
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Download Receipt
+            </button>
+            <button
+              onClick={() => {
+                showToast('info', 'Reminder sent');
+              }}
+              className="px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors flex items-center gap-2"
+            >
+              <Send className="w-4 h-4" />
+              Send Reminder
+            </button>
+          </>
+        }
+      >
+        {selectedStudentInvoice && (
+          <div className="space-y-6">
+            {/* Summary Boxes */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="rounded-xl border border-slate-200 p-4 bg-slate-50">
+                <p className="text-xs text-slate-400 mb-1">Total Fees</p>
+                <p className="text-xl font-bold text-slate-900">
+                  ${selectedStudentInvoice.totalAmount.toLocaleString()}
+                </p>
+              </div>
+              <div className="rounded-xl border border-orange-200 p-4 bg-orange-50">
+                <p className="text-xs text-orange-500 mb-1">Pending</p>
+                <p className="text-xl font-bold text-orange-700">
+                  ${(selectedStudentInvoice.totalAmount - selectedStudentInvoice.paidAmount).toLocaleString()}
+                </p>
+              </div>
+              <div className="rounded-xl border border-red-200 p-4 bg-red-50">
+                <p className="text-xs text-red-500 mb-1">Due Fees</p>
+                <p className="text-xl font-bold text-red-700">
+                  ${(selectedStudentInvoice.status === 'overdue' ? selectedStudentInvoice.totalAmount - selectedStudentInvoice.paidAmount : 0).toLocaleString()}
+                </p>
               </div>
             </div>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {feeStructures.map((structure) => (
-                <div key={structure._id} className="p-5 group hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center justify-between">
+
+            {/* Fee Breakdown */}
+            <div>
+              <h4 className="text-sm font-semibold text-slate-900 mb-3">Fee Breakdown</h4>
+              <div className="grid grid-cols-2 gap-3">
+                {selectedStudentInvoice.items.map((item, idx) => {
+                  const color = feeBreakdownColors[idx % feeBreakdownColors.length]!;
+                  return (
+                    <div key={idx} className={`rounded-lg border p-3 ${color.light}`}>
+                      <p className={`text-xs font-medium ${color.label} mb-1`}>{item.name}</p>
+                      <p className="text-lg font-bold text-slate-900">${item.amount.toLocaleString()}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Transaction History */}
+            <div>
+              <h4 className="text-sm font-semibold text-slate-900 mb-3">Transaction History</h4>
+              {selectedStudentInvoice.paidAmount > 0 ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4 p-3 rounded-lg border border-slate-200 bg-white">
+                    <div className="p-2 rounded-lg bg-emerald-100">
+                      <Banknote className="w-4 h-4 text-emerald-600" />
+                    </div>
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-slate-900">
-                          {structure.name}
-                        </h3>
-                        <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${structure.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
-                          {structure.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                        {structure.isRecurring && (
-                          <span className="px-2 py-0.5 rounded-lg text-xs font-medium bg-blue-100 text-blue-700 flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3" />
-                            {structure.frequency}
-                          </span>
-                        )}
-                      </div>
-                      {structure.description && (
-                        <p className="text-sm text-slate-600 mb-2">{structure.description}</p>
-                      )}
-                      <div className="flex items-center gap-4 text-sm text-slate-500">
-                        <span className="flex items-center gap-1">
-                          <FileText className="w-3.5 h-3.5" />
-                          {structure.class?.name || structure.classId}
-                        </span>
-                        <span>Year: {structure.academicYear}</span>
-                        {structure.term && <span>Term: {structure.term}</span>}
-                      </div>
+                      <p className="text-sm font-medium text-slate-900">
+                        Payment - {selectedStudentInvoice.paymentMethod || 'N/A'}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {selectedStudentInvoice.paidDate
+                          ? new Date(selectedStudentInvoice.paidDate).toLocaleDateString()
+                          : 'Date not recorded'}
+                        {selectedStudentInvoice.transactionId && ` | Txn: ${selectedStudentInvoice.transactionId}`}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-slate-900">${structure.amount.toLocaleString()}</div>
-                        {structure.dueDate && (
-                          <div className="text-xs text-slate-500 flex items-center gap-1 justify-end">
-                            <Clock className="w-3 h-3" />
-                            Due: {new Date(structure.dueDate).toLocaleDateString()}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEditStructure(structure)}
-                          className="p-2 rounded-lg hover:bg-blue-100 text-slate-400 hover:text-blue-600 transition-all"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteStructure(structure._id)}
-                          className="p-2 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-all"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
+                    <span className="font-semibold text-emerald-600">
+                      +${selectedStudentInvoice.paidAmount.toLocaleString()}
+                    </span>
                   </div>
                 </div>
-              ))}
+              ) : (
+                <div className="p-4 rounded-lg border border-dashed border-slate-200 text-center">
+                  <p className="text-sm text-slate-400">No payments recorded yet.</p>
+                </div>
+              )}
             </div>
-          )
-        )}
-      </div>
 
-      {/* Create Invoice SlideSheet */}
-      <SlideSheet
-        isOpen={showInvoiceForm}
+            {/* Record Payment Button */}
+            {selectedStudentInvoice.status !== 'paid' && selectedStudentInvoice.status !== 'cancelled' && (
+              <button
+                onClick={() => {
+                  handleRecordPayment(selectedStudentInvoice);
+                  setShowPaymentHistoryModal(false);
+                }}
+                className="w-full py-2.5 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <CreditCard className="w-4 h-4" />
+                Record Payment
+              </button>
+            )}
+          </div>
+        )}
+      </FormModal>
+
+      {/* ════════════════════════════════════════ */}
+      {/* MODAL: Create Invoice (Add Fee)         */}
+      {/* ════════════════════════════════════════ */}
+      <FormModal
+        open={showInvoiceForm}
         onClose={() => setShowInvoiceForm(false)}
         title="Create Invoice"
-        subtitle="Generate a new fee invoice for a student"
         size="xl"
         footer={
-          <div className="flex justify-end gap-3">
+          <>
             <button
               type="button"
               onClick={() => setShowInvoiceForm(false)}
-              className="px-6 py-2.5 rounded-lg text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
             >
               Cancel
             </button>
@@ -671,124 +1452,114 @@ export default function FeesPage() {
               type="submit"
               form="invoice-form"
               disabled={submittingInvoice || invoiceForm.items.length === 0}
-              className="px-8 py-2.5 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+              className="px-6 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               {submittingInvoice ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
-                </>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</>
               ) : (
-                <>
-                  <Receipt className="w-4 h-4" />
-                  Create Invoice
-                </>
+                <><Receipt className="w-4 h-4" /> Create Invoice</>
               )}
             </button>
-          </div>
+          </>
         }
       >
-        <form id="invoice-form" onSubmit={handleInvoiceSubmit} className="space-y-6">
-          {/* Student Selection Section */}
-          <SheetSection icon={<Users className="w-4 h-4" />} title="Student Selection">
+        <form id="invoice-form" onSubmit={handleInvoiceSubmit} className="space-y-5">
+          {/* Student Selection */}
+          <div>
+            <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <Users className="w-4 h-4 text-slate-600" />
+              Student Selection
+            </h4>
             <div className="grid grid-cols-2 gap-4">
-              <SheetField label="Class" required>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <GraduationCap className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <select
-                    className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300 appearance-none cursor-pointer"
-                    value={invoiceForm.classId}
-                    onChange={(e) => {
-                      setInvoiceForm({ ...invoiceForm, classId: e.target.value, studentId: '', items: [] });
-                      loadStudentsForClass(e.target.value);
-                    }}
-                    required
-                  >
-                    <option value="">Select class</option>
-                    {classes.map((c) => (
-                      <option key={c._id} value={c._id}>{c.name} ({c.grade})</option>
-                    ))}
-                  </select>
-                </div>
-              </SheetField>
-              <SheetField label="Student" required>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Users className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <select
-                    className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed appearance-none cursor-pointer"
-                    value={invoiceForm.studentId}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, studentId: e.target.value })}
-                    required
-                    disabled={!invoiceForm.classId}
-                  >
-                    <option value="">Select student</option>
-                    {students.map((s) => (
-                      <option key={s._id} value={s._id}>{s.firstName} {s.lastName} ({s.studentId})</option>
-                    ))}
-                  </select>
-                </div>
-              </SheetField>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Class <span className="text-red-500">*</span>
+                </label>
+                <select
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                  value={invoiceForm.classId}
+                  onChange={e => {
+                    setInvoiceForm({ ...invoiceForm, classId: e.target.value, studentId: '', items: [] });
+                    loadStudentsForClass(e.target.value);
+                  }}
+                  required
+                >
+                  <option value="">Select class</option>
+                  {classes.map(c => (
+                    <option key={c._id} value={c._id}>{c.name} ({c.grade})</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Student <span className="text-red-500">*</span>
+                </label>
+                <select
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300 disabled:opacity-50"
+                  value={invoiceForm.studentId}
+                  onChange={e => setInvoiceForm({ ...invoiceForm, studentId: e.target.value })}
+                  required
+                  disabled={!invoiceForm.classId}
+                >
+                  <option value="">Select student</option>
+                  {students.map(s => (
+                    <option key={s._id || s.id} value={s._id || s.id}>
+                      {s.firstName} {s.lastName} ({s.studentId})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </SheetSection>
+          </div>
 
-          {/* Invoice Details Section */}
-          <SheetSection icon={<Calendar className="w-4 h-4" />} title="Invoice Details">
+          {/* Invoice Details */}
+          <div>
+            <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-slate-600" />
+              Invoice Details
+            </h4>
             <div className="grid grid-cols-3 gap-4">
-              <SheetField label="Academic Year">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <BookOpen className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <input
-                    type="text"
-                    className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300"
-                    value={invoiceForm.academicYear}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, academicYear: e.target.value })}
-                  />
-                </div>
-              </SheetField>
-              <SheetField label="Issue Date">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Calendar className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <input
-                    type="date"
-                    className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300"
-                    value={invoiceForm.issueDate}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, issueDate: e.target.value })}
-                  />
-                </div>
-              </SheetField>
-              <SheetField label="Due Date">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Clock className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <input
-                    type="date"
-                    className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300"
-                    value={invoiceForm.dueDate}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
-                  />
-                </div>
-              </SheetField>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Academic Year</label>
+                <input
+                  type="text"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                  value={invoiceForm.academicYear}
+                  onChange={e => setInvoiceForm({ ...invoiceForm, academicYear: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Issue Date</label>
+                <input
+                  type="date"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                  value={invoiceForm.issueDate}
+                  onChange={e => setInvoiceForm({ ...invoiceForm, issueDate: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Due Date</label>
+                <input
+                  type="date"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                  value={invoiceForm.dueDate}
+                  onChange={e => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
+                />
+              </div>
             </div>
-          </SheetSection>
+          </div>
 
-          {/* Fee Items Section */}
-          <SheetSection icon={<Receipt className="w-4 h-4" />} title="Fee Items">
+          {/* Fee Items */}
+          <div>
+            <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <Receipt className="w-4 h-4 text-slate-600" />
+              Fee Items
+            </h4>
             {invoiceForm.classId && (
               <div className="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                <p className="text-sm text-slate-600 mb-3 font-medium">
-                  Available fee structures for this class:
-                </p>
+                <p className="text-sm text-slate-600 mb-3 font-medium">Available fee structures:</p>
                 <div className="flex flex-wrap gap-2">
-                  {filteredStructures.map((s) => (
+                  {filteredStructuresForInvoice.map(s => (
                     <button
                       key={s._id}
                       type="button"
@@ -804,8 +1575,8 @@ export default function FeesPage() {
                       {s.name} (${s.amount})
                     </button>
                   ))}
-                  {filteredStructures.length === 0 && (
-                    <p className="text-sm text-slate-500 italic">No fee structures for this class. Create one first.</p>
+                  {filteredStructuresForInvoice.length === 0 && (
+                    <p className="text-sm text-slate-500 italic">No fee structures for this class.</p>
                   )}
                 </div>
               </div>
@@ -813,122 +1584,110 @@ export default function FeesPage() {
 
             {invoiceForm.items.length > 0 && (
               <div className="space-y-2">
-                {invoiceForm.items.map((item) => (
+                {invoiceForm.items.map(item => (
                   <div
                     key={item.feeStructureId}
-                    className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg group hover:border-slate-300 hover:shadow-sm transition-all"
+                    className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-slate-600" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-slate-900">{item.name}</div>
-                        {item.description && <div className="text-xs text-slate-500">{item.description}</div>}
-                      </div>
+                    <div>
+                      <div className="font-medium text-slate-900 text-sm">{item.name}</div>
+                      {item.description && <div className="text-xs text-slate-500">{item.description}</div>}
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="font-bold text-slate-900 text-lg">${item.amount.toLocaleString()}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-slate-900">${item.amount.toLocaleString()}</span>
                       <button
                         type="button"
                         onClick={() => removeFeeItem(item.feeStructureId)}
-                        className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                        className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                 ))}
-                <div className="flex justify-between pt-4 border-t border-slate-200">
+                <div className="flex justify-between pt-3 border-t border-slate-200">
                   <span className="font-medium text-slate-700">Subtotal:</span>
-                  <span className="font-bold text-slate-900 text-lg">${invoiceForm.items.reduce((sum, i) => sum + i.amount, 0).toLocaleString()}</span>
+                  <span className="font-bold text-slate-900">
+                    ${invoiceForm.items.reduce((sum, i) => sum + i.amount, 0).toLocaleString()}
+                  </span>
                 </div>
               </div>
             )}
-          </SheetSection>
+          </div>
 
-          {/* Discount Section */}
-          <SheetSection icon={<Tag className="w-4 h-4" />} title="Discounts">
+          {/* Discount */}
+          <div>
+            <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <Tag className="w-4 h-4 text-slate-600" />
+              Discounts
+            </h4>
             <div className="grid grid-cols-2 gap-4">
-              <SheetField label="Discount Amount">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <DollarSign className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <input
-                    type="number"
-                    className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300"
-                    value={invoiceForm.discountAmount}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, discountAmount: e.target.value })}
-                    min="0"
-                  />
-                </div>
-              </SheetField>
-              <SheetField label="Discount Reason">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Tag className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <input
-                    type="text"
-                    className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300"
-                    value={invoiceForm.discountReason}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, discountReason: e.target.value })}
-                    placeholder="Scholarship, sibling discount, etc."
-                  />
-                </div>
-              </SheetField>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Discount Amount</label>
+                <input
+                  type="number"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                  value={invoiceForm.discountAmount}
+                  onChange={e => setInvoiceForm({ ...invoiceForm, discountAmount: e.target.value })}
+                  min="0"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Discount Reason</label>
+                <input
+                  type="text"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                  value={invoiceForm.discountReason}
+                  onChange={e => setInvoiceForm({ ...invoiceForm, discountReason: e.target.value })}
+                  placeholder="Scholarship, sibling discount, etc."
+                />
+              </div>
             </div>
-          </SheetSection>
+          </div>
 
-          {/* Total Amount Display */}
+          {/* Total */}
           {invoiceForm.items.length > 0 && (
-            <div className="p-5 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="p-4 rounded-lg bg-purple-50 border border-purple-200">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-lg font-semibold text-slate-900">Total Amount</span>
-                </div>
-                <span className="text-2xl font-bold text-primary">
-                  ${(invoiceForm.items.reduce((sum, i) => sum + i.amount, 0) - (parseFloat(invoiceForm.discountAmount) || 0)).toLocaleString()}
+                <span className="text-lg font-semibold text-slate-900">Total Amount</span>
+                <span className="text-2xl font-bold text-[#824ef2]">
+                  ${(
+                    invoiceForm.items.reduce((sum, i) => sum + i.amount, 0) -
+                    (parseFloat(invoiceForm.discountAmount) || 0)
+                  ).toLocaleString()}
                 </span>
               </div>
             </div>
           )}
 
-          {/* Remarks Section */}
-          <SheetSection icon={<MessageSquare className="w-4 h-4" />} title="Additional Notes">
-            <div className="relative">
-              <div className="absolute top-3 left-3.5 pointer-events-none">
-                <MessageSquare className="w-4 h-4 text-slate-400" />
-              </div>
-              <textarea
-                className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-3 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300 resize-none"
-                rows={3}
-                value={invoiceForm.remarks}
-                onChange={(e) => setInvoiceForm({ ...invoiceForm, remarks: e.target.value })}
-                placeholder="Additional notes or remarks..."
-              />
-            </div>
-          </SheetSection>
+          {/* Remarks */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Remarks</label>
+            <textarea
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300 resize-none"
+              rows={2}
+              value={invoiceForm.remarks}
+              onChange={e => setInvoiceForm({ ...invoiceForm, remarks: e.target.value })}
+              placeholder="Additional notes..."
+            />
+          </div>
         </form>
-      </SlideSheet>
+      </FormModal>
 
-      {/* Fee Structure Form SlideSheet */}
-      <SlideSheet
-        isOpen={showStructureForm}
+      {/* ════════════════════════════════════════ */}
+      {/* MODAL: Add / Edit Fee Structure         */}
+      {/* ════════════════════════════════════════ */}
+      <FormModal
+        open={showStructureForm}
         onClose={() => setShowStructureForm(false)}
         title={editingStructure ? 'Edit Fee Structure' : 'Add Fee Structure'}
-        subtitle={editingStructure ? 'Update fee structure details' : 'Define a new fee type for your school'}
         size="lg"
         footer={
-          <div className="flex justify-end gap-3">
+          <>
             <button
               type="button"
               onClick={() => setShowStructureForm(false)}
-              className="px-6 py-2.5 rounded-lg text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
             >
               Cancel
             </button>
@@ -936,209 +1695,240 @@ export default function FeesPage() {
               type="submit"
               form="structure-form"
               disabled={submittingStructure}
-              className="px-8 py-2.5 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+              className="px-6 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               {submittingStructure ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
               ) : (
-                <>
-                  {editingStructure ? <Edit className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                  {editingStructure ? 'Update' : 'Create'}
-                </>
+                <>{editingStructure ? <Edit className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {editingStructure ? 'Update' : 'Create'}</>
               )}
             </button>
-          </div>
+          </>
         }
       >
         <form id="structure-form" onSubmit={handleStructureSubmit} className="space-y-5">
-          {/* Basic Info Section */}
-          <SheetSection icon={<FileText className="w-4 h-4" />} title="Basic Information">
-            <SheetField label="Fee Name" required>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Fee Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+              value={structureForm.name}
+              onChange={e => setStructureForm({ ...structureForm, name: e.target.value })}
+              placeholder="e.g., Tuition Fee, Lab Fee"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Amount <span className="text-red-500">*</span>
+              </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <Tag className="w-4 h-4 text-slate-400" />
-                </div>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
                 <input
-                  type="text"
-                  className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300"
-                  value={structureForm.name}
-                  onChange={(e) => setStructureForm({ ...structureForm, name: e.target.value })}
-                  placeholder="e.g., Tuition Fee, Lab Fee, etc."
+                  type="number"
+                  className="w-full border border-slate-200 rounded-lg pl-7 pr-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                  value={structureForm.amount}
+                  onChange={e => setStructureForm({ ...structureForm, amount: e.target.value })}
+                  placeholder="0.00"
                   required
                 />
               </div>
-            </SheetField>
-          </SheetSection>
-
-          {/* Amount & Class Section */}
-          <SheetSection icon={<DollarSign className="w-4 h-4" />} title="Pricing & Assignment">
-            <div className="grid grid-cols-2 gap-4">
-              <SheetField label="Amount" required>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Banknote className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <input
-                    type="number"
-                    className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300"
-                    value={structureForm.amount}
-                    onChange={(e) => setStructureForm({ ...structureForm, amount: e.target.value })}
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-              </SheetField>
-              <SheetField label="Class" required>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <GraduationCap className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <select
-                    className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300 appearance-none cursor-pointer"
-                    value={structureForm.classId}
-                    onChange={(e) => setStructureForm({ ...structureForm, classId: e.target.value })}
-                    required
-                  >
-                    <option value="">Select class</option>
-                    {classes.map((c) => (
-                      <option key={c._id} value={c._id}>{c.name} ({c.grade})</option>
-                    ))}
-                  </select>
-                </div>
-              </SheetField>
             </div>
-          </SheetSection>
-
-          {/* Schedule Section */}
-          <SheetSection icon={<Calendar className="w-4 h-4" />} title="Schedule">
-            <div className="grid grid-cols-2 gap-4">
-              <SheetField label="Academic Year">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <BookOpen className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <input
-                    type="text"
-                    className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300"
-                    value={structureForm.academicYear}
-                    onChange={(e) => setStructureForm({ ...structureForm, academicYear: e.target.value })}
-                  />
-                </div>
-              </SheetField>
-              <SheetField label="Due Date">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Clock className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <input
-                    type="date"
-                    className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300"
-                    value={structureForm.dueDate}
-                    onChange={(e) => setStructureForm({ ...structureForm, dueDate: e.target.value })}
-                  />
-                </div>
-              </SheetField>
-            </div>
-          </SheetSection>
-
-          {/* Description Section */}
-          <SheetSection icon={<MessageSquare className="w-4 h-4" />} title="Description">
-            <div className="relative">
-              <div className="absolute top-3 left-3.5 pointer-events-none">
-                <MessageSquare className="w-4 h-4 text-slate-400" />
-              </div>
-              <textarea
-                className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-3 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300 resize-none"
-                rows={2}
-                value={structureForm.description}
-                onChange={(e) => setStructureForm({ ...structureForm, description: e.target.value })}
-                placeholder="Fee description..."
-              />
-            </div>
-          </SheetSection>
-
-          {/* Options Section */}
-          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                <CheckCircle className="w-4 h-4 text-amber-600" />
-              </div>
-              <h4 className="font-semibold text-slate-900">Options</h4>
-            </div>
-            <div className="flex items-center gap-6">
-              <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-white border border-slate-200 hover:border-emerald-300 transition-all">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={structureForm.isActive}
-                    onChange={(e) => setStructureForm({ ...structureForm, isActive: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-10 h-6 bg-slate-200 rounded-full peer peer-checked:bg-emerald-500 transition-all" />
-                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm peer-checked:translate-x-4 transition-transform" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className={`w-4 h-4 ${structureForm.isActive ? 'text-emerald-500' : 'text-slate-400'}`} />
-                  <span className="text-sm font-medium text-slate-700">Active</span>
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Class <span className="text-red-500">*</span>
               </label>
-              <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-white border border-slate-200 hover:border-blue-300 transition-all">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={structureForm.isRecurring}
-                    onChange={(e) => setStructureForm({ ...structureForm, isRecurring: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-10 h-6 bg-slate-200 rounded-full peer peer-checked:bg-blue-500 transition-all" />
-                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm peer-checked:translate-x-4 transition-transform" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className={`w-4 h-4 ${structureForm.isRecurring ? 'text-blue-500' : 'text-slate-400'}`} />
-                  <span className="text-sm font-medium text-slate-700">Recurring</span>
-                </div>
-              </label>
+              <select
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                value={structureForm.classId}
+                onChange={e => setStructureForm({ ...structureForm, classId: e.target.value })}
+                required
+              >
+                <option value="">Select class</option>
+                {classes.map(c => (
+                  <option key={c._id} value={c._id}>{c.name} ({c.grade})</option>
+                ))}
+              </select>
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Academic Year</label>
+              <input
+                type="text"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                value={structureForm.academicYear}
+                onChange={e => setStructureForm({ ...structureForm, academicYear: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Due Date</label>
+              <input
+                type="date"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                value={structureForm.dueDate}
+                onChange={e => setStructureForm({ ...structureForm, dueDate: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
+            <textarea
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300 resize-none"
+              rows={2}
+              value={structureForm.description}
+              onChange={e => setStructureForm({ ...structureForm, description: e.target.value })}
+              placeholder="Fee description..."
+            />
+          </div>
+
+          <div className="flex items-center gap-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={structureForm.isActive}
+                onChange={e => setStructureForm({ ...structureForm, isActive: e.target.checked })}
+                className="rounded border-slate-300 text-[#824ef2] focus:ring-[#824ef2]/20"
+              />
+              <span className="text-sm font-medium text-slate-700">Active</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={structureForm.isRecurring}
+                onChange={e => setStructureForm({ ...structureForm, isRecurring: e.target.checked })}
+                className="rounded border-slate-300 text-[#824ef2] focus:ring-[#824ef2]/20"
+              />
+              <span className="text-sm font-medium text-slate-700">Recurring</span>
+            </label>
+          </div>
+
           {structureForm.isRecurring && (
-            <SheetSection icon={<TrendingUp className="w-4 h-4" />} title="Frequency">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <TrendingUp className="w-4 h-4 text-slate-400" />
-                </div>
-                <select
-                  className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-slate-300 appearance-none cursor-pointer"
-                  value={structureForm.frequency}
-                  onChange={(e) => setStructureForm({ ...structureForm, frequency: e.target.value })}
-                >
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                  <option value="semi-annually">Semi-Annually</option>
-                  <option value="annually">Annually</option>
-                </select>
-              </div>
-            </SheetSection>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Frequency</label>
+              <select
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                value={structureForm.frequency}
+                onChange={e => setStructureForm({ ...structureForm, frequency: e.target.value })}
+              >
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="semi-annually">Semi-Annually</option>
+                <option value="annually">Annually</option>
+              </select>
+            </div>
           )}
         </form>
-      </SlideSheet>
+      </FormModal>
 
-      {/* Record Payment SlideSheet */}
-      <SlideSheet
-        isOpen={showPaymentForm}
-        onClose={() => setShowPaymentForm(false)}
-        title="Record Payment"
-        subtitle={selectedInvoice ? `Invoice: ${selectedInvoice.invoiceNumber}` : ''}
+      {/* ════════════════════════════════════════ */}
+      {/* MODAL: Add Additional Fee               */}
+      {/* ════════════════════════════════════════ */}
+      <FormModal
+        open={showAdditionalFeeModal}
+        onClose={() => setShowAdditionalFeeModal(false)}
+        title="Add Additional Fee"
         size="md"
         footer={
-          <div className="flex justify-end gap-3">
+          <>
+            <button
+              type="button"
+              onClick={() => setShowAdditionalFeeModal(false)}
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="additional-fee-form"
+              disabled={submittingAdditionalFee}
+              className="px-6 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              {submittingAdditionalFee ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Adding...</>
+              ) : (
+                <><Plus className="w-4 h-4" /> Add Fee</>
+              )}
+            </button>
+          </>
+        }
+      >
+        <form id="additional-fee-form" onSubmit={handleAdditionalFeeSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Fee Type</label>
+            <select
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+              value={additionalFeeForm.feeType}
+              onChange={e => setAdditionalFeeForm({ ...additionalFeeForm, feeType: e.target.value })}
+              required
+            >
+              <option value="">Select fee type</option>
+              <option value="Transport Fee">Transport Fee</option>
+              <option value="Hostel Fee">Hostel Fee</option>
+              <option value="Library Fee">Library Fee</option>
+              <option value="Sports Fee">Sports Fee</option>
+              <option value="Lab Fee">Lab Fee</option>
+              <option value="Uniform Fee">Uniform Fee</option>
+              <option value="Exam Fee">Exam Fee</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Amount</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
+              <input
+                type="number"
+                className="w-full border border-slate-200 rounded-lg pl-7 pr-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                value={additionalFeeForm.amount}
+                onChange={e => setAdditionalFeeForm({ ...additionalFeeForm, amount: e.target.value })}
+                placeholder="0.00"
+                required
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
+            <textarea
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300 resize-none"
+              rows={3}
+              value={additionalFeeForm.description}
+              onChange={e => setAdditionalFeeForm({ ...additionalFeeForm, description: e.target.value })}
+              placeholder="Fee description..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Due Date</label>
+            <input
+              type="date"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+              value={additionalFeeForm.dueDate}
+              onChange={e => setAdditionalFeeForm({ ...additionalFeeForm, dueDate: e.target.value })}
+            />
+          </div>
+        </form>
+      </FormModal>
+
+      {/* ════════════════════════════════════════ */}
+      {/* MODAL: Record Payment                   */}
+      {/* ════════════════════════════════════════ */}
+      <FormModal
+        open={showPaymentForm}
+        onClose={() => setShowPaymentForm(false)}
+        title="Record Payment"
+        size="md"
+        footer={
+          <>
             <button
               type="button"
               onClick={() => setShowPaymentForm(false)}
-              className="px-6 py-2.5 rounded-lg text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
             >
               Cancel
             </button>
@@ -1146,59 +1936,60 @@ export default function FeesPage() {
               type="submit"
               form="payment-form"
               disabled={processingPayment}
-              className="px-8 py-2.5 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+              className="px-6 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               {processingPayment ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Processing...
-                </>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
               ) : (
-                <>
-                  <CreditCard className="w-4 h-4" />
-                  Record Payment
-                </>
+                <><CreditCard className="w-4 h-4" /> Record Payment</>
               )}
             </button>
-          </div>
+          </>
         }
       >
         {selectedInvoice && (
           <>
             <div className="mb-5 p-4 bg-slate-50 rounded-lg space-y-2">
-              <SheetDetailRow label="Invoice" value={selectedInvoice.invoiceNumber} />
-              <SheetDetailRow label="Total" value={`$${selectedInvoice.totalAmount.toLocaleString()}`} />
-              <SheetDetailRow
-                label="Already Paid"
-                value={`$${selectedInvoice.paidAmount.toLocaleString()}`}
-                valueClassName="text-emerald-600"
-              />
-              <div className="pt-2 border-t border-slate-200">
-                <SheetDetailRow
-                  label="Remaining"
-                  value={`$${(selectedInvoice.totalAmount - selectedInvoice.paidAmount).toLocaleString()}`}
-                  labelClassName="font-medium text-slate-700"
-                  valueClassName="font-bold text-amber-600"
-                />
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Invoice</span>
+                <span className="font-medium text-slate-900">{selectedInvoice.invoiceNumber}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Total</span>
+                <span className="font-medium text-slate-900">${selectedInvoice.totalAmount.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Already Paid</span>
+                <span className="font-medium text-emerald-600">${selectedInvoice.paidAmount.toLocaleString()}</span>
+              </div>
+              <div className="pt-2 border-t border-slate-200 flex justify-between text-sm">
+                <span className="font-medium text-slate-700">Remaining</span>
+                <span className="font-bold text-amber-600">
+                  ${(selectedInvoice.totalAmount - selectedInvoice.paidAmount).toLocaleString()}
+                </span>
               </div>
             </div>
 
             <form id="payment-form" onSubmit={handlePaymentSubmit} className="space-y-4">
-              <SheetField label="Payment Amount" required>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Payment Amount <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="number"
-                  className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all"
                   value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  onChange={e => setPaymentAmount(e.target.value)}
                   max={selectedInvoice.totalAmount - selectedInvoice.paidAmount}
                   required
                 />
-              </SheetField>
-              <SheetField label="Payment Method">
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Payment Method</label>
                 <select
-                  className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all"
                   value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                  onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
                 >
                   <option value="cash">Cash</option>
                   <option value="card">Card</option>
@@ -1206,20 +1997,34 @@ export default function FeesPage() {
                   <option value="online">Online</option>
                   <option value="cheque">Cheque</option>
                 </select>
-              </SheetField>
-              <SheetField label="Transaction ID (optional)">
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Transaction ID (optional)</label>
                 <input
                   type="text"
-                  className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all"
                   value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
+                  onChange={e => setTransactionId(e.target.value)}
                   placeholder="Reference number..."
                 />
-              </SheetField>
+              </div>
             </form>
           </>
         )}
-      </SlideSheet>
+      </FormModal>
+
+      {/* ════════════════════════════════════════ */}
+      {/* Confirm Delete Modal                    */}
+      {/* ════════════════════════════════════════ */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={`Delete ${confirmModal.type === 'structure' ? 'Fee Structure' : 'Invoice'}`}
+        message={`Are you sure you want to delete this ${confirmModal.type === 'structure' ? 'fee structure' : 'invoice'}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        confirmColor="red"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmModal({ open: false, type: 'invoice', id: '' })}
+      />
     </section>
   );
 }

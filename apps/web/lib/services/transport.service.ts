@@ -25,6 +25,7 @@ export interface Vehicle {
   type: VehicleType;
   make?: string;
   model?: string;
+  vehicleModel?: string;
   year?: number;
   capacity: number;
   driverId?: { _id: string; firstName: string; lastName: string; phone?: string };

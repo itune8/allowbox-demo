@@ -16,11 +16,21 @@ export default function Home() {
 
   useEffect(() => {
     if (!loading) {
-      if (!user) {
-        // Redirect to login
+      if (user) {
+        router.replace(dashboardPath);
+      } else {
         router.replace('/auth/login');
       }
     }
+
+    // Safety timeout: if loading takes more than 3s, redirect to login
+    const timeout = setTimeout(() => {
+      if (loading) {
+        router.replace('/auth/login');
+      }
+    }, 3000);
+
+    return () => clearTimeout(timeout);
   }, [user, loading, router, dashboardPath]);
 
   return (
@@ -28,8 +38,6 @@ export default function Home() {
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
         <p className="mt-4 text-gray-600">Loading...</p>
-        {/* Fallback link in case client navigation is blocked for any reason */}
-        {/* Redirect handled above; nothing else to show here */}
       </div>
     </div>
   );

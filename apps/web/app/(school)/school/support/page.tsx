@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@repo/ui/button';
-import { SlideSheet, SheetSection, SheetField, SheetDetailRow } from '@/components/ui';
 import {
   supportTicketService,
   SupportTicket,
@@ -11,6 +9,7 @@ import {
   TicketCategory,
   TicketStatistics,
 } from '../../../../lib/services/support-ticket.service';
+import { SchoolStatCard, SchoolStatusBadge, FormModal, useToast } from '../../../../components/school';
 import {
   HelpCircle,
   Search,
@@ -20,16 +19,17 @@ import {
   Loader2,
   Ticket,
   X,
-  TrendingUp,
+  XCircle,
 } from 'lucide-react';
 
 export default function SchoolSupportPage() {
+  const { showToast } = useToast();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [stats, setStats] = useState<TicketStatistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
-  const [showDetailsSheet, setShowDetailsSheet] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [filter, setFilter] = useState<'All' | TicketStatus>('All');
   const [ticketSearch, setTicketSearch] = useState('');
 
@@ -48,19 +48,12 @@ export default function SchoolSupportPage() {
       setStats(statsData);
     } catch (err) {
       setError('Failed to load support tickets');
+      showToast('error', 'Failed to load support tickets');
       console.error(err);
     } finally {
       setLoading(false);
     }
   }
-
-  const statusColors: Record<TicketStatus, string> = {
-    [TicketStatus.OPEN]: 'bg-amber-100 text-amber-700',
-    [TicketStatus.IN_PROGRESS]: 'bg-blue-100 text-blue-700',
-    [TicketStatus.WAITING_FOR_USER]: 'bg-orange-100 text-orange-700',
-    [TicketStatus.RESOLVED]: 'bg-emerald-100 text-emerald-700',
-    [TicketStatus.CLOSED]: 'bg-slate-100 text-slate-700',
-  };
 
   const priorityColors: Record<TicketPriority, string> = {
     [TicketPriority.LOW]: 'bg-slate-100 text-slate-700',
@@ -99,7 +92,7 @@ export default function SchoolSupportPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white">
+          <div className="w-12 h-12 bg-[#824ef2] rounded-xl flex items-center justify-center text-white">
             <HelpCircle className="w-6 h-6" />
           </div>
           <div>
@@ -126,59 +119,33 @@ export default function SchoolSupportPage() {
       )}
 
       {/* Stats Cards */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-slate-300 transition-colors">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                <Ticket className="w-5 h-5 text-slate-600" />
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-slate-900">{stats.total}</div>
-            <div className="text-sm text-slate-600">Total Tickets</div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-slate-300 transition-colors">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-amber-600" />
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-slate-900">{stats.open}</div>
-            <div className="text-sm text-slate-600">Open</div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-slate-300 transition-colors">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-slate-900">{stats.inProgress}</div>
-            <div className="text-sm text-slate-600">In Progress</div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-slate-300 transition-colors">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-emerald-600" />
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-slate-900">{stats.resolved}</div>
-            <div className="text-sm text-slate-600">Resolved</div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-slate-300 transition-colors">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                <Clock className="w-5 h-5 text-slate-600" />
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-slate-900">{stats.avgResolutionTimeHours}h</div>
-            <div className="text-sm text-slate-600">Avg Resolution</div>
-          </div>
-        </div>
-      )}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <SchoolStatCard
+          icon={<HelpCircle className="w-5 h-5" />}
+          color="blue"
+          label="Total Tickets"
+          value={stats?.total || 0}
+        />
+        <SchoolStatCard
+          icon={<AlertCircle className="w-5 h-5" />}
+          color="amber"
+          label="Open"
+          value={stats?.open || 0}
+        />
+        <SchoolStatCard
+          icon={<CheckCircle className="w-5 h-5" />}
+          color="green"
+          label="Resolved"
+          value={stats?.resolved || 0}
+        />
+        <SchoolStatCard
+          icon={<XCircle className="w-5 h-5" />}
+          color="slate"
+          label="Closed"
+          value={stats?.avgResolutionTimeHours ? `${stats.avgResolutionTimeHours}h avg` : '0'}
+          subtitle="Avg resolution time"
+        />
+      </div>
 
       {/* Filter & Tickets List */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -188,7 +155,7 @@ export default function SchoolSupportPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
-                className="h-10 w-48 border border-slate-200 rounded-xl pl-9 pr-9 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                className="h-10 w-48 border border-slate-200 rounded-xl pl-9 pr-9 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all"
                 placeholder="Search tickets..."
                 value={ticketSearch}
                 onChange={(e) => setTicketSearch(e.target.value)}
@@ -204,7 +171,7 @@ export default function SchoolSupportPage() {
               )}
             </div>
             <select
-              className="border border-slate-200 bg-white text-slate-900 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+              className="border border-slate-200 bg-white text-slate-900 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all"
               value={filter}
               onChange={(e) => setFilter(e.target.value as 'All' | TicketStatus)}
             >
@@ -242,25 +209,21 @@ export default function SchoolSupportPage() {
                     className="cursor-pointer hover:bg-slate-50 transition-colors"
                     onClick={() => {
                       setSelectedTicket(ticket);
-                      setShowDetailsSheet(true);
+                      setShowDetailsModal(true);
                     }}
                   >
                     <td className="py-3 px-4 font-mono text-xs text-slate-500">{ticket.ticketNumber}</td>
-                    <td className="py-3 px-4 font-medium text-slate-900 hover:text-primary transition-colors">{ticket.subject}</td>
+                    <td className="py-3 px-4 font-medium text-slate-900 hover:text-[#824ef2] transition-colors">{ticket.subject}</td>
                     <td className="py-3 px-4 text-slate-600">
                       {ticket.createdBy?.firstName} {ticket.createdBy?.lastName}
                       <span className="text-xs text-slate-400 ml-1">({ticket.createdBy?.role})</span>
                     </td>
                     <td className="py-3 px-4 text-slate-600">{categoryLabels[ticket.category]}</td>
                     <td className="py-3 px-4">
-                      <span className={`text-xs px-2 py-0.5 rounded ${priorityColors[ticket.priority]}`}>
-                        {ticket.priority}
-                      </span>
+                      <SchoolStatusBadge value={ticket.priority} />
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`text-xs px-2 py-0.5 rounded ${statusColors[ticket.status]}`}>
-                        {ticket.status.replace('_', ' ')}
-                      </span>
+                      <SchoolStatusBadge value={ticket.status.replace('_', ' ')} />
                     </td>
                     <td className="py-3 px-4 text-slate-600">
                       {new Date(ticket.createdAt).toLocaleDateString()}
@@ -273,84 +236,83 @@ export default function SchoolSupportPage() {
         )}
       </div>
 
-      {/* View Ticket Details Sheet */}
-      <SlideSheet
-        isOpen={showDetailsSheet}
+      {/* View Ticket Details Modal */}
+      <FormModal
+        open={showDetailsModal}
         onClose={() => {
-          setShowDetailsSheet(false);
+          setShowDetailsModal(false);
           setSelectedTicket(null);
         }}
         title={selectedTicket?.subject || ''}
-        subtitle={selectedTicket?.ticketNumber}
         size="lg"
         footer={
-          <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowDetailsSheet(false);
-                setSelectedTicket(null);
-              }}
-            >
-              Close
-            </Button>
-          </div>
+          <button
+            onClick={() => {
+              setShowDetailsModal(false);
+              setSelectedTicket(null);
+            }}
+            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            Close
+          </button>
         }
       >
         {selectedTicket && (
           <div className="space-y-6">
-            <SheetSection title="Ticket Information">
-              <div className="space-y-4">
-                <SheetDetailRow
-                  label="Status"
-                  value={
-                    <span className={`text-xs px-2 py-0.5 rounded ${statusColors[selectedTicket.status]}`}>
-                      {selectedTicket.status.replace('_', ' ')}
-                    </span>
-                  }
-                />
-                <SheetDetailRow
-                  label="Priority"
-                  value={
-                    <span className={`text-xs px-2 py-0.5 rounded ${priorityColors[selectedTicket.priority]}`}>
-                      {selectedTicket.priority}
-                    </span>
-                  }
-                />
-                <SheetDetailRow
-                  label="Category"
-                  value={categoryLabels[selectedTicket.category]}
-                />
-                <SheetDetailRow
-                  label="Submitted by"
-                  value={
-                    <>
-                      {selectedTicket.createdBy?.firstName} {selectedTicket.createdBy?.lastName}
-                      <span className="text-xs text-slate-400 ml-1">({selectedTicket.createdBy?.role})</span>
-                    </>
-                  }
-                />
-                <SheetDetailRow
-                  label="Created"
-                  value={new Date(selectedTicket.createdAt).toLocaleString()}
-                />
+            {/* Ticket Information */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-3">Ticket Information</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+                  <span className="text-sm text-slate-500">Ticket Number</span>
+                  <span className="text-sm font-medium text-slate-900 font-mono">{selectedTicket.ticketNumber}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+                  <span className="text-sm text-slate-500">Status</span>
+                  <SchoolStatusBadge value={selectedTicket.status.replace('_', ' ')} />
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+                  <span className="text-sm text-slate-500">Priority</span>
+                  <SchoolStatusBadge value={selectedTicket.priority} />
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+                  <span className="text-sm text-slate-500">Category</span>
+                  <span className="text-sm font-medium text-slate-900">{categoryLabels[selectedTicket.category]}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+                  <span className="text-sm text-slate-500">Submitted by</span>
+                  <span className="text-sm font-medium text-slate-900">
+                    {selectedTicket.createdBy?.firstName} {selectedTicket.createdBy?.lastName}
+                    <span className="text-xs text-slate-400 ml-1">({selectedTicket.createdBy?.role})</span>
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+                  <span className="text-sm text-slate-500">Created</span>
+                  <span className="text-sm font-medium text-slate-900">{new Date(selectedTicket.createdAt).toLocaleString()}</span>
+                </div>
                 {selectedTicket.assignedTo && (
-                  <SheetDetailRow
-                    label="Assigned to"
-                    value={`${selectedTicket.assignedTo.firstName} ${selectedTicket.assignedTo.lastName}`}
-                  />
+                  <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+                    <span className="text-sm text-slate-500">Assigned to</span>
+                    <span className="text-sm font-medium text-slate-900">
+                      {selectedTicket.assignedTo.firstName} {selectedTicket.assignedTo.lastName}
+                    </span>
+                  </div>
                 )}
               </div>
-            </SheetSection>
+            </div>
 
-            <SheetSection title="Description">
+            {/* Description */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-3">Description</h3>
               <div className="bg-slate-50 rounded-lg p-4">
                 <p className="text-slate-700 whitespace-pre-wrap">{selectedTicket.description}</p>
               </div>
-            </SheetSection>
+            </div>
 
+            {/* Activity / Comments */}
             {selectedTicket.comments.length > 0 && (
-              <SheetSection title="Activity">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-3">Activity</h3>
                 <div className="space-y-3">
                   {selectedTicket.comments.map((comment, idx) => (
                     <div
@@ -368,11 +330,11 @@ export default function SchoolSupportPage() {
                     </div>
                   ))}
                 </div>
-              </SheetSection>
+              </div>
             )}
           </div>
         )}
-      </SlideSheet>
+      </FormModal>
     </section>
   );
 }

@@ -36,6 +36,22 @@ export const statusColors: Record<string, { bg: string; text: string; dot: strin
   online: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
   maintenance: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
   healthy: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  // School-specific statuses
+  present: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  absent: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
+  late: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
+  on_leave: { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500' },
+  class_teacher: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
+  subject_teacher: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  submitted: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  graded: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
+  not_submitted: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
+  partial: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
+  blocked: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
+  approved: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  rejected: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
+  completed: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  upcoming: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
 };
 
 export const planColors: Record<string, { bg: string; text: string }> = {

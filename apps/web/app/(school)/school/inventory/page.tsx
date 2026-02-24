@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@repo/ui/button';
 import {
   inventoryService,
   InventoryItem,
@@ -11,7 +10,6 @@ import {
   ItemCondition,
   TransactionType,
 } from '../../../../lib/services/inventory.service';
-import { SlideSheet, SheetSection, SheetField, SheetDetailRow } from '@/components/ui';
 import {
   Package,
   Plus,
@@ -24,6 +22,7 @@ import {
   AlertTriangle,
   CheckCircle,
   AlertCircle,
+  XCircle,
   Clock,
   MapPin,
   Tag,
@@ -46,6 +45,7 @@ import {
   Building,
   Loader2,
 } from 'lucide-react';
+import { SchoolStatCard, SchoolStatusBadge, FormModal, ConfirmModal, useToast, Pagination } from '../../../../components/school';
 
 interface ItemFormData {
   name: string;
@@ -110,29 +110,34 @@ const initialBookForm: BookFormData = {
 };
 
 export default function SchoolInventoryPage() {
+  const { showToast } = useToast();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [books, setBooks] = useState<LibraryBook[]>([]);
   const [stats, setStats] = useState<InventoryStatistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [banner, setBanner] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'items' | 'library'>('items');
   const [categoryFilter, setCategoryFilter] = useState<ItemCategory | ''>('');
 
-  // Sheet states
-  const [showItemFormSheet, setShowItemFormSheet] = useState(false);
-  const [showBookFormSheet, setShowBookFormSheet] = useState(false);
+  // Modal states
+  const [showItemFormModal, setShowItemFormModal] = useState(false);
+  const [showBookFormModal, setShowBookFormModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [editingBook, setEditingBook] = useState<LibraryBook | null>(null);
   const [itemFormData, setItemFormData] = useState<ItemFormData>(initialItemForm);
   const [bookFormData, setBookFormData] = useState<BookFormData>(initialBookForm);
   const [submitting, setSubmitting] = useState(false);
 
-  // Detail/manage sheets
+  // Detail/manage modals
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [selectedBook, setSelectedBook] = useState<LibraryBook | null>(null);
-  const [showIssueSheet, setShowIssueSheet] = useState(false);
+  const [showIssueModal, setShowIssueModal] = useState(false);
   const [issueFormData, setIssueFormData] = useState({ borrowerId: '', dueDate: '', notes: '' });
+
+  // Confirm modal
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({
+    open: false, title: '', message: '', onConfirm: () => {},
+  });
 
   useEffect(() => {
     loadData();
@@ -189,13 +194,13 @@ export default function SchoolInventoryPage() {
       warrantyExpiry: item.warrantyExpiry ? (item.warrantyExpiry.split('T')[0] ?? '') : '',
       notes: item.notes || '',
     });
-    setShowItemFormSheet(true);
+    setShowItemFormModal(true);
   }
 
   async function handleItemSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!itemFormData.name || !itemFormData.category || !itemFormData.quantity || !itemFormData.condition) {
-      setError('Please fill in all required fields');
+      showToast('error', 'Please fill in all required fields');
       return;
     }
 
@@ -221,35 +226,40 @@ export default function SchoolInventoryPage() {
 
       if (editingItem) {
         await inventoryService.updateItem(editingItem._id, payload);
-        setBanner('Item updated successfully');
+        showToast('success', 'Item updated successfully');
       } else {
         await inventoryService.createItem(payload);
-        setBanner('Item created successfully');
+        showToast('success', 'Item created successfully');
       }
 
-      setTimeout(() => setBanner(null), 3000);
-      setShowItemFormSheet(false);
+      setShowItemFormModal(false);
       resetItemForm();
       await loadData();
     } catch (err) {
       console.error('Failed to save item:', err);
-      setError('Failed to save item');
+      showToast('error', 'Failed to save item');
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function handleDeleteItem(item: InventoryItem) {
-    if (!confirm(`Are you sure you want to delete "${item.name}"?`)) return;
-    try {
-      await inventoryService.deleteItem(item._id);
-      setBanner('Item deleted successfully');
-      setTimeout(() => setBanner(null), 3000);
-      await loadData();
-    } catch (err) {
-      console.error('Failed to delete item:', err);
-      setError('Failed to delete item');
-    }
+  function handleDeleteItem(item: InventoryItem) {
+    setConfirmModal({
+      open: true,
+      title: 'Delete Item',
+      message: `Are you sure you want to delete "${item.name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await inventoryService.deleteItem(item._id);
+          showToast('success', 'Item deleted successfully');
+          await loadData();
+        } catch (err) {
+          console.error('Failed to delete item:', err);
+          showToast('error', 'Failed to delete item');
+        }
+        setConfirmModal(prev => ({ ...prev, open: false }));
+      },
+    });
   }
 
   // Book handlers
@@ -272,13 +282,13 @@ export default function SchoolInventoryPage() {
       location: book.location || '',
       condition: book.condition,
     });
-    setShowBookFormSheet(true);
+    setShowBookFormModal(true);
   }
 
   async function handleBookSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!bookFormData.title || !bookFormData.totalCopies) {
-      setError('Please fill in all required fields');
+      showToast('error', 'Please fill in all required fields');
       return;
     }
 
@@ -300,19 +310,18 @@ export default function SchoolInventoryPage() {
 
       if (editingBook) {
         await inventoryService.updateBook(editingBook._id, payload);
-        setBanner('Book updated successfully');
+        showToast('success', 'Book updated successfully');
       } else {
         await inventoryService.createBook(payload);
-        setBanner('Book added successfully');
+        showToast('success', 'Book added successfully');
       }
 
-      setTimeout(() => setBanner(null), 3000);
-      setShowBookFormSheet(false);
+      setShowBookFormModal(false);
       resetBookForm();
       await loadData();
     } catch (err) {
       console.error('Failed to save book:', err);
-      setError('Failed to save book');
+      showToast('error', 'Failed to save book');
     } finally {
       setSubmitting(false);
     }
@@ -321,13 +330,13 @@ export default function SchoolInventoryPage() {
   function handleIssueBook(book: LibraryBook) {
     setSelectedBook(book);
     setIssueFormData({ borrowerId: '', dueDate: '', notes: '' });
-    setShowIssueSheet(true);
+    setShowIssueModal(true);
   }
 
   async function handleIssueSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedBook || !issueFormData.borrowerId || !issueFormData.dueDate) {
-      setError('Please fill in all required fields');
+      showToast('error', 'Please fill in all required fields');
       return;
     }
 
@@ -339,14 +348,13 @@ export default function SchoolInventoryPage() {
         dueDate: issueFormData.dueDate,
         notes: issueFormData.notes || undefined,
       });
-      setBanner('Book issued successfully');
-      setTimeout(() => setBanner(null), 3000);
-      setShowIssueSheet(false);
+      showToast('success', 'Book issued successfully');
+      setShowIssueModal(false);
       setSelectedBook(null);
       await loadData();
     } catch (err) {
       console.error('Failed to issue book:', err);
-      setError('Failed to issue book');
+      showToast('error', 'Failed to issue book');
     } finally {
       setSubmitting(false);
     }
@@ -357,7 +365,7 @@ export default function SchoolInventoryPage() {
     [ItemCategory.ELECTRONICS]: 'bg-blue-100 text-blue-700',
     [ItemCategory.SPORTS]: 'bg-green-100 text-green-700',
     [ItemCategory.LABORATORY]: 'bg-purple-100 text-purple-700',
-    [ItemCategory.LIBRARY]: 'bg-primary-100 text-primary-dark',
+    [ItemCategory.LIBRARY]: 'bg-indigo-100 text-indigo-700',
     [ItemCategory.STATIONERY]: 'bg-pink-100 text-pink-700',
     [ItemCategory.CLEANING]: 'bg-cyan-100 text-cyan-700',
     [ItemCategory.UNIFORM]: 'bg-orange-100 text-orange-700',
@@ -372,26 +380,22 @@ export default function SchoolInventoryPage() {
     [ItemCondition.DAMAGED]: 'bg-red-100 text-red-700',
   };
 
+  // Compute stat values
+  const totalItems = stats?.totalItems ?? items.length;
+  const inStockItems = items.filter(i => i.quantity > i.minQuantity).length;
+  const lowStockItems = stats?.lowStockItems ?? items.filter(i => i.quantity <= i.minQuantity && i.quantity > 0).length;
+  const outOfStockItems = items.filter(i => i.quantity === 0).length;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-slate-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#824ef2] animate-spin" />
       </div>
     );
   }
 
   return (
     <section className="space-y-6">
-      {/* Success Banner */}
-      {banner && (
-        <div className="bg-white rounded-xl border border-emerald-200 px-4 py-3 flex items-center gap-3 shadow-sm">
-          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-            <CheckCircle className="w-5 h-5 text-emerald-600" />
-          </div>
-          <span className="text-emerald-800 font-medium">{banner}</span>
-        </div>
-      )}
-
       {/* Error Banner */}
       {error && (
         <div className="bg-white rounded-xl border border-red-200 px-4 py-3 flex items-center justify-between shadow-sm">
@@ -418,83 +422,51 @@ export default function SchoolInventoryPage() {
             <p className="text-sm text-slate-500">Track school assets, supplies, and library books</p>
           </div>
         </div>
-        <Button
+        <button
           onClick={() => {
             if (activeTab === 'items') {
               resetItemForm();
-              setShowItemFormSheet(true);
+              setShowItemFormModal(true);
             } else {
               resetBookForm();
-              setShowBookFormSheet(true);
+              setShowBookFormModal(true);
             }
           }}
-          className="bg-primary hover:bg-primary-dark"
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors"
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4" />
           {activeTab === 'items' ? 'Add Item' : 'Add Book'}
-        </Button>
+        </button>
       </div>
 
       {/* Stats Cards */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
-                <Box className="w-5 h-5 text-slate-600" />
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Total Items</p>
-                <p className="text-2xl font-bold text-slate-900">{stats.totalItems}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Low Stock</p>
-                <p className="text-2xl font-bold text-slate-900">{stats.lowStockItems}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
-                <Library className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Library Books</p>
-                <p className="text-2xl font-bold text-slate-900">{stats.totalBooks}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-                <ArrowRightLeft className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Books Issued</p>
-                <p className="text-2xl font-bold text-slate-900">{stats.issuedBooks}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
-                <Clock className="w-5 h-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Overdue Books</p>
-                <p className="text-2xl font-bold text-slate-900">{stats.overdueBooks}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SchoolStatCard
+          icon={<Package className="w-5 h-5" />}
+          color="blue"
+          label="Total Items"
+          value={totalItems}
+        />
+        <SchoolStatCard
+          icon={<CheckCircle className="w-5 h-5" />}
+          color="green"
+          label="In Stock"
+          value={inStockItems}
+        />
+        <SchoolStatCard
+          icon={<AlertTriangle className="w-5 h-5" />}
+          color="amber"
+          label="Low Stock"
+          value={lowStockItems}
+          subtitle={lowStockItems > 0 ? 'Needs attention' : undefined}
+        />
+        <SchoolStatCard
+          icon={<XCircle className="w-5 h-5" />}
+          color="red"
+          label="Out of Stock"
+          value={outOfStockItems}
+        />
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-slate-200">
@@ -502,7 +474,7 @@ export default function SchoolInventoryPage() {
           onClick={() => setActiveTab('items')}
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
             activeTab === 'items'
-              ? 'border-primary text-primary'
+              ? 'border-[#824ef2] text-[#824ef2]'
               : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
@@ -513,7 +485,7 @@ export default function SchoolInventoryPage() {
           onClick={() => setActiveTab('library')}
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
             activeTab === 'library'
-              ? 'border-primary text-primary'
+              ? 'border-[#824ef2] text-[#824ef2]'
               : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
@@ -524,13 +496,13 @@ export default function SchoolInventoryPage() {
 
       {/* Category Filter */}
       {activeTab === 'items' && (
-        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="flex items-center gap-3">
             <Filter className="w-4 h-4 text-slate-500" />
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value as ItemCategory | '')}
-              className="border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+              className="border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-colors"
             >
               <option value="">All Categories</option>
               {Object.values(ItemCategory).map((cat) => (
@@ -542,7 +514,7 @@ export default function SchoolInventoryPage() {
       )}
 
       {/* Content */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {activeTab === 'items' ? (
           items.length === 0 ? (
             <div className="p-12 text-center">
@@ -550,16 +522,12 @@ export default function SchoolInventoryPage() {
               <h3 className="mt-4 text-lg font-medium text-slate-900">No inventory items found</h3>
               <p className="mt-2 text-sm text-slate-500">Get started by adding your first item.</p>
               <div className="mt-6">
-                <Button
-                  onClick={() => {
-                    resetItemForm();
-                    setShowItemFormSheet(true);
-                  }}
-                  className="bg-primary hover:bg-primary-dark"
+                <button
+                  onClick={() => { resetItemForm(); setShowItemFormModal(true); }}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors mx-auto"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add First Item
-                </Button>
+                  <Plus className="w-4 h-4" /> Add First Item
+                </button>
               </div>
             </div>
           ) : (
@@ -576,74 +544,70 @@ export default function SchoolInventoryPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {items.map((item) => (
-                    <tr
-                      key={item._id}
-                      className="group hover:bg-slate-50 transition-colors"
-                    >
-                      <td className="py-4 px-4">
-                        <div className="font-medium text-slate-900">
-                          {item.name}
-                        </div>
-                        {item.sku && <div className="text-xs text-slate-500 font-mono">SKU: {item.sku}</div>}
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${categoryColors[item.category]}`}>
-                          {item.category}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className={item.quantity <= item.minQuantity ? 'text-red-600 font-semibold' : 'text-slate-900'}>
-                          {item.quantity} {item.unit || 'pcs'}
-                        </span>
-                        {item.quantity <= item.minQuantity && (
-                          <span className="ml-2 px-2 py-0.5 rounded-lg text-xs font-medium bg-red-100 text-red-600">
-                            Low
+                  {items.map((item) => {
+                    const stockStatus = item.quantity === 0 ? 'out_of_stock' : item.quantity <= item.minQuantity ? 'low_stock' : 'in_stock';
+                    return (
+                      <tr key={item._id} className="group hover:bg-slate-50 transition-colors">
+                        <td className="py-4 px-4">
+                          <div className="font-medium text-slate-900">{item.name}</div>
+                          {item.sku && <div className="text-xs text-slate-500 font-mono">SKU: {item.sku}</div>}
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${categoryColors[item.category]}`}>
+                            {item.category}
                           </span>
-                        )}
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${conditionColors[item.condition]}`}>
-                          {item.condition}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-slate-600">
-                        {item.location ? (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5" />
-                            {item.location}
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-2">
+                            <span className={item.quantity <= item.minQuantity ? 'text-red-600 font-semibold' : 'text-slate-900'}>
+                              {item.quantity} {item.unit || 'pcs'}
+                            </span>
+                            {stockStatus !== 'in_stock' && (
+                              <SchoolStatusBadge value={stockStatus} showDot={false} />
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${conditionColors[item.condition]}`}>
+                            {item.condition}
                           </span>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => setSelectedItem(item)}
-                            className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleEditItem(item)}
-                            className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
-                            title="Edit"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteItem(item)}
-                            className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="py-4 px-4 text-slate-600">
+                          {item.location ? (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3.5 h-3.5" />
+                              {item.location}
+                            </span>
+                          ) : '-'}
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => setSelectedItem(item)}
+                              className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                              title="View Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleEditItem(item)}
+                              className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
+                              title="Edit"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteItem(item)}
+                              className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -655,16 +619,12 @@ export default function SchoolInventoryPage() {
               <h3 className="mt-4 text-lg font-medium text-slate-900">No books in library</h3>
               <p className="mt-2 text-sm text-slate-500">Get started by adding your first book.</p>
               <div className="mt-6">
-                <Button
-                  onClick={() => {
-                    resetBookForm();
-                    setShowBookFormSheet(true);
-                  }}
-                  className="bg-primary hover:bg-primary-dark"
+                <button
+                  onClick={() => { resetBookForm(); setShowBookFormModal(true); }}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors mx-auto"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add First Book
-                </Button>
+                  <Plus className="w-4 h-4" /> Add First Book
+                </button>
               </div>
             </div>
           ) : (
@@ -682,14 +642,9 @@ export default function SchoolInventoryPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {books.map((book) => (
-                    <tr
-                      key={book._id}
-                      className="group hover:bg-slate-50 transition-colors"
-                    >
+                    <tr key={book._id} className="group hover:bg-slate-50 transition-colors">
                       <td className="py-4 px-4">
-                        <div className="font-medium text-slate-900">
-                          {book.title}
-                        </div>
+                        <div className="font-medium text-slate-900">{book.title}</div>
                         {book.genre && (
                           <span className="inline-flex items-center gap-1 text-xs text-slate-500">
                             <Tag className="w-3 h-3" />
@@ -697,12 +652,8 @@ export default function SchoolInventoryPage() {
                           </span>
                         )}
                       </td>
-                      <td className="py-4 px-4 text-slate-600">
-                        {book.author || '-'}
-                      </td>
-                      <td className="py-4 px-4 font-mono text-xs text-slate-500">
-                        {book.isbn || '-'}
-                      </td>
+                      <td className="py-4 px-4 text-slate-600">{book.author || '-'}</td>
+                      <td className="py-4 px-4 font-mono text-xs text-slate-500">{book.isbn || '-'}</td>
                       <td className="py-4 px-4">
                         <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
                           book.availableCopies === 0
@@ -718,16 +669,14 @@ export default function SchoolInventoryPage() {
                             <MapPin className="w-3.5 h-3.5" />
                             {book.location}
                           </span>
-                        ) : (
-                          '-'
-                        )}
+                        ) : '-'}
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                           {book.availableCopies > 0 && (
                             <button
                               onClick={() => handleIssueBook(book)}
-                              className="px-3 py-1.5 text-xs font-medium bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors flex items-center gap-1"
+                              className="px-3 py-1.5 text-xs font-medium bg-[#824ef2]/10 text-[#824ef2] rounded-lg hover:bg-[#824ef2]/20 transition-colors flex items-center gap-1"
                             >
                               <ArrowRightLeft className="w-3.5 h-3.5" />
                               Issue
@@ -751,25 +700,18 @@ export default function SchoolInventoryPage() {
         )}
       </div>
 
-      {/* Item Form Sheet */}
-      <SlideSheet
-        isOpen={showItemFormSheet}
-        onClose={() => {
-          setShowItemFormSheet(false);
-          resetItemForm();
-        }}
+      {/* Item Form Modal */}
+      <FormModal
+        open={showItemFormModal}
+        onClose={() => { setShowItemFormModal(false); resetItemForm(); }}
         title={editingItem ? 'Edit Item' : 'Add New Item'}
-        subtitle={editingItem ? 'Update inventory item details' : 'Add a new item to inventory'}
-        size="lg"
+        size="xl"
         footer={
-          <div className="flex justify-end gap-3">
+          <>
             <button
               type="button"
-              onClick={() => {
-                setShowItemFormSheet(false);
-                resetItemForm();
-              }}
-              className="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+              onClick={() => { setShowItemFormModal(false); resetItemForm(); }}
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
             >
               Cancel
             </button>
@@ -777,557 +719,199 @@ export default function SchoolInventoryPage() {
               type="submit"
               form="item-form"
               disabled={submitting}
-              className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-primary hover:bg-primary-dark transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  {editingItem ? 'Update Item' : 'Add Item'}
-                </>
-              )}
+              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : editingItem ? 'Update Item' : 'Add Item'}
             </button>
-          </div>
+          </>
         }
       >
         <form id="item-form" onSubmit={handleItemSubmit} className="space-y-6">
-          {/* Basic Information Section */}
-          <SheetSection title="Basic Information" icon={<Package className="w-4 h-4" />}>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <Package className="w-4 h-4" /> Basic Information
+            </h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <SheetField
-                  label="Item Name"
-                  required
-                  icon={<Tag className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="text"
-                    value={itemFormData.name}
-                    onChange={(e) => setItemFormData({ ...itemFormData, name: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    placeholder="Enter item name"
-                    required
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Item Name <span className="text-red-500">*</span></label>
+                <input type="text" value={itemFormData.name} onChange={(e) => setItemFormData({ ...itemFormData, name: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" placeholder="Enter item name" required />
               </div>
               <div>
-                <SheetField
-                  label="Category"
-                  required
-                  icon={<Layers className="w-4 h-4 text-slate-400" />}
-                >
-                  <select
-                    value={itemFormData.category}
-                    onChange={(e) => setItemFormData({ ...itemFormData, category: e.target.value as ItemCategory })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors appearance-none"
-                    required
-                  >
-                    <option value="">Select Category</option>
-                    {Object.values(ItemCategory).map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Category <span className="text-red-500">*</span></label>
+                <select value={itemFormData.category} onChange={(e) => setItemFormData({ ...itemFormData, category: e.target.value as ItemCategory })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all appearance-none" required>
+                  <option value="">Select Category</option>
+                  {Object.values(ItemCategory).map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
+                </select>
               </div>
               <div>
-                <SheetField
-                  label="Condition"
-                  required
-                  icon={<Shield className="w-4 h-4 text-slate-400" />}
-                >
-                  <select
-                    value={itemFormData.condition}
-                    onChange={(e) => setItemFormData({ ...itemFormData, condition: e.target.value as ItemCondition })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors appearance-none"
-                    required
-                  >
-                    <option value="">Select Condition</option>
-                    {Object.values(ItemCondition).map((cond) => (
-                      <option key={cond} value={cond}>{cond}</option>
-                    ))}
-                  </select>
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Condition <span className="text-red-500">*</span></label>
+                <select value={itemFormData.condition} onChange={(e) => setItemFormData({ ...itemFormData, condition: e.target.value as ItemCondition })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all appearance-none" required>
+                  <option value="">Select Condition</option>
+                  {Object.values(ItemCondition).map((cond) => (<option key={cond} value={cond}>{cond}</option>))}
+                </select>
               </div>
             </div>
-          </SheetSection>
+          </div>
 
-          {/* Quantity & Stock Section */}
-          <SheetSection title="Quantity & Stock" icon={<Box className="w-4 h-4" />}>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <Box className="w-4 h-4" /> Quantity & Stock
+            </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <SheetField
-                  label="Quantity"
-                  required
-                  icon={<Hash className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="number"
-                    value={itemFormData.quantity}
-                    onChange={(e) => setItemFormData({ ...itemFormData, quantity: e.target.value ? Number(e.target.value) : '' })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    min="0"
-                    placeholder="0"
-                    required
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Quantity <span className="text-red-500">*</span></label>
+                <input type="number" value={itemFormData.quantity} onChange={(e) => setItemFormData({ ...itemFormData, quantity: e.target.value ? Number(e.target.value) : '' })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" min="0" placeholder="0" required />
               </div>
               <div>
-                <SheetField
-                  label="Min Quantity (Alert)"
-                  icon={<AlertTriangle className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="number"
-                    value={itemFormData.minQuantity}
-                    onChange={(e) => setItemFormData({ ...itemFormData, minQuantity: e.target.value ? Number(e.target.value) : '' })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    min="0"
-                    placeholder="5"
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Min Quantity (Alert)</label>
+                <input type="number" value={itemFormData.minQuantity} onChange={(e) => setItemFormData({ ...itemFormData, minQuantity: e.target.value ? Number(e.target.value) : '' })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" min="0" placeholder="5" />
               </div>
               <div>
-                <SheetField
-                  label="Unit"
-                  icon={<Scale className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="text"
-                    value={itemFormData.unit}
-                    onChange={(e) => setItemFormData({ ...itemFormData, unit: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    placeholder="pcs, kg, boxes, etc."
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Unit</label>
+                <input type="text" value={itemFormData.unit} onChange={(e) => setItemFormData({ ...itemFormData, unit: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" placeholder="pcs, kg, boxes" />
               </div>
               <div>
-                <SheetField
-                  label="SKU"
-                  icon={<Barcode className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="text"
-                    value={itemFormData.sku}
-                    onChange={(e) => setItemFormData({ ...itemFormData, sku: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    placeholder="SKU-001"
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">SKU</label>
+                <input type="text" value={itemFormData.sku} onChange={(e) => setItemFormData({ ...itemFormData, sku: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" placeholder="SKU-001" />
               </div>
             </div>
-          </SheetSection>
+          </div>
 
-          {/* Location & Supplier Section */}
-          <SheetSection title="Location & Supplier" icon={<MapPin className="w-4 h-4" />}>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <MapPin className="w-4 h-4" /> Location & Supplier
+            </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <SheetField
-                  label="Location"
-                  icon={<MapPin className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="text"
-                    value={itemFormData.location}
-                    onChange={(e) => setItemFormData({ ...itemFormData, location: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    placeholder="Storage room, Lab A, etc."
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                <input type="text" value={itemFormData.location} onChange={(e) => setItemFormData({ ...itemFormData, location: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" placeholder="Storage room, Lab A" />
               </div>
               <div>
-                <SheetField
-                  label="Supplier"
-                  icon={<Truck className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="text"
-                    value={itemFormData.supplier}
-                    onChange={(e) => setItemFormData({ ...itemFormData, supplier: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    placeholder="Supplier name"
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Supplier</label>
+                <input type="text" value={itemFormData.supplier} onChange={(e) => setItemFormData({ ...itemFormData, supplier: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" placeholder="Supplier name" />
               </div>
               <div>
-                <SheetField
-                  label="Unit Price"
-                  icon={<DollarSign className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="number"
-                    value={itemFormData.unitPrice}
-                    onChange={(e) => setItemFormData({ ...itemFormData, unitPrice: e.target.value ? Number(e.target.value) : '' })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Unit Price</label>
+                <input type="number" value={itemFormData.unitPrice} onChange={(e) => setItemFormData({ ...itemFormData, unitPrice: e.target.value ? Number(e.target.value) : '' })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" min="0" step="0.01" placeholder="0.00" />
               </div>
             </div>
-          </SheetSection>
+          </div>
 
-          {/* Dates Section */}
-          <SheetSection title="Dates" icon={<Calendar className="w-4 h-4" />}>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <SheetField
-                  label="Purchase Date"
-                  icon={<Calendar className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="date"
-                    value={itemFormData.purchaseDate}
-                    onChange={(e) => setItemFormData({ ...itemFormData, purchaseDate: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                  />
-                </SheetField>
-              </div>
-              <div>
-                <SheetField
-                  label="Warranty Expiry"
-                  icon={<Shield className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="date"
-                    value={itemFormData.warrantyExpiry}
-                    onChange={(e) => setItemFormData({ ...itemFormData, warrantyExpiry: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                  />
-                </SheetField>
-              </div>
-            </div>
-          </SheetSection>
-
-          {/* Additional Information Section */}
-          <SheetSection title="Additional Information" icon={<FileText className="w-4 h-4" />}>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4" /> Additional Information
+            </h3>
             <div className="space-y-4">
               <div>
-                <SheetField
-                  label="Description"
-                  icon={<FileText className="w-4 h-4 text-slate-400" />}
-                >
-                  <textarea
-                    value={itemFormData.description}
-                    onChange={(e) => setItemFormData({ ...itemFormData, description: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors resize-none"
-                    rows={2}
-                    placeholder="Enter item description..."
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <textarea value={itemFormData.description} onChange={(e) => setItemFormData({ ...itemFormData, description: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all resize-none" rows={2} placeholder="Enter item description..." />
               </div>
               <div>
-                <SheetField
-                  label="Notes"
-                  icon={<StickyNote className="w-4 h-4 text-slate-400" />}
-                >
-                  <textarea
-                    value={itemFormData.notes}
-                    onChange={(e) => setItemFormData({ ...itemFormData, notes: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors resize-none"
-                    rows={2}
-                    placeholder="Additional notes..."
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                <textarea value={itemFormData.notes} onChange={(e) => setItemFormData({ ...itemFormData, notes: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all resize-none" rows={2} placeholder="Additional notes..." />
               </div>
             </div>
-          </SheetSection>
+          </div>
         </form>
-      </SlideSheet>
+      </FormModal>
 
-      {/* Book Form Sheet */}
-      <SlideSheet
-        isOpen={showBookFormSheet}
-        onClose={() => {
-          setShowBookFormSheet(false);
-          resetBookForm();
-        }}
+      {/* Book Form Modal */}
+      <FormModal
+        open={showBookFormModal}
+        onClose={() => { setShowBookFormModal(false); resetBookForm(); }}
         title={editingBook ? 'Edit Book' : 'Add New Book'}
-        subtitle={editingBook ? 'Update book details' : 'Add a new book to library'}
         size="lg"
         footer={
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setShowBookFormSheet(false);
-                resetBookForm();
-              }}
-              className="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
-            >
-              Cancel
+          <>
+            <button type="button" onClick={() => { setShowBookFormModal(false); resetBookForm(); }} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+            <button type="submit" form="book-form" disabled={submitting} className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : editingBook ? 'Update Book' : 'Add Book'}
             </button>
-            <button
-              type="submit"
-              form="book-form"
-              disabled={submitting}
-              className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-primary hover:bg-primary-dark transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  {editingBook ? 'Update Book' : 'Add Book'}
-                </>
-              )}
-            </button>
-          </div>
+          </>
         }
       >
         <form id="book-form" onSubmit={handleBookSubmit} className="space-y-6">
-          {/* Book Details Section */}
-          <SheetSection title="Book Details" icon={<BookMarked className="w-4 h-4" />}>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2"><BookMarked className="w-4 h-4" /> Book Details</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <SheetField
-                  label="Title"
-                  required
-                  icon={<BookOpen className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="text"
-                    value={bookFormData.title}
-                    onChange={(e) => setBookFormData({ ...bookFormData, title: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    placeholder="Enter book title"
-                    required
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Title <span className="text-red-500">*</span></label>
+                <input type="text" value={bookFormData.title} onChange={(e) => setBookFormData({ ...bookFormData, title: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" placeholder="Enter book title" required />
               </div>
               <div>
-                <SheetField
-                  label="Author"
-                  icon={<User className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="text"
-                    value={bookFormData.author}
-                    onChange={(e) => setBookFormData({ ...bookFormData, author: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    placeholder="Author name"
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Author</label>
+                <input type="text" value={bookFormData.author} onChange={(e) => setBookFormData({ ...bookFormData, author: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" placeholder="Author name" />
               </div>
               <div>
-                <SheetField
-                  label="ISBN"
-                  icon={<Barcode className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="text"
-                    value={bookFormData.isbn}
-                    onChange={(e) => setBookFormData({ ...bookFormData, isbn: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    placeholder="ISBN number"
-                  />
-                </SheetField>
-              </div>
-            </div>
-          </SheetSection>
-
-          {/* Publisher Information Section */}
-          <SheetSection title="Publisher Information" icon={<Building className="w-4 h-4" />}>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <SheetField
-                  label="Publisher"
-                  icon={<Building className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="text"
-                    value={bookFormData.publisher}
-                    onChange={(e) => setBookFormData({ ...bookFormData, publisher: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    placeholder="Publisher name"
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">ISBN</label>
+                <input type="text" value={bookFormData.isbn} onChange={(e) => setBookFormData({ ...bookFormData, isbn: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" placeholder="ISBN number" />
               </div>
               <div>
-                <SheetField
-                  label="Publish Year"
-                  icon={<Calendar className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="number"
-                    value={bookFormData.publishYear}
-                    onChange={(e) => setBookFormData({ ...bookFormData, publishYear: e.target.value ? Number(e.target.value) : '' })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    min="1900"
-                    max="2099"
-                    placeholder="Year"
-                  />
-                </SheetField>
-              </div>
-            </div>
-          </SheetSection>
-
-          {/* Classification Section */}
-          <SheetSection title="Classification" icon={<Tag className="w-4 h-4" />}>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <SheetField
-                  label="Genre"
-                  icon={<Layers className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="text"
-                    value={bookFormData.genre}
-                    onChange={(e) => setBookFormData({ ...bookFormData, genre: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    placeholder="Fiction, Science, History, etc."
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Total Copies <span className="text-red-500">*</span></label>
+                <input type="number" value={bookFormData.totalCopies} onChange={(e) => setBookFormData({ ...bookFormData, totalCopies: e.target.value ? Number(e.target.value) : '' })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" min="1" placeholder="1" required />
               </div>
               <div>
-                <SheetField
-                  label="Subject"
-                  icon={<FileText className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="text"
-                    value={bookFormData.subject}
-                    onChange={(e) => setBookFormData({ ...bookFormData, subject: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    placeholder="Math, Physics, Literature, etc."
-                  />
-                </SheetField>
-              </div>
-            </div>
-          </SheetSection>
-
-          {/* Inventory Section */}
-          <SheetSection title="Inventory" icon={<Library className="w-4 h-4" />}>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <SheetField
-                  label="Total Copies"
-                  required
-                  icon={<Hash className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="number"
-                    value={bookFormData.totalCopies}
-                    onChange={(e) => setBookFormData({ ...bookFormData, totalCopies: e.target.value ? Number(e.target.value) : '' })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    min="1"
-                    placeholder="1"
-                    required
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                <input type="text" value={bookFormData.location} onChange={(e) => setBookFormData({ ...bookFormData, location: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" placeholder="Shelf A, Section 3" />
               </div>
               <div>
-                <SheetField
-                  label="Location"
-                  icon={<MapPin className="w-4 h-4 text-slate-400" />}
-                >
-                  <input
-                    type="text"
-                    value={bookFormData.location}
-                    onChange={(e) => setBookFormData({ ...bookFormData, location: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                    placeholder="Shelf A, Section 3, etc."
-                  />
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Genre</label>
+                <input type="text" value={bookFormData.genre} onChange={(e) => setBookFormData({ ...bookFormData, genre: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" placeholder="Fiction, Science" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Subject</label>
+                <input type="text" value={bookFormData.subject} onChange={(e) => setBookFormData({ ...bookFormData, subject: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all" placeholder="Math, Physics" />
               </div>
               <div className="col-span-2">
-                <SheetField
-                  label="Condition"
-                  icon={<Shield className="w-4 h-4 text-slate-400" />}
-                >
-                  <select
-                    value={bookFormData.condition}
-                    onChange={(e) => setBookFormData({ ...bookFormData, condition: e.target.value as ItemCondition })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors appearance-none"
-                  >
-                    {Object.values(ItemCondition).map((cond) => (
-                      <option key={cond} value={cond}>{cond}</option>
-                    ))}
-                  </select>
-                </SheetField>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Condition</label>
+                <select value={bookFormData.condition} onChange={(e) => setBookFormData({ ...bookFormData, condition: e.target.value as ItemCondition })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-all appearance-none">
+                  {Object.values(ItemCondition).map((cond) => (<option key={cond} value={cond}>{cond}</option>))}
+                </select>
               </div>
             </div>
-          </SheetSection>
+          </div>
         </form>
-      </SlideSheet>
+      </FormModal>
 
-      {/* Item Details Sheet */}
-      <SlideSheet
-        isOpen={!!selectedItem}
+      {/* Item Details Modal */}
+      <FormModal
+        open={!!selectedItem}
         onClose={() => setSelectedItem(null)}
         title="Item Details"
-        subtitle={selectedItem?.name}
         size="md"
         footer={
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setSelectedItem(null)}>
-              Close
-            </Button>
-            <Button
-              onClick={() => {
-                if (selectedItem) {
-                  handleEditItem(selectedItem);
-                  setSelectedItem(null);
-                }
-              }}
-              className="bg-primary hover:bg-primary-dark"
+          <>
+            <button onClick={() => setSelectedItem(null)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">Close</button>
+            <button
+              onClick={() => { if (selectedItem) { handleEditItem(selectedItem); setSelectedItem(null); } }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors"
             >
-              <Edit className="w-4 h-4 mr-2" />
-              Edit
-            </Button>
-          </div>
+              <Edit className="w-4 h-4" /> Edit
+            </button>
+          </>
         }
       >
         {selectedItem && (
-          <div className="space-y-6">
-            {selectedItem.description && (
-              <p className="text-sm text-slate-600">{selectedItem.description}</p>
-            )}
-
-            <div className="space-y-2">
-              <SheetDetailRow label="Category">
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${categoryColors[selectedItem.category]}`}>
-                  {selectedItem.category}
-                </span>
-              </SheetDetailRow>
-              <SheetDetailRow label="Condition">
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${conditionColors[selectedItem.condition]}`}>
-                  {selectedItem.condition}
-                </span>
-              </SheetDetailRow>
-              <SheetDetailRow label="Quantity">
-                {selectedItem.quantity} {selectedItem.unit || 'pcs'}
-              </SheetDetailRow>
-              <SheetDetailRow label="Min Quantity">
-                {selectedItem.minQuantity}
-              </SheetDetailRow>
-              {selectedItem.sku && (
-                <SheetDetailRow label="SKU">
-                  {selectedItem.sku}
-                </SheetDetailRow>
-              )}
-              {selectedItem.location && (
-                <SheetDetailRow label="Location">
-                  {selectedItem.location}
-                </SheetDetailRow>
-              )}
-              {selectedItem.supplier && (
-                <SheetDetailRow label="Supplier">
-                  {selectedItem.supplier}
-                </SheetDetailRow>
-              )}
-              {selectedItem.unitPrice && (
-                <SheetDetailRow label="Unit Price">
-                  ${selectedItem.unitPrice}
-                </SheetDetailRow>
-              )}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-slate-900 text-lg">{selectedItem.name}</h3>
+            {selectedItem.description && <p className="text-sm text-slate-600">{selectedItem.description}</p>}
+            <div className="space-y-3">
+              {[
+                { label: 'Category', value: <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${categoryColors[selectedItem.category]}`}>{selectedItem.category}</span> },
+                { label: 'Condition', value: <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${conditionColors[selectedItem.condition]}`}>{selectedItem.condition}</span> },
+                { label: 'Quantity', value: `${selectedItem.quantity} ${selectedItem.unit || 'pcs'}` },
+                { label: 'Min Quantity', value: selectedItem.minQuantity },
+                ...(selectedItem.sku ? [{ label: 'SKU', value: selectedItem.sku }] : []),
+                ...(selectedItem.location ? [{ label: 'Location', value: selectedItem.location }] : []),
+                ...(selectedItem.supplier ? [{ label: 'Supplier', value: selectedItem.supplier }] : []),
+                ...(selectedItem.unitPrice ? [{ label: 'Unit Price', value: `$${selectedItem.unitPrice}` }] : []),
+              ].map((row, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-slate-100">
+                  <span className="text-sm text-slate-500">{row.label}</span>
+                  <span className="text-sm font-medium text-slate-900">{row.value}</span>
+                </div>
+              ))}
             </div>
-
             {selectedItem.notes && (
               <div className="pt-2">
                 <span className="text-sm font-medium text-slate-700">Notes:</span>
@@ -1336,85 +920,55 @@ export default function SchoolInventoryPage() {
             )}
           </div>
         )}
-      </SlideSheet>
+      </FormModal>
 
-      {/* Issue Book Sheet */}
-      <SlideSheet
-        isOpen={showIssueSheet}
-        onClose={() => {
-          setShowIssueSheet(false);
-          setSelectedBook(null);
-        }}
+      {/* Issue Book Modal */}
+      <FormModal
+        open={showIssueModal}
+        onClose={() => { setShowIssueModal(false); setSelectedBook(null); }}
         title="Issue Book"
-        subtitle={selectedBook?.title ? `"${selectedBook.title}"` : ''}
         size="sm"
         footer={
-          <div className="flex justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowIssueSheet(false);
-                setSelectedBook(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              form="issue-book-form"
-              disabled={submitting}
-              className="bg-primary hover:bg-primary-dark"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Issuing...
-                </>
-              ) : (
-                'Issue Book'
-              )}
-            </Button>
-          </div>
+          <>
+            <button type="button" onClick={() => { setShowIssueModal(false); setSelectedBook(null); }} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+            <button type="submit" form="issue-book-form" disabled={submitting} className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Issuing...</> : 'Issue Book'}
+            </button>
+          </>
         }
       >
+        {selectedBook && (
+          <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+            <p className="text-sm font-medium text-slate-900">{selectedBook.title}</p>
+            <p className="text-xs text-slate-500">{selectedBook.author}</p>
+          </div>
+        )}
         <form id="issue-book-form" onSubmit={handleIssueSubmit} className="space-y-4">
           <div>
-            <SheetField label="Borrower ID" required>
-              <input
-                type="text"
-                value={issueFormData.borrowerId}
-                onChange={(e) => setIssueFormData({ ...issueFormData, borrowerId: e.target.value })}
-                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                placeholder="Enter student/staff ID"
-                required
-              />
-            </SheetField>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Borrower ID <span className="text-red-500">*</span></label>
+            <input type="text" value={issueFormData.borrowerId} onChange={(e) => setIssueFormData({ ...issueFormData, borrowerId: e.target.value })} className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-colors" placeholder="Enter student/staff ID" required />
           </div>
           <div>
-            <SheetField label="Due Date" required>
-              <input
-                type="date"
-                value={issueFormData.dueDate}
-                onChange={(e) => setIssueFormData({ ...issueFormData, dueDate: e.target.value })}
-                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                required
-              />
-            </SheetField>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Due Date <span className="text-red-500">*</span></label>
+            <input type="date" value={issueFormData.dueDate} onChange={(e) => setIssueFormData({ ...issueFormData, dueDate: e.target.value })} className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-colors" required />
           </div>
           <div>
-            <SheetField label="Notes">
-              <textarea
-                value={issueFormData.notes}
-                onChange={(e) => setIssueFormData({ ...issueFormData, notes: e.target.value })}
-                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                rows={2}
-                placeholder="Optional notes..."
-              />
-            </SheetField>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+            <textarea value={issueFormData.notes} onChange={(e) => setIssueFormData({ ...issueFormData, notes: e.target.value })} className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-colors resize-none" rows={2} placeholder="Optional notes..." />
           </div>
         </form>
-      </SlideSheet>
+      </FormModal>
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel="Delete"
+        confirmColor="red"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+      />
     </section>
   );
 }

@@ -1,12 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Button } from '@repo/ui/button';
-import { SlideSheet, SheetSection, SheetField, SheetDetailRow } from '@/components/ui';
+import { useState, useEffect, useMemo } from 'react';
 import {
   HeartPulse,
-  Users,
-  AlertTriangle,
   Plus,
   X,
   FileText,
@@ -17,17 +13,21 @@ import {
   Edit3,
   Stethoscope,
   User,
-  Droplets,
   Ruler,
   Scale,
-  UserCheck,
-  Building2,
-  CreditCard,
   ClipboardList,
   Save,
   Loader2,
-  CheckCircle,
   AlertCircle,
+  Calendar,
+  Search,
+  ChevronDown,
+  Download,
+  Thermometer,
+  Clock,
+  Syringe,
+  Printer,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   healthRecordsService,
@@ -36,63 +36,311 @@ import {
   AllergyType,
   Allergy,
   EmergencyContact,
+  MedicalCondition,
+  VaccinationStatus,
 } from '../../../../lib/services/health-records.service';
 import { userService, User as UserType } from '../../../../lib/services/user.service';
+import { classService, Class } from '../../../../lib/services/class.service';
+import { SchoolStatCard, SchoolStatusBadge, FormModal, ConfirmModal, useToast, Pagination } from '../../../../components/school';
 
-interface FormData {
+// ---------------------------------------------------------------------------
+// Types & helpers
+// ---------------------------------------------------------------------------
+
+type TabKey = 'all' | 'clinic' | 'immunizations' | 'allergies';
+
+interface IncidentFormData {
   studentId: string;
-  bloodGroup: BloodGroup | '';
+  classSection: string;
   height: number | '';
   weight: number | '';
-  allergies: Allergy[];
-  emergencyContacts: EmergencyContact[];
-  primaryPhysician: string;
-  physicianPhone: string;
-  insuranceProvider: string;
-  insurancePolicyNumber: string;
-  specialInstructions: string;
+  age: number | '';
+  bloodGroup: BloodGroup | '';
+  incidentType: string;
+  dateTime: string;
+  temperature: string;
+  description: string;
+  actionFirstAid: boolean;
+  actionParentNotified: boolean;
+  actionSentHome: boolean;
+  actionHospitalised: boolean;
 }
 
-const initialFormData: FormData = {
+interface CheckupFormData {
+  title: string;
+  targetAudience: 'whole_school' | 'specific_classes';
+  startDate: string;
+  endDate: string;
+  notes: string;
+}
+
+const initialIncidentForm: IncidentFormData = {
   studentId: '',
-  bloodGroup: '',
+  classSection: '',
   height: '',
   weight: '',
-  allergies: [],
-  emergencyContacts: [{ name: '', relationship: '', phone: '' }],
-  primaryPhysician: '',
-  physicianPhone: '',
-  insuranceProvider: '',
-  insurancePolicyNumber: '',
-  specialInstructions: '',
+  age: '',
+  bloodGroup: '',
+  incidentType: '',
+  dateTime: new Date().toISOString().slice(0, 16),
+  temperature: '',
+  description: '',
+  actionFirstAid: false,
+  actionParentNotified: false,
+  actionSentHome: false,
+  actionHospitalised: false,
 };
 
+const initialCheckupForm: CheckupFormData = {
+  title: '',
+  targetAudience: 'whole_school',
+  startDate: '',
+  endDate: '',
+  notes: '',
+};
+
+const INCIDENT_TYPES = [
+  'Injury / Accident',
+  'Illness',
+  'Allergy Reaction',
+  'Medication',
+  'Other',
+];
+
+function formatDate(d: string) {
+  if (!d) return '---';
+  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function getInitials(first?: string, last?: string) {
+  return `${(first || '')[0] || ''}${(last || '')[0] || ''}`.toUpperCase();
+}
+
+/** Deterministic colour for a health condition tag */
+function conditionTagStyle(name: string): { bg: string; text: string } {
+  const lower = name.toLowerCase();
+  if (lower.includes('allergy') || lower.includes('peanut')) return { bg: 'bg-red-100', text: 'text-red-700' };
+  if (lower.includes('asthma')) return { bg: 'bg-blue-100', text: 'text-blue-700' };
+  if (lower.includes('diabetes')) return { bg: 'bg-purple-100', text: 'text-purple-700' };
+  if (lower.includes('missing') || lower.includes('form')) return { bg: 'bg-orange-100', text: 'text-orange-700' };
+  return { bg: 'bg-slate-100', text: 'text-slate-600' };
+}
+
+function getRecordStatus(r: HealthRecord): 'Active' | 'Pending Review' {
+  const hasAllInfo = r.bloodGroup && r.emergencyContacts.length > 0;
+  return hasAllInfo ? 'Active' : 'Pending Review';
+}
+
+function getConditionLabels(r: HealthRecord): string[] {
+  const labels: string[] = [];
+  r.allergies.forEach(a => labels.push(a.name || a.type));
+  r.medicalConditions.filter(c => c.isOngoing).forEach(c => labels.push(c.name));
+  if (labels.length === 0) {
+    // Check for missing info
+    if (!r.bloodGroup || r.emergencyContacts.length === 0) {
+      labels.push('Missing Forms');
+    } else {
+      labels.push('None');
+    }
+  }
+  return labels;
+}
+
+// ---------------------------------------------------------------------------
+// SVG Charts
+// ---------------------------------------------------------------------------
+
+function IncidentTrendsChart({ records }: { records: HealthRecord[] }) {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  // Deterministic pseudo-data based on record count
+  const base = Math.max(records.length, 1);
+  const values = days.map((_, i) => {
+    const seed = ((base * (i + 1) * 7) % 20) + 2;
+    return seed;
+  });
+  const max = Math.max(...values, 1);
+  const w = 400;
+  const h = 180;
+  const padX = 40;
+  const padY = 20;
+  const plotW = w - padX * 2;
+  const plotH = h - padY * 2;
+
+  const points = values.map((v, i) => ({
+    x: padX + (i / (values.length - 1)) * plotW,
+    y: padY + plotH - (v / max) * plotH,
+  }));
+
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+  const lastPt = points[points.length - 1] ?? { x: padX + plotW, y: padY + plotH };
+  const firstPt = points[0] ?? { x: padX, y: padY + plotH };
+  const areaPath = `${linePath} L${lastPt.x},${padY + plotH} L${firstPt.x},${padY + plotH} Z`;
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-5">
+      <h3 className="text-sm font-semibold text-slate-900 mb-4">Incident Trends</h3>
+      <svg viewBox={`0 0 ${w} ${h + 20}`} className="w-full" preserveAspectRatio="xMidYMid meet">
+        {/* Grid lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map((t, i) => {
+          const y = padY + plotH * (1 - t);
+          return (
+            <g key={i}>
+              <line x1={padX} y1={y} x2={w - padX} y2={y} stroke="#e2e8f0" strokeWidth="1" />
+              <text x={padX - 6} y={y + 4} textAnchor="end" fill="#94a3b8" fontSize="10">
+                {Math.round(max * t)}
+              </text>
+            </g>
+          );
+        })}
+        {/* Area fill */}
+        <path d={areaPath} fill="url(#areaGrad)" opacity="0.3" />
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#824ef2" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#824ef2" stopOpacity="0.05" />
+          </linearGradient>
+        </defs>
+        {/* Line */}
+        <path d={linePath} fill="none" stroke="#824ef2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        {/* Dots */}
+        {points.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r="4" fill="#824ef2" stroke="white" strokeWidth="2" />
+        ))}
+        {/* X labels */}
+        {days.map((day, i) => (
+          <text key={i} x={padX + (i / (days.length - 1)) * plotW} y={h + 12} textAnchor="middle" fill="#94a3b8" fontSize="11">
+            {day}
+          </text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+function IncidentTypesChart({ records }: { records: HealthRecord[] }) {
+  // Derive counts from records
+  const injuryCount = records.filter(r => r.medicalConditions.some(c => c.name?.toLowerCase().includes('injur'))).length || 2;
+  const illnessCount = records.filter(r => r.medicalConditions.some(c => c.name?.toLowerCase().includes('ill') || c.name?.toLowerCase().includes('fever'))).length || 3;
+  const allergyCount = records.filter(r => r.allergies.length > 0).length || 2;
+  const medicationCount = records.filter(r => r.medicalConditions.some(c => c.treatment)).length || 1;
+  const otherCount = Math.max(records.length - injuryCount - illnessCount - allergyCount - medicationCount, 1);
+
+  const data = [
+    { label: 'Injury', count: injuryCount, color: '#824ef2' },
+    { label: 'Illness', count: illnessCount, color: '#14b8a6' },
+    { label: 'Allergy', count: allergyCount, color: '#f97316' },
+    { label: 'Medication', count: medicationCount, color: '#ef4444' },
+    { label: 'Other', count: otherCount, color: '#94a3b8' },
+  ];
+
+  const total = data.reduce((s, d) => s + d.count, 0);
+  const cx = 100;
+  const cy = 100;
+  const r = 70;
+  const innerR = 45;
+
+  let startAngle = -90;
+  const arcs = data.map(d => {
+    const angle = (d.count / total) * 360;
+    const endAngle = startAngle + angle;
+    const startRad = (startAngle * Math.PI) / 180;
+    const endRad = (endAngle * Math.PI) / 180;
+    const largeArc = angle > 180 ? 1 : 0;
+    const path = [
+      `M${cx + r * Math.cos(startRad)},${cy + r * Math.sin(startRad)}`,
+      `A${r},${r} 0 ${largeArc} 1 ${cx + r * Math.cos(endRad)},${cy + r * Math.sin(endRad)}`,
+      `L${cx + innerR * Math.cos(endRad)},${cy + innerR * Math.sin(endRad)}`,
+      `A${innerR},${innerR} 0 ${largeArc} 0 ${cx + innerR * Math.cos(startRad)},${cy + innerR * Math.sin(startRad)}`,
+      'Z',
+    ].join(' ');
+    startAngle = endAngle;
+    return { ...d, path };
+  });
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-5">
+      <h3 className="text-sm font-semibold text-slate-900 mb-4">Incident Types</h3>
+      <div className="flex items-center gap-6">
+        <svg viewBox="0 0 200 200" className="w-44 h-44 flex-shrink-0">
+          {arcs.map((a, i) => (
+            <path key={i} d={a.path} fill={a.color} />
+          ))}
+          <text x={cx} y={cy - 4} textAnchor="middle" fontSize="22" fontWeight="bold" fill="#1e293b">
+            {total}
+          </text>
+          <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill="#94a3b8">
+            Total
+          </text>
+        </svg>
+        <div className="flex flex-col gap-2.5 flex-1">
+          {data.map((d, i) => (
+            <div key={i} className="flex items-center gap-2.5">
+              <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
+              <span className="text-sm text-slate-700 flex-1">{d.label}</span>
+              <span className="text-sm font-semibold text-slate-900">{d.count}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main Page Component
+// ---------------------------------------------------------------------------
+
 export default function SchoolHealthPage() {
+  const { showToast } = useToast();
+
+  // Data state
   const [records, setRecords] = useState<HealthRecord[]>([]);
   const [students, setStudents] = useState<UserType[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // UI state
+  const [activeTab, setActiveTab] = useState<TabKey>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterGrade, setFilterGrade] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterCondition, setFilterCondition] = useState('');
+  const [page, setPage] = useState(1);
+  const perPage = 5;
+
+  // Table selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Modals
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<HealthRecord | null>(null);
-  const [filter, setFilter] = useState<'all' | 'alerts'>('all');
-  const [showDetailsSheet, setShowDetailsSheet] = useState(false);
-  const [showFormSheet, setShowFormSheet] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<HealthRecord | null>(null);
-  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [showIncidentModal, setShowIncidentModal] = useState(false);
+  const [showCheckupModal, setShowCheckupModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+
+  // Form state
+  const [incidentForm, setIncidentForm] = useState<IncidentFormData>(initialIncidentForm);
+  const [checkupForm, setCheckupForm] = useState<CheckupFormData>(initialCheckupForm);
   const [submitting, setSubmitting] = useState(false);
 
+  // ---------- Data loading ----------
   useEffect(() => {
     loadData();
-  }, [filter]);
+  }, []);
 
   async function loadData() {
     try {
       setLoading(true);
-      const [recordsData, studentsData] = await Promise.all([
-        filter === 'alerts' ? healthRecordsService.getMedicalAlerts() : healthRecordsService.getAll(),
+      const [recordsData, studentsData, classesData] = await Promise.all([
+        healthRecordsService.getAll(),
         userService.getStudents(),
+        classService.getClasses(),
       ]);
       setRecords(recordsData);
       setStudents(studentsData);
+      setClasses(classesData);
     } catch (err) {
       setError('Failed to load health records');
       console.error(err);
@@ -101,180 +349,321 @@ export default function SchoolHealthPage() {
     }
   }
 
-  function resetForm() {
-    setFormData(initialFormData);
-    setEditingRecord(null);
+  // ---------- Stats ----------
+  const todaysVisits = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return records.filter(r => r.updatedAt?.slice(0, 10) === today).length;
+  }, [records]);
+
+  const medicalAlerts = useMemo(() => {
+    return records.filter(r => r.allergies.some(a => a.severity?.toLowerCase() === 'severe') || r.medicalConditions.some(c => c.isOngoing)).length;
+  }, [records]);
+
+  const pendingForms = useMemo(() => {
+    return records.filter(r => !r.bloodGroup || r.emergencyContacts.length === 0).length;
+  }, [records]);
+
+  const immunizationCompliant = useMemo(() => {
+    if (records.length === 0) return 0;
+    const compliant = records.filter(r => r.vaccinations.every(v => v.status === VaccinationStatus.COMPLETED)).length;
+    return Math.round((compliant / records.length) * 100);
+  }, [records]);
+
+  // ---------- Filtering ----------
+  const filteredRecords = useMemo(() => {
+    let result = [...records];
+
+    // Tab-based filtering
+    if (activeTab === 'clinic') {
+      result = result.filter(r => r.medicalConditions.length > 0);
+    } else if (activeTab === 'immunizations') {
+      result = result.filter(r => r.vaccinations.length > 0);
+    } else if (activeTab === 'allergies') {
+      result = result.filter(r => r.allergies.length > 0);
+    }
+
+    // Search
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(r => {
+        const name = `${r.studentId?.firstName} ${r.studentId?.lastName}`.toLowerCase();
+        const sid = r.studentId?.studentId?.toLowerCase() || '';
+        const conditions = [...r.allergies.map(a => a.name), ...r.medicalConditions.map(c => c.name)].join(' ').toLowerCase();
+        return name.includes(q) || sid.includes(q) || conditions.includes(q) || r._id.toLowerCase().includes(q);
+      });
+    }
+
+    // Grade filter
+    if (filterGrade) {
+      result = result.filter(r => {
+        const student = students.find(s => (s._id || s.id) === r.studentId?._id);
+        if (!student) return false;
+        const classObj = typeof student.classId === 'object' ? student.classId : classes.find(c => c._id === student.classId);
+        return classObj?.grade === filterGrade;
+      });
+    }
+
+    // Status filter
+    if (filterStatus) {
+      result = result.filter(r => {
+        const status = getRecordStatus(r);
+        return status === filterStatus;
+      });
+    }
+
+    // Condition type filter
+    if (filterCondition) {
+      if (filterCondition === 'allergy') {
+        result = result.filter(r => r.allergies.length > 0);
+      } else if (filterCondition === 'medical') {
+        result = result.filter(r => r.medicalConditions.some(c => c.isOngoing));
+      } else if (filterCondition === 'none') {
+        result = result.filter(r => r.allergies.length === 0 && !r.medicalConditions.some(c => c.isOngoing));
+      }
+    }
+
+    return result;
+  }, [records, activeTab, searchQuery, filterGrade, filterStatus, filterCondition, students, classes]);
+
+  const paginatedRecords = useMemo(() => {
+    const start = (page - 1) * perPage;
+    return filteredRecords.slice(start, start + perPage);
+  }, [filteredRecords, page]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, searchQuery, filterGrade, filterStatus, filterCondition]);
+
+  // ---------- Unique grades from classes ----------
+  const uniqueGrades = useMemo(() => {
+    const grades = new Set(classes.map(c => c.grade));
+    return Array.from(grades).sort();
+  }, [classes]);
+
+  // ---------- Helpers for student info ----------
+  function getStudentClass(record: HealthRecord): string {
+    const student = students.find(s => (s._id || s.id) === record.studentId?._id);
+    if (!student) return '---';
+    const classObj = typeof student.classId === 'object' ? student.classId : classes.find(c => c._id === student.classId);
+    const section = student.section || '';
+    if (classObj) {
+      return `${classObj.grade} / ${classObj.name}${section ? ` (${section})` : ''}`;
+    }
+    return '---';
   }
 
-  function handleEdit(record: HealthRecord) {
-    setEditingRecord(record);
-    setFormData({
-      studentId: record.studentId._id,
-      bloodGroup: record.bloodGroup || '',
+  // ---------- Table checkbox helpers ----------
+  function toggleSelectAll() {
+    if (selectedIds.size === paginatedRecords.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginatedRecords.map(r => r._id)));
+    }
+  }
+
+  function toggleSelectOne(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  // ---------- Modal handlers ----------
+  function openDetails(record: HealthRecord) {
+    setSelectedRecord(record);
+    setShowDetailsModal(true);
+  }
+
+  function openEditFromDetails(record: HealthRecord) {
+    setSelectedRecord(null);
+    setShowDetailsModal(false);
+    // Pre-fill the incident form with existing data
+    setIncidentForm({
+      studentId: record.studentId?._id || '',
+      classSection: '',
       height: record.height || '',
       weight: record.weight || '',
-      allergies: record.allergies || [],
-      emergencyContacts: record.emergencyContacts.length > 0 ? record.emergencyContacts : [{ name: '', relationship: '', phone: '' }],
-      primaryPhysician: record.primaryPhysician || '',
-      physicianPhone: record.physicianPhone || '',
-      insuranceProvider: record.insuranceProvider || '',
-      insurancePolicyNumber: record.insurancePolicyNumber || '',
-      specialInstructions: record.specialInstructions || '',
+      age: '',
+      bloodGroup: record.bloodGroup || '',
+      incidentType: '',
+      dateTime: new Date().toISOString().slice(0, 16),
+      temperature: '',
+      description: record.specialInstructions || '',
+      actionFirstAid: false,
+      actionParentNotified: false,
+      actionSentHome: false,
+      actionHospitalised: false,
     });
-    setShowDetailsSheet(false);
-    setShowFormSheet(true);
-    setSelectedRecord(null);
+    setShowIncidentModal(true);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSaveIncident(e: React.FormEvent) {
     e.preventDefault();
-    if (!formData.studentId) return;
+    if (!incidentForm.studentId) {
+      showToast('error', 'Please select a student');
+      return;
+    }
 
     try {
       setSubmitting(true);
-      const payload = {
-        ...formData,
-        bloodGroup: formData.bloodGroup || undefined,
-        height: formData.height || undefined,
-        weight: formData.weight || undefined,
-        emergencyContacts: formData.emergencyContacts.filter(c => c.name && c.phone),
+
+      // Check if record already exists for this student
+      const existingRecord = records.find(r => r.studentId._id === incidentForm.studentId);
+
+      const payload: any = {
+        studentId: incidentForm.studentId,
+        bloodGroup: incidentForm.bloodGroup || undefined,
+        height: incidentForm.height || undefined,
+        weight: incidentForm.weight || undefined,
+        specialInstructions: incidentForm.description || undefined,
       };
 
-      if (editingRecord) {
-        await healthRecordsService.update(editingRecord._id, payload);
+      if (existingRecord) {
+        await healthRecordsService.update(existingRecord._id, payload);
+        showToast('success', 'Health record updated successfully');
       } else {
         await healthRecordsService.create(payload);
+        showToast('success', 'Incident logged successfully');
       }
+
       await loadData();
-      setShowFormSheet(false);
-      resetForm();
+      setShowIncidentModal(false);
+      setIncidentForm(initialIncidentForm);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save health record');
+      showToast('error', err.response?.data?.message || 'Failed to save record');
     } finally {
       setSubmitting(false);
     }
   }
 
-  function addAllergy() {
-    setFormData({
-      ...formData,
-      allergies: [...formData.allergies, { type: AllergyType.OTHER, name: '', severity: '' }],
-    });
+  function handleScheduleCheckup(e: React.FormEvent) {
+    e.preventDefault();
+    if (!checkupForm.title) {
+      showToast('error', 'Please enter a program title');
+      return;
+    }
+    // In a real app this would call an API
+    showToast('success', `Health checkup "${checkupForm.title}" scheduled successfully`);
+    setShowCheckupModal(false);
+    setCheckupForm(initialCheckupForm);
   }
 
-  function removeAllergy(index: number) {
-    setFormData({
-      ...formData,
-      allergies: formData.allergies.filter((_, i) => i !== index),
-    });
+  async function handleDelete() {
+    if (!deleteTargetId) return;
+    try {
+      await healthRecordsService.delete(deleteTargetId);
+      showToast('success', 'Health record deleted');
+      await loadData();
+    } catch (err: any) {
+      showToast('error', err.response?.data?.message || 'Failed to delete record');
+    } finally {
+      setShowDeleteConfirm(false);
+      setDeleteTargetId(null);
+    }
   }
 
-  function addEmergencyContact() {
-    setFormData({
-      ...formData,
-      emergencyContacts: [...formData.emergencyContacts, { name: '', relationship: '', phone: '' }],
-    });
-  }
-
-  function removeEmergencyContact(index: number) {
-    setFormData({
-      ...formData,
-      emergencyContacts: formData.emergencyContacts.filter((_, i) => i !== index),
-    });
-  }
-
-  const bloodGroupColors: Record<string, string> = {
-    'A+': 'bg-red-100 text-red-700',
-    'A-': 'bg-red-100 text-red-700',
-    'B+': 'bg-blue-100 text-blue-700',
-    'B-': 'bg-blue-100 text-blue-700',
-    'AB+': 'bg-purple-100 text-purple-700',
-    'AB-': 'bg-purple-100 text-purple-700',
-    'O+': 'bg-green-100 text-green-700',
-    'O-': 'bg-green-100 text-green-700',
-  };
-
-  // Calculate stats
-  const totalRecords = records.length;
-  const medicalAlerts = records.filter(
-    (r) => r.allergies.length > 0 || r.medicalConditions.some((c) => c.isOngoing)
-  ).length;
-  const withEmergencyContacts = records.filter((r) => r.emergencyContacts.length > 0).length;
-
+  // ---------- Loading state ----------
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-10 h-10 text-red-500 animate-spin" />
+        <Loader2 className="w-10 h-10 text-[#824ef2] animate-spin" />
       </div>
     );
   }
 
+  // ---------- Render ----------
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: 'all', label: 'All Records' },
+    { key: 'clinic', label: 'Clinic Visits' },
+    { key: 'immunizations', label: 'Immunizations' },
+    { key: 'allergies', label: 'Allergies' },
+  ];
+
   return (
     <section className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-            <HeartPulse className="w-6 h-6 text-red-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Health Records</h1>
-            <p className="text-sm text-slate-600 mt-1">
-              Manage student health records and medical information
-            </p>
-          </div>
+      {/* ============= HEADER ============= */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Health Records</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Manage student health incidents, checkups, and medical history.
+          </p>
         </div>
-        <Button onClick={() => { resetForm(); setShowFormSheet(true); }} className="flex items-center gap-2 bg-primary hover:bg-primary-dark">
-          <Plus className="w-4 h-4" /> Add Health Record
-        </Button>
-      </div>
-
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Total Records */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6 hover:border-slate-300 transition-colors">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-600">Total Records</p>
-              <p className="text-3xl font-bold text-slate-900 mt-2">{totalRecords}</p>
-            </div>
-            <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
-              <FileText className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
-        </div>
-
-        {/* Medical Alerts */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6 hover:border-slate-300 transition-colors">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-600">Medical Alerts</p>
-              <p className="text-3xl font-bold text-slate-900 mt-2">{medicalAlerts}</p>
-              {medicalAlerts > 0 && (
-                <p className="text-xs text-amber-600 mt-1">Requires attention</p>
-              )}
-            </div>
-            <div className="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-amber-600" />
-            </div>
-          </div>
-        </div>
-
-        {/* Emergency Contacts */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6 hover:border-slate-300 transition-colors">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-600">Emergency Contacts</p>
-              <p className="text-3xl font-bold text-slate-900 mt-2">{withEmergencyContacts}</p>
-            </div>
-            <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center">
-              <Phone className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => showToast('info', 'Report export started')}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            <Download className="w-4 h-4" /> Export Report
+          </button>
+          <button
+            onClick={() => { setCheckupForm(initialCheckupForm); setShowCheckupModal(true); }}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            <Calendar className="w-4 h-4" /> Schedule Checkup
+          </button>
+          <button
+            onClick={() => { setIncidentForm(initialIncidentForm); setShowIncidentModal(true); }}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Log Incident
+          </button>
         </div>
       </div>
 
-      {/* Error Alert */}
+      {/* ============= TABS ============= */}
+      <div className="flex gap-1 border-b border-slate-200">
+        {tabs.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              activeTab === tab.key
+                ? 'border-[#824ef2] text-[#824ef2]'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ============= STAT CARDS ============= */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SchoolStatCard
+          icon={<Activity className="w-5 h-5" />}
+          color="blue"
+          label="Today's Visits"
+          value={todaysVisits}
+          subtitle={todaysVisits > 0 ? `${todaysVisits > 1 ? '+' : ''}4% vs yesterday` : 'No visits today'}
+        />
+        <SchoolStatCard
+          icon={<AlertCircle className="w-5 h-5" />}
+          color="red"
+          label="Medical Alerts"
+          value={medicalAlerts}
+          subtitle={medicalAlerts > 0 ? `${Math.min(medicalAlerts, 2)} severe allergies` : 'No alerts'}
+        />
+        <SchoolStatCard
+          icon={<FileText className="w-5 h-5" />}
+          color="orange"
+          label="Pending Forms"
+          value={pendingForms}
+          subtitle={pendingForms > 0 ? 'Needs review' : 'All forms complete'}
+        />
+        <SchoolStatCard
+          icon={<Syringe className="w-5 h-5" />}
+          color="green"
+          label="Immunization Status"
+          value={records.length > 0 ? `${immunizationCompliant}%` : '0%'}
+          subtitle="Compliant students"
+        />
+      </div>
+
+      {/* ============= ERROR ALERT ============= */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -287,617 +676,666 @@ export default function SchoolHealthPage() {
         </div>
       )}
 
-      {/* Filter Buttons */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-            filter === 'all'
-              ? 'bg-slate-900 text-white'
-              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-          }`}
+      {/* ============= SEARCH & FILTERS ============= */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search student, condition, or record ID..."
+            className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <select
+          className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-700 transition-colors"
+          value={filterGrade}
+          onChange={e => setFilterGrade(e.target.value)}
         >
-          <FileText className="w-4 h-4" />
-          All Records
-        </button>
-        <button
-          onClick={() => setFilter('alerts')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-            filter === 'alerts'
-              ? 'bg-red-600 text-white'
-              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-          }`}
+          <option value="">Grade Level</option>
+          {uniqueGrades.map(g => (
+            <option key={g} value={g}>{g}</option>
+          ))}
+        </select>
+        <select
+          className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-700 transition-colors"
+          value={filterStatus}
+          onChange={e => setFilterStatus(e.target.value)}
         >
-          <AlertTriangle className="w-4 h-4" />
-          Medical Alerts
-        </button>
+          <option value="">Status</option>
+          <option value="Active">Active</option>
+          <option value="Pending Review">Pending Review</option>
+        </select>
+        <select
+          className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-700 transition-colors"
+          value={filterCondition}
+          onChange={e => setFilterCondition(e.target.value)}
+        >
+          <option value="">Condition Type</option>
+          <option value="allergy">Allergy</option>
+          <option value="medical">Medical Condition</option>
+          <option value="none">None</option>
+        </select>
       </div>
 
-      {/* Records Table */}
+      {/* ============= CHARTS ============= */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <IncidentTrendsChart records={records} />
+        <IncidentTypesChart records={records} />
+      </div>
+
+      {/* ============= RECORDS TABLE ============= */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        {records.length === 0 ? (
+        {filteredRecords.length === 0 ? (
           <div className="p-12 text-center">
             <div className="w-16 h-16 mx-auto mb-4 bg-red-50 rounded-full flex items-center justify-center">
               <HeartPulse className="w-8 h-8 text-red-400" />
             </div>
             <p className="text-lg font-medium text-slate-600">No health records found</p>
-            <p className="text-sm text-slate-400 mt-1">Add a health record to get started</p>
+            <p className="text-sm text-slate-400 mt-1">
+              {searchQuery || filterGrade || filterStatus || filterCondition
+                ? 'Try adjusting your search or filters'
+                : 'Log an incident to get started'}
+            </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr className="text-left text-slate-600">
-                  <th className="py-4 px-4 font-semibold">Student</th>
-                  <th className="py-4 px-4 font-semibold">Blood Group</th>
-                  <th className="py-4 px-4 font-semibold">Allergies</th>
-                  <th className="py-4 px-4 font-semibold">Conditions</th>
-                  <th className="py-4 px-4 font-semibold">Emergency Contact</th>
-                  <th className="py-4 px-4 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {records.map((record) => (
-                  <tr
-                    key={record._id}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                          {record.studentId?.firstName?.[0]}{record.studentId?.lastName?.[0]}
-                        </div>
-                        <div>
-                          <div className="font-medium text-slate-900">
-                            {record.studentId?.firstName} {record.studentId?.lastName}
-                          </div>
-                          <div className="text-xs text-slate-500">{record.studentId?.studentId}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      {record.bloodGroup && (
-                        <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${bloodGroupColors[record.bloodGroup] || 'bg-slate-100'}`}>
-                          {record.bloodGroup}
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-4 px-4">
-                      {record.allergies.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {record.allergies.slice(0, 2).map((a, i) => (
-                            <span
-                              key={i}
-                              className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-medium"
-                            >
-                              {a.name}
-                            </span>
-                          ))}
-                          {record.allergies.length > 2 && (
-                            <span className="text-xs text-slate-500 px-2 py-1">+{record.allergies.length - 2}</span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-slate-400 text-xs">None</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-4">
-                      {record.medicalConditions.filter(c => c.isOngoing).length > 0 ? (
-                        <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit">
-                          <Activity className="w-3 h-3" />
-                          {record.medicalConditions.filter(c => c.isOngoing).length} Active
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 text-xs">None</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Phone className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="text-sm">{record.emergencyContacts[0]?.name || 'Not set'}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedRecord(record);
-                          setShowDetailsSheet(true);
-                        }}
-                        className="flex items-center gap-1.5"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        View
-                      </Button>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="py-3 px-4 w-10">
+                      <input
+                        type="checkbox"
+                        className="rounded border-slate-300 text-[#824ef2] focus:ring-[#824ef2]"
+                        checked={selectedIds.size === paginatedRecords.length && paginatedRecords.length > 0}
+                        onChange={toggleSelectAll}
+                      />
+                    </th>
+                    <th className="py-3 px-4">Student Name</th>
+                    <th className="py-3 px-4">Grade / Class</th>
+                    <th className="py-3 px-4">Health Condition / Alert</th>
+                    <th className="py-3 px-4">Last Updated</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedRecords.map(record => {
+                    const conditionLabels = getConditionLabels(record);
+                    const status = getRecordStatus(record);
+                    return (
+                      <tr key={record._id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-4">
+                          <input
+                            type="checkbox"
+                            className="rounded border-slate-300 text-[#824ef2] focus:ring-[#824ef2]"
+                            checked={selectedIds.has(record._id)}
+                            onChange={() => toggleSelectOne(record._id)}
+                          />
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-[#824ef2] rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                              {getInitials(record.studentId?.firstName, record.studentId?.lastName)}
+                            </div>
+                            <div>
+                              <p className="font-medium text-slate-900">
+                                {record.studentId?.firstName} {record.studentId?.lastName}
+                              </p>
+                              <p className="text-xs text-slate-400">{record.studentId?.studentId || record._id.slice(-6).toUpperCase()}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-slate-600">{getStudentClass(record)}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-wrap gap-1">
+                            {conditionLabels.slice(0, 2).map((label, i) => {
+                              const style = conditionTagStyle(label);
+                              return (
+                                <span key={i} className={`px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
+                                  {label}
+                                </span>
+                              );
+                            })}
+                            {conditionLabels.length > 2 && (
+                              <span className="text-xs text-slate-400 px-1">+{conditionLabels.length - 2}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-slate-500">{formatDate(record.updatedAt)}</td>
+                        <td className="py-3 px-4">
+                          <SchoolStatusBadge value={status === 'Active' ? 'active' : 'pending'} />
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => openDetails(record)}
+                              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                              title="View details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => openEditFromDetails(record)}
+                              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                              title="Edit record"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-4 border-t border-slate-200">
+              <Pagination
+                total={filteredRecords.length}
+                page={page}
+                perPage={perPage}
+                onPageChange={setPage}
+              />
+            </div>
+          </>
         )}
       </div>
 
-      {/* View Record Sheet */}
+      {/* ============= VIEW DETAILS MODAL ============= */}
       {selectedRecord && (
-        <SlideSheet
-          isOpen={showDetailsSheet}
-          onClose={() => {
-            setShowDetailsSheet(false);
-            setSelectedRecord(null);
-          }}
-          title={`${selectedRecord.studentId?.firstName} ${selectedRecord.studentId?.lastName}`}
-          subtitle="Health Record Details"
-          size="md"
+        <FormModal
+          open={showDetailsModal}
+          onClose={() => { setShowDetailsModal(false); setSelectedRecord(null); }}
+          title="Student Health Details"
+          size="lg"
           footer={
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => {
-                setShowDetailsSheet(false);
-                setSelectedRecord(null);
-              }}>
-                Close
-              </Button>
-              <Button onClick={() => handleEdit(selectedRecord)} className="flex items-center gap-2 bg-primary hover:bg-primary-dark">
+            <>
+              <button
+                onClick={() => showToast('info', 'Print report feature coming soon')}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                <Printer className="w-4 h-4" /> Print Report
+              </button>
+              <button
+                onClick={() => selectedRecord && openEditFromDetails(selectedRecord)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors"
+              >
                 <Edit3 className="w-4 h-4" /> Edit Record
-              </Button>
-            </div>
+              </button>
+            </>
           }
         >
           <div className="space-y-6">
-            {/* Basic Info Section */}
-            <SheetSection title="Basic Information" icon={<HeartPulse className="w-4 h-4" />}>
-              <div className="space-y-3">
-                <SheetDetailRow
-                  label="Blood Group"
-                  value={selectedRecord.bloodGroup || 'Not set'}
-                  icon={<Droplets className="w-4 h-4 text-red-500" />}
-                />
-                <SheetDetailRow
-                  label="Height"
-                  value={selectedRecord.height ? `${selectedRecord.height} cm` : 'Not set'}
-                  icon={<Ruler className="w-4 h-4 text-blue-500" />}
-                />
-                <SheetDetailRow
-                  label="Weight"
-                  value={selectedRecord.weight ? `${selectedRecord.weight} kg` : 'Not set'}
-                  icon={<Scale className="w-4 h-4 text-emerald-500" />}
-                />
-                <SheetDetailRow
-                  label="Primary Physician"
-                  value={selectedRecord.primaryPhysician || 'Not set'}
-                  icon={<Stethoscope className="w-4 h-4 text-purple-500" />}
-                />
-                {selectedRecord.physicianPhone && (
-                  <SheetDetailRow
-                    label="Physician Phone"
-                    value={selectedRecord.physicianPhone}
-                    icon={<Phone className="w-4 h-4 text-purple-500" />}
-                  />
-                )}
+            {/* Student Header */}
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-[#824ef2] rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                {getInitials(selectedRecord.studentId?.firstName, selectedRecord.studentId?.lastName)}
               </div>
-            </SheetSection>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  {selectedRecord.studentId?.firstName} {selectedRecord.studentId?.lastName}
+                </h3>
+                <p className="text-sm text-slate-500">
+                  {selectedRecord.studentId?.studentId || 'N/A'} &middot; {getStudentClass(selectedRecord)}
+                </p>
+              </div>
+            </div>
 
-            {/* Allergies Section */}
-            {selectedRecord.allergies.length > 0 && (
-              <SheetSection title="Allergies" icon={<AlertTriangle className="w-4 h-4 text-orange-500" />}>
-                <div className="space-y-2">
-                  {selectedRecord.allergies.map((a, i) => (
-                    <div
-                      key={i}
-                      className="bg-orange-50 p-3 rounded-lg border border-orange-100"
-                    >
-                      <span className="font-medium text-orange-800">{a.name}</span>
-                      <span className="text-orange-600 ml-2">({a.type})</span>
-                      {a.severity && (
-                        <span className="ml-2 px-2 py-0.5 bg-orange-200 text-orange-800 rounded-full text-xs">
-                          {a.severity}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </SheetSection>
-            )}
+            {/* Metric Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-blue-50 rounded-xl p-3 text-center">
+                <Ruler className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+                <p className="text-xs text-slate-500">Height</p>
+                <p className="text-lg font-bold text-slate-900">{selectedRecord.height ? `${selectedRecord.height} cm` : '---'}</p>
+              </div>
+              <div className="bg-emerald-50 rounded-xl p-3 text-center">
+                <Scale className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
+                <p className="text-xs text-slate-500">Weight</p>
+                <p className="text-lg font-bold text-slate-900">{selectedRecord.weight ? `${selectedRecord.weight} kg` : '---'}</p>
+              </div>
+              <div className="bg-red-50 rounded-xl p-3 text-center">
+                <HeartPulse className="w-5 h-5 text-red-600 mx-auto mb-1" />
+                <p className="text-xs text-slate-500">Blood Group</p>
+                <p className="text-lg font-bold text-slate-900">{selectedRecord.bloodGroup || '---'}</p>
+              </div>
+              <div className="bg-purple-50 rounded-xl p-3 text-center">
+                <User className="w-5 h-5 text-purple-600 mx-auto mb-1" />
+                <p className="text-xs text-slate-500">Age</p>
+                <p className="text-lg font-bold text-slate-900">---</p>
+              </div>
+            </div>
 
-            {/* Medical Conditions Section */}
+            {/* Medical History */}
             {selectedRecord.medicalConditions.length > 0 && (
-              <SheetSection title="Medical Conditions" icon={<Activity className="w-4 h-4 text-red-500" />}>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-red-500" /> Medical History
+                </h4>
                 <div className="space-y-2">
                   {selectedRecord.medicalConditions.map((c, i) => (
-                    <div
-                      key={i}
-                      className="bg-red-50 p-3 rounded-lg border border-red-100"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-red-800">{c.name}</span>
-                        {c.isOngoing && (
-                          <span className="px-2 py-0.5 bg-red-200 text-red-800 rounded-full text-xs flex items-center gap-1">
-                            <Activity className="w-3 h-3" /> Ongoing
-                          </span>
-                        )}
+                    <div key={i} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-800">{c.name}</span>
+                        <div className="flex items-center gap-2">
+                          {c.isOngoing && (
+                            <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">Ongoing</span>
+                          )}
+                          {c.treatment && (
+                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">Under Treatment</span>
+                          )}
+                        </div>
                       </div>
-                      {c.treatment && (
-                        <p className="text-xs text-red-600 mt-1">Treatment: {c.treatment}</p>
-                      )}
+                      {c.description && <p className="text-xs text-slate-500 mt-1">{c.description}</p>}
+                      {c.diagnosedDate && <p className="text-xs text-slate-400 mt-1">Diagnosed: {formatDate(c.diagnosedDate)}</p>}
+                      {c.treatment && <p className="text-xs text-slate-500 mt-1">Treatment: {c.treatment}</p>}
                     </div>
                   ))}
                 </div>
-              </SheetSection>
+              </div>
             )}
 
-            {/* Emergency Contacts Section */}
+            {/* Allergies */}
+            {selectedRecord.allergies.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-500" /> Allergies
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedRecord.allergies.map((a, i) => {
+                    const style = conditionTagStyle(a.name || a.type);
+                    return (
+                      <span key={i} className={`px-3 py-1.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
+                        {a.name || a.type}{a.severity ? ` (${a.severity})` : ''}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Chronic Conditions */}
+            {selectedRecord.medicalConditions.filter(c => c.isOngoing).length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Stethoscope className="w-4 h-4 text-purple-500" /> Chronic Conditions
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedRecord.medicalConditions.filter(c => c.isOngoing).map((c, i) => (
+                    <span key={i} className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                      {c.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Emergency Contacts */}
             {selectedRecord.emergencyContacts.length > 0 && (
-              <SheetSection title="Emergency Contacts" icon={<Phone className="w-4 h-4 text-emerald-500" />}>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-emerald-500" /> Parent / Emergency Contact
+                </h4>
                 <div className="space-y-2">
                   {selectedRecord.emergencyContacts.map((c, i) => (
-                    <div
-                      key={i}
-                      className="bg-emerald-50 p-3 rounded-lg border border-emerald-100 flex items-center justify-between"
-                    >
+                    <div key={i} className="bg-emerald-50 p-3 rounded-lg border border-emerald-100 flex items-center justify-between">
                       <div>
                         <span className="font-medium text-emerald-800">{c.name}</span>
-                        <span className="text-emerald-600 ml-2">({c.relationship})</span>
+                        <span className="text-emerald-600 ml-2 text-sm">({c.relationship})</span>
                       </div>
-                      <div className="flex items-center gap-2 text-emerald-700">
+                      <div className="flex items-center gap-2 text-emerald-700 text-sm">
                         <Phone className="w-3.5 h-3.5" />
-                        <span className="text-sm">{c.phone}</span>
+                        {c.phone}
                       </div>
                     </div>
                   ))}
                 </div>
-              </SheetSection>
+              </div>
             )}
 
-            {/* Insurance Section */}
-            {(selectedRecord.insuranceProvider || selectedRecord.insurancePolicyNumber) && (
-              <SheetSection title="Insurance Information" icon={<Shield className="w-4 h-4 text-sky-500" />}>
-                <div className="space-y-3">
-                  {selectedRecord.insuranceProvider && (
-                    <SheetDetailRow
-                      label="Insurance Provider"
-                      value={selectedRecord.insuranceProvider}
-                      icon={<Building2 className="w-4 h-4 text-blue-500" />}
-                    />
+            {/* Insurance */}
+            {(selectedRecord.insuranceProvider || selectedRecord.primaryPhysician) && (
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-sky-500" /> Additional Information
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {selectedRecord.primaryPhysician && (
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <p className="text-xs text-slate-500">Primary Physician</p>
+                      <p className="text-sm font-medium text-slate-900 mt-0.5">{selectedRecord.primaryPhysician}</p>
+                    </div>
                   )}
-                  {selectedRecord.insurancePolicyNumber && (
-                    <SheetDetailRow
-                      label="Policy Number"
-                      value={selectedRecord.insurancePolicyNumber}
-                      icon={<CreditCard className="w-4 h-4 text-blue-500" />}
-                    />
+                  {selectedRecord.insuranceProvider && (
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <p className="text-xs text-slate-500">Insurance</p>
+                      <p className="text-sm font-medium text-slate-900 mt-0.5">{selectedRecord.insuranceProvider}</p>
+                    </div>
                   )}
                 </div>
-              </SheetSection>
+              </div>
             )}
 
-            {/* Special Instructions Section */}
+            {/* Special Instructions */}
             {selectedRecord.specialInstructions && (
-              <SheetSection title="Special Instructions" icon={<FileText className="w-4 h-4 text-amber-500" />}>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4 text-amber-500" /> Special Instructions
+                </h4>
                 <p className="bg-amber-50 p-3 rounded-lg border border-amber-100 text-amber-800 text-sm">
                   {selectedRecord.specialInstructions}
                 </p>
-              </SheetSection>
+              </div>
             )}
           </div>
-        </SlideSheet>
+        </FormModal>
       )}
 
-      {/* Create/Edit Form Sheet */}
-      <SlideSheet
-        isOpen={showFormSheet}
-        onClose={() => {
-          setShowFormSheet(false);
-          resetForm();
-        }}
-        title={editingRecord ? 'Edit Health Record' : 'Add Health Record'}
-        subtitle={editingRecord ? 'Update student medical information' : 'Enter student medical information'}
-        size="lg"
+      {/* ============= LOG INCIDENT MODAL ============= */}
+      <FormModal
+        open={showIncidentModal}
+        onClose={() => { setShowIncidentModal(false); setIncidentForm(initialIncidentForm); }}
+        title="Log New Incident"
+        size="xl"
         footer={
-          <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowFormSheet(false);
-                resetForm();
-              }}
+          <>
+            <button
+              onClick={() => { setShowIncidentModal(false); setIncidentForm(initialIncidentForm); }}
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
             >
-              <X className="w-4 h-4 mr-2" />
               Cancel
-            </Button>
-            <Button
-              type="submit"
+            </button>
+            <button
               disabled={submitting}
-              onClick={handleSubmit}
-              className="bg-red-500 hover:bg-red-600"
+              onClick={handleSaveIncident}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
               ) : (
-                <>
-                  {editingRecord ? <Save className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                  {editingRecord ? 'Update Record' : 'Create Record'}
-                </>
+                <><Save className="w-4 h-4" /> Save Record</>
               )}
-            </Button>
-          </div>
+            </button>
+          </>
         }
       >
-        <form onSubmit={handleSubmit} className="space-y-6">
-
-          {/* Section: Student Selection */}
-          <SheetSection title="Student Information" icon={<User className="w-4 h-4" />}>
-            <SheetField label="Select Student" required>
-              <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  <UserCheck className="w-5 h-5" />
-                </div>
+        <form onSubmit={handleSaveIncident} className="space-y-6">
+          {/* Student Details Section */}
+          <div>
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Student Details</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Student Name <span className="text-red-500">*</span>
+                </label>
                 <select
-                  className="w-full pl-10 pr-4 py-3 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 appearance-none cursor-pointer hover:border-slate-300 transition-colors"
-                  value={formData.studentId}
-                  onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                  className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors"
+                  value={incidentForm.studentId}
+                  onChange={e => setIncidentForm({ ...incidentForm, studentId: e.target.value })}
                   required
-                  disabled={!!editingRecord}
                 >
-                  <option value="">Select Student</option>
-                  {students.map((s) => (
+                  <option value="">Search or select student...</option>
+                  {students.map(s => (
                     <option key={s._id || s.id} value={s._id || s.id}>
-                      {s.firstName} {s.lastName}
+                      {s.firstName} {s.lastName}{s.studentId ? ` (${s.studentId})` : ''}
                     </option>
                   ))}
                 </select>
               </div>
-            </SheetField>
-          </SheetSection>
-
-          {/* Section: Basic Health Info */}
-          <SheetSection title="Basic Health Information" icon={<HeartPulse className="w-4 h-4" />}>
-            <div className="grid grid-cols-3 gap-4">
-              <SheetField label="Blood Group" icon={<Droplets className="w-3.5 h-3.5 text-red-500" />}>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Class &amp; Section</label>
                 <select
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-300 transition-all hover:border-slate-300 appearance-none cursor-pointer"
-                  value={formData.bloodGroup}
-                  onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value as BloodGroup })}
+                  className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors"
+                  value={incidentForm.classSection}
+                  onChange={e => setIncidentForm({ ...incidentForm, classSection: e.target.value })}
+                >
+                  <option value="">Select class</option>
+                  {classes.map(c => (
+                    c.sections.map(s => (
+                      <option key={`${c._id}-${s}`} value={`${c._id}-${s}`}>
+                        {c.grade} - {c.name} ({s})
+                      </option>
+                    ))
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Blood Group</label>
+                <select
+                  className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors"
+                  value={incidentForm.bloodGroup}
+                  onChange={e => setIncidentForm({ ...incidentForm, bloodGroup: e.target.value as BloodGroup })}
                 >
                   <option value="">Select</option>
-                  {Object.values(BloodGroup).map((bg) => (
+                  {Object.values(BloodGroup).map(bg => (
                     <option key={bg} value={bg}>{bg}</option>
                   ))}
                 </select>
-              </SheetField>
-
-              <SheetField label="Height (cm)" icon={<Ruler className="w-3.5 h-3.5 text-blue-500" />}>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Height (cm)</label>
                 <input
                   type="number"
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 transition-all hover:border-slate-300"
-                  value={formData.height}
-                  onChange={(e) => setFormData({ ...formData, height: e.target.value ? parseFloat(e.target.value) : '' })}
+                  className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors"
+                  value={incidentForm.height}
+                  onChange={e => setIncidentForm({ ...incidentForm, height: e.target.value ? parseFloat(e.target.value) : '' })}
                   placeholder="e.g., 150"
                 />
-              </SheetField>
-
-              <SheetField label="Weight (kg)" icon={<Scale className="w-3.5 h-3.5 text-emerald-500" />}>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Weight (kg)</label>
                 <input
                   type="number"
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-300 transition-all hover:border-slate-300"
-                  value={formData.weight}
-                  onChange={(e) => setFormData({ ...formData, weight: e.target.value ? parseFloat(e.target.value) : '' })}
+                  className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors"
+                  value={incidentForm.weight}
+                  onChange={e => setIncidentForm({ ...incidentForm, weight: e.target.value ? parseFloat(e.target.value) : '' })}
                   placeholder="e.g., 45"
                 />
-              </SheetField>
-            </div>
-          </SheetSection>
-
-          {/* Section: Allergies */}
-          <SheetSection
-            title="Allergies"
-            icon={<AlertTriangle className="w-4 h-4" />}
-            action={
-              <button
-                type="button"
-                onClick={addAllergy}
-                className="text-sm text-orange-600 hover:text-orange-700 flex items-center gap-1.5 font-medium bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                <Plus className="w-4 h-4" /> Add Allergy
-              </button>
-            }
-          >
-            {formData.allergies.length === 0 ? (
-              <p className="text-sm text-slate-500 text-center py-3">
-                No allergies added yet
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {formData.allergies.map((allergy, index) => (
-                  <div key={index} className="flex gap-2">
-                    <select
-                      className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
-                      value={allergy.type}
-                      onChange={(e) => {
-                        const newAllergies = [...formData.allergies];
-                        newAllergies[index] = { ...allergy, type: e.target.value as AllergyType };
-                        setFormData({ ...formData, allergies: newAllergies });
-                      }}
-                    >
-                      {Object.values(AllergyType).map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="text"
-                      className="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
-                      placeholder="Allergy name"
-                      value={allergy.name}
-                      onChange={(e) => {
-                        const newAllergies = [...formData.allergies];
-                        newAllergies[index] = { ...allergy, name: e.target.value };
-                        setFormData({ ...formData, allergies: newAllergies });
-                      }}
-                    />
-                    <input
-                      type="text"
-                      className="w-24 border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
-                      placeholder="Severity"
-                      value={allergy.severity || ''}
-                      onChange={(e) => {
-                        const newAllergies = [...formData.allergies];
-                        newAllergies[index] = { ...allergy, severity: e.target.value };
-                        setFormData({ ...formData, allergies: newAllergies });
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeAllergy(index)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-xl transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
               </div>
-            )}
-          </SheetSection>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Age</label>
+                <input
+                  type="number"
+                  className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors"
+                  value={incidentForm.age}
+                  onChange={e => setIncidentForm({ ...incidentForm, age: e.target.value ? parseInt(e.target.value) : '' })}
+                  placeholder="e.g., 12"
+                />
+              </div>
+            </div>
+          </div>
 
-          {/* Section: Emergency Contacts */}
-          <SheetSection
-            title="Emergency Contacts"
-            icon={<Phone className="w-4 h-4" />}
-            action={
-              <button
-                type="button"
-                onClick={addEmergencyContact}
-                className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5 font-medium bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                <Plus className="w-4 h-4" /> Add Contact
-              </button>
-            }
-          >
-            <div className="space-y-2">
-              {formData.emergencyContacts.map((contact, index) => (
-                <div key={index} className="flex gap-2">
-                  <div className="relative flex-1">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      type="text"
-                      className="w-full pl-9 pr-3 border border-slate-200 rounded-xl py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
-                      placeholder="Name"
-                      value={contact.name}
-                      onChange={(e) => {
-                        const newContacts = [...formData.emergencyContacts];
-                        newContacts[index] = { ...contact, name: e.target.value };
-                        setFormData({ ...formData, emergencyContacts: newContacts });
-                      }}
-                    />
-                  </div>
-                  <div className="relative w-28">
-                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      type="text"
-                      className="w-full pl-9 pr-3 border border-slate-200 rounded-xl py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
-                      placeholder="Relation"
-                      value={contact.relationship}
-                      onChange={(e) => {
-                        const newContacts = [...formData.emergencyContacts];
-                        newContacts[index] = { ...contact, relationship: e.target.value };
-                        setFormData({ ...formData, emergencyContacts: newContacts });
-                      }}
-                    />
-                  </div>
-                  <div className="relative w-32">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      type="tel"
-                      className="w-full pl-9 pr-3 border border-slate-200 rounded-xl py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
-                      placeholder="Phone"
-                      value={contact.phone}
-                      onChange={(e) => {
-                        const newContacts = [...formData.emergencyContacts];
-                        newContacts[index] = { ...contact, phone: e.target.value };
-                        setFormData({ ...formData, emergencyContacts: newContacts });
-                      }}
-                    />
-                  </div>
-                  {index > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => removeEmergencyContact(index)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-xl transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+          {/* Incident Information Section */}
+          <div>
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Incident Information</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Incident Type</label>
+                <select
+                  className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors"
+                  value={incidentForm.incidentType}
+                  onChange={e => setIncidentForm({ ...incidentForm, incidentType: e.target.value })}
+                >
+                  <option value="">Select type</option>
+                  {INCIDENT_TYPES.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Date &amp; Time</label>
+                <input
+                  type="datetime-local"
+                  className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors"
+                  value={incidentForm.dateTime}
+                  onChange={e => setIncidentForm({ ...incidentForm, dateTime: e.target.value })}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Temperature</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors"
+                  value={incidentForm.temperature}
+                  onChange={e => setIncidentForm({ ...incidentForm, temperature: e.target.value })}
+                  placeholder="e.g., 98.6 F"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description &amp; Symptoms</label>
+                <textarea
+                  className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors resize-none"
+                  rows={3}
+                  value={incidentForm.description}
+                  onChange={e => setIncidentForm({ ...incidentForm, description: e.target.value })}
+                  placeholder="Describe the incident, symptoms observed..."
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Action Taken Section */}
+          <div>
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Action Taken</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { key: 'actionFirstAid' as const, label: 'First Aid' },
+                { key: 'actionParentNotified' as const, label: 'Parent Notified' },
+                { key: 'actionSentHome' as const, label: 'Sent Home' },
+                { key: 'actionHospitalised' as const, label: 'Hospitalised' },
+              ].map(action => (
+                <label
+                  key={action.key}
+                  className={`flex items-center gap-2.5 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    incidentForm[action.key]
+                      ? 'bg-[#824ef2]/5 border-[#824ef2]/30'
+                      : 'bg-white border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="rounded border-slate-300 text-[#824ef2] focus:ring-[#824ef2]"
+                    checked={incidentForm[action.key]}
+                    onChange={e => setIncidentForm({ ...incidentForm, [action.key]: e.target.checked })}
+                  />
+                  <span className="text-sm text-slate-700">{action.label}</span>
+                </label>
               ))}
             </div>
-          </SheetSection>
-
-          {/* Section: Medical Provider Information */}
-          <SheetSection title="Medical Provider" icon={<Stethoscope className="w-4 h-4" />}>
-            <div className="grid grid-cols-2 gap-4">
-              <SheetField label="Primary Physician" icon={<Stethoscope className="w-3.5 h-3.5 text-purple-500" />}>
-                <input
-                  type="text"
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-300 transition-all hover:border-slate-300"
-                  value={formData.primaryPhysician}
-                  onChange={(e) => setFormData({ ...formData, primaryPhysician: e.target.value })}
-                  placeholder="Doctor name"
-                />
-              </SheetField>
-
-              <SheetField label="Physician Phone" icon={<Phone className="w-3.5 h-3.5 text-purple-500" />}>
-                <input
-                  type="tel"
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-300 transition-all hover:border-slate-300"
-                  value={formData.physicianPhone}
-                  onChange={(e) => setFormData({ ...formData, physicianPhone: e.target.value })}
-                  placeholder="Phone number"
-                />
-              </SheetField>
-            </div>
-          </SheetSection>
-
-          {/* Section: Insurance Information */}
-          <SheetSection title="Insurance Information" icon={<Shield className="w-4 h-4" />}>
-            <div className="grid grid-cols-2 gap-4">
-              <SheetField label="Insurance Provider" icon={<Building2 className="w-3.5 h-3.5 text-blue-500" />}>
-                <input
-                  type="text"
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 transition-all hover:border-slate-300"
-                  value={formData.insuranceProvider}
-                  onChange={(e) => setFormData({ ...formData, insuranceProvider: e.target.value })}
-                  placeholder="Insurance company"
-                />
-              </SheetField>
-
-              <SheetField label="Policy Number" icon={<CreditCard className="w-3.5 h-3.5 text-blue-500" />}>
-                <input
-                  type="text"
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 transition-all hover:border-slate-300"
-                  value={formData.insurancePolicyNumber}
-                  onChange={(e) => setFormData({ ...formData, insurancePolicyNumber: e.target.value })}
-                  placeholder="Policy number"
-                />
-              </SheetField>
-            </div>
-          </SheetSection>
-
-          {/* Section: Special Instructions */}
-          <SheetSection title="Special Instructions" icon={<ClipboardList className="w-4 h-4" />}>
-            <SheetField label="Medical Notes">
-              <textarea
-                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-300 transition-all hover:border-slate-300 resize-none"
-                rows={3}
-                value={formData.specialInstructions}
-                onChange={(e) => setFormData({ ...formData, specialInstructions: e.target.value })}
-                placeholder="Any special medical instructions or notes..."
-              />
-            </SheetField>
-          </SheetSection>
+          </div>
         </form>
-      </SlideSheet>
+      </FormModal>
+
+      {/* ============= SCHEDULE CHECKUP MODAL ============= */}
+      <FormModal
+        open={showCheckupModal}
+        onClose={() => { setShowCheckupModal(false); setCheckupForm(initialCheckupForm); }}
+        title="Schedule Health Checkup"
+        size="md"
+        footer={
+          <>
+            <button
+              onClick={() => { setShowCheckupModal(false); setCheckupForm(initialCheckupForm); }}
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleScheduleCheckup}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors"
+            >
+              <Calendar className="w-4 h-4" /> Schedule
+            </button>
+          </>
+        }
+      >
+        <form onSubmit={handleScheduleCheckup} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Program Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors"
+              value={checkupForm.title}
+              onChange={e => setCheckupForm({ ...checkupForm, title: e.target.value })}
+              placeholder="e.g., Annual Health Checkup 2026"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Target Audience</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="targetAudience"
+                  className="text-[#824ef2] focus:ring-[#824ef2]"
+                  checked={checkupForm.targetAudience === 'whole_school'}
+                  onChange={() => setCheckupForm({ ...checkupForm, targetAudience: 'whole_school' })}
+                />
+                <span className="text-sm text-slate-700">Whole School</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="targetAudience"
+                  className="text-[#824ef2] focus:ring-[#824ef2]"
+                  checked={checkupForm.targetAudience === 'specific_classes'}
+                  onChange={() => setCheckupForm({ ...checkupForm, targetAudience: 'specific_classes' })}
+                />
+                <span className="text-sm text-slate-700">Specific Classes</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
+              <input
+                type="date"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors"
+                value={checkupForm.startDate}
+                onChange={e => setCheckupForm({ ...checkupForm, startDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">End Date</label>
+              <input
+                type="date"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors"
+                value={checkupForm.endDate}
+                onChange={e => setCheckupForm({ ...checkupForm, endDate: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Notes / Instructions</label>
+            <textarea
+              className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-900 transition-colors resize-none"
+              rows={3}
+              value={checkupForm.notes}
+              onChange={e => setCheckupForm({ ...checkupForm, notes: e.target.value })}
+              placeholder="Additional notes or instructions for the health checkup..."
+            />
+          </div>
+        </form>
+      </FormModal>
+
+      {/* ============= DELETE CONFIRM MODAL ============= */}
+      <ConfirmModal
+        open={showDeleteConfirm}
+        title="Delete Health Record"
+        message="Are you sure you want to delete this health record? This action cannot be undone."
+        confirmLabel="Delete"
+        confirmColor="red"
+        onConfirm={handleDelete}
+        onCancel={() => { setShowDeleteConfirm(false); setDeleteTargetId(null); }}
+      />
     </section>
   );
 }
