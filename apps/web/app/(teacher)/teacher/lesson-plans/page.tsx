@@ -1,749 +1,318 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet } from '@/components/ui';
-import { BookOpen, Clock, CheckCircle, AlertCircle, Eye, Trash2 } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { lessonPlanService } from '../../../../lib/services/lesson-plan.service';
+import { SchoolStatCard, FormModal, ConfirmModal, useToast, SchoolStatusBadge } from '../../../../components/school';
 import {
-  lessonPlanService,
-  LessonPlan,
-  LessonPlanStatus,
-  CreateLessonPlanDto,
-} from '../../../../lib/services/lesson-plan.service';
-import { classService, Class } from '../../../../lib/services/class.service';
-import { subjectService, Subject } from '../../../../lib/services/subject.service';
+  ClipboardList,
+  CheckCircle,
+  Clock,
+  Calendar,
+  Loader2,
+  Plus,
+  MoreVertical,
+  Eye,
+  Edit,
+  Trash2,
+} from 'lucide-react';
 
-export default function LessonPlansPage() {
-  const [lessonPlans, setLessonPlans] = useState<LessonPlan[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+// ── Mock data ──
+interface MockPlan {
+  id: string;
+  title: string;
+  subject: string;
+  class: string;
+  date: string;
+  status: 'draft' | 'scheduled' | 'in_progress' | 'completed';
+  duration: string;
+  objectives: string[];
+  activities: string;
+  resources: string;
+  assessment: string;
+  notes: string;
+}
+
+const MOCK_PLANS: MockPlan[] = [
+  { id: 'lp1', title: 'Introduction to Quadratic Equations', subject: 'Mathematics', class: 'Class 10-A', date: '2025-03-10', status: 'scheduled', duration: '45 min', objectives: ['Understand the standard form', 'Identify coefficients'], activities: 'Interactive examples on board, student practice', resources: 'Textbook Ch. 4, Whiteboard', assessment: 'Quick quiz at end', notes: 'Focus on weaker students' },
+  { id: 'lp2', title: 'Newton\'s Third Law', subject: 'Physics', class: 'Class 8-A', date: '2025-03-11', status: 'scheduled', duration: '45 min', objectives: ['State Newton\'s Third Law', 'Identify action-reaction pairs'], activities: 'Demonstration with balloon, discussion', resources: 'Lab equipment, balloons', assessment: 'Worksheet', notes: '' },
+  { id: 'lp3', title: 'Trigonometric Ratios', subject: 'Mathematics', class: 'Class 10-B', date: '2025-03-08', status: 'in_progress', duration: '45 min', objectives: ['Define sin, cos, tan', 'Apply to right triangles'], activities: 'Board work, group problem solving', resources: 'Textbook, protractors', assessment: 'Practice set', notes: '' },
+  { id: 'lp4', title: 'Linear Equations Revision', subject: 'Mathematics', class: 'Class 9-B', date: '2025-03-07', status: 'completed', duration: '45 min', objectives: ['Revise graphing linear equations', 'Solve word problems'], activities: 'Graph plotting, word problems', resources: 'Graph paper, textbook', assessment: 'Homework assignment', notes: 'Students struggled with word problems' },
+  { id: 'lp5', title: 'Optics — Reflection', subject: 'Physics', class: 'Class 10-A', date: '2025-03-06', status: 'completed', duration: '90 min', objectives: ['Laws of reflection', 'Image formation in plane mirror'], activities: 'Lab experiment, ray diagrams', resources: 'Mirrors, laser pointer', assessment: 'Lab report', notes: '' },
+  { id: 'lp6', title: 'Polynomials', subject: 'Mathematics', class: 'Class 9-A', date: '2025-03-05', status: 'completed', duration: '45 min', objectives: ['Degree of polynomial', 'Zeroes of polynomial'], activities: 'Examples, class discussion', resources: 'Textbook Ch. 2', assessment: 'Class work', notes: '' },
+  { id: 'lp7', title: 'Wave Motion Introduction', subject: 'Physics', class: 'Class 9-A', date: '2025-03-12', status: 'draft', duration: '45 min', objectives: ['Types of waves', 'Wave properties'], activities: 'Slinky demonstration', resources: 'Slinky, projector', assessment: 'Oral questions', notes: 'Need to prepare slides' },
+  { id: 'lp8', title: 'Integers and Number Line', subject: 'Mathematics', class: 'Class 7-C', date: '2025-03-13', status: 'draft', duration: '45 min', objectives: ['Represent integers on number line', 'Addition of integers'], activities: 'Number line activity', resources: 'Number line charts', assessment: 'Worksheet', notes: '' },
+];
+
+const statusColors: Record<string, string> = {
+  draft: 'bg-slate-100 text-slate-600',
+  scheduled: 'bg-blue-100 text-blue-700',
+  in_progress: 'bg-amber-100 text-amber-700',
+  completed: 'bg-green-100 text-green-700',
+};
+
+const statusLabels: Record<string, string> = {
+  draft: 'Draft',
+  scheduled: 'Scheduled',
+  in_progress: 'In Progress',
+  completed: 'Completed',
+};
+
+export default function TeacherLessonPlansPage() {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [plans, setPlans] = useState<MockPlan[]>(MOCK_PLANS);
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<LessonPlan | null>(null);
-  const [filterStatus, setFilterStatus] = useState<LessonPlanStatus | ''>('');
+  const [selectedPlan, setSelectedPlan] = useState<MockPlan | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState({ open: false, id: '' });
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Form state
   const [formData, setFormData] = useState({
-    subjectId: '',
-    classId: '',
-    title: '',
-    description: '',
-    objectives: [] as string[],
-    content: '',
-    scheduledDate: new Date().toISOString().split('T')[0] ?? '',
-    duration: 45 as number | undefined,
-    status: LessonPlanStatus.DRAFT,
-    teacherNotes: '',
+    title: '', subject: 'Mathematics', class: 'Class 10-A', date: '', duration: '45 min',
+    objectives: '', activities: '', resources: '', assessment: '', notes: '',
   });
-  const [objectiveInput, setObjectiveInput] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    loadData();
+    const t = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(t);
   }, []);
 
-  async function loadData() {
-    try {
-      setLoading(true);
-      const [plansData, classesData, subjectsData] = await Promise.all([
-        lessonPlanService.getMyPlans(),
-        classService.getClasses(),
-        subjectService.getSubjects(),
-      ]);
-      setLessonPlans(plansData);
-      setClasses(classesData);
-      setSubjects(subjectsData);
-      if (classesData.length > 0) {
-        setFormData((prev) => ({ ...prev, classId: classesData[0]?._id || '' }));
-      }
-      if (subjectsData.length > 0) {
-        setFormData((prev) => ({ ...prev, subjectId: subjectsData[0]?._id || '' }));
-      }
-    } catch (err) {
-      setError('Failed to load data');
-      console.error(err);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpenMenuId(null);
     }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const stats = useMemo(() => ({
+    total: plans.length,
+    completed: plans.filter((p) => p.status === 'completed').length,
+    inProgress: plans.filter((p) => p.status === 'in_progress').length,
+    thisWeek: plans.filter((p) => p.status === 'scheduled').length,
+  }), [plans]);
+
+  const filtered = useMemo(() => {
+    if (filterStatus === 'all') return plans;
+    return plans.filter((p) => p.status === filterStatus);
+  }, [plans, filterStatus]);
+
+  function handleDelete(id: string) {
+    setPlans((prev) => prev.filter((p) => p.id !== id));
+    setConfirmModal({ open: false, id: '' });
+    showToast('success', 'Lesson plan deleted');
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!formData.title.trim() || !formData.subjectId || !formData.classId || !formData.scheduledDate) return;
-
-    try {
-      setSubmitting(true);
-      await lessonPlanService.create({
-        ...formData,
-        scheduledDate: formData.scheduledDate,
-      });
-      await loadData();
-      resetForm();
-      setShowForm(false);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to create lesson plan');
-    } finally {
-      setSubmitting(false);
-    }
+    if (!formData.title.trim() || !formData.date) return;
+    const newPlan: MockPlan = {
+      id: `lp${Date.now()}`, ...formData,
+      objectives: formData.objectives.split('\n').filter(Boolean),
+      status: 'draft',
+    };
+    setPlans((prev) => [newPlan, ...prev]);
+    setFormData({ title: '', subject: 'Mathematics', class: 'Class 10-A', date: '', duration: '45 min', objectives: '', activities: '', resources: '', assessment: '', notes: '' });
+    setShowForm(false);
+    showToast('success', 'Lesson plan created');
   }
 
-  async function handleStatusChange(id: string, status: LessonPlanStatus) {
-    try {
-      await lessonPlanService.updateStatus(id, status);
-      await loadData();
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this lesson plan?')) return;
-    try {
-      await lessonPlanService.delete(id);
-      await loadData();
-      setSelectedPlan(null);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  function addObjective() {
-    if (!objectiveInput.trim()) return;
-    setFormData((prev) => ({
-      ...prev,
-      objectives: [...(prev.objectives || []), objectiveInput.trim()],
-    }));
-    setObjectiveInput('');
-  }
-
-  function removeObjective(index: number) {
-    setFormData((prev) => ({
-      ...prev,
-      objectives: prev.objectives?.filter((_, i) => i !== index) || [],
-    }));
-  }
-
-  function resetForm() {
-    setFormData({
-      subjectId: subjects[0]?._id || '',
-      classId: classes[0]?._id || '',
-      title: '',
-      description: '',
-      objectives: [],
-      content: '',
-      scheduledDate: new Date().toISOString().split('T')[0] ?? '',
-      duration: 45,
-      status: LessonPlanStatus.DRAFT,
-      teacherNotes: '',
-    });
-    setObjectiveInput('');
-  }
-
-  const filteredPlans = filterStatus
-    ? lessonPlans.filter((p) => p.status === filterStatus)
-    : lessonPlans;
-
-  const statusColors: Record<LessonPlanStatus, string> = {
-    [LessonPlanStatus.DRAFT]: 'bg-gray-100 text-gray-700',
-    [LessonPlanStatus.SCHEDULED]: 'bg-blue-100 text-blue-700',
-    [LessonPlanStatus.IN_PROGRESS]: 'bg-yellow-100 text-yellow-700',
-    [LessonPlanStatus.COMPLETED]: 'bg-green-100 text-green-700',
-  };
-
-  const stats = {
-    total: lessonPlans.length,
-    draft: lessonPlans.filter((p) => p.status === LessonPlanStatus.DRAFT).length,
-    scheduled: lessonPlans.filter((p) => p.status === LessonPlanStatus.SCHEDULED).length,
-    inProgress: lessonPlans.filter((p) => p.status === LessonPlanStatus.IN_PROGRESS).length,
-    completed: lessonPlans.filter((p) => p.status === LessonPlanStatus.COMPLETED).length,
-  };
+  const inputClass = 'w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] hover:border-slate-300 transition-all';
 
   if (loading) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="flex items-center justify-center min-h-[50vh]"
-      >
-        <div className="text-center space-y-3">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto"
-          />
-          <div className="text-gray-500">Loading lesson plans...</div>
-        </div>
-      </motion.div>
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="w-10 h-10 text-[#824ef2] animate-spin" />
+        <p className="mt-4 text-slate-500">Loading lesson plans...</p>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <section className="space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex items-center justify-between gap-3"
-      >
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Icon3D bgColor="bg-purple-500" size="lg">
-            <BookOpen className="w-6 h-6" />
-          </Icon3D>
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Lesson Plans</h1>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">
-              Create and manage lesson plans
-            </p>
+          <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+            <ClipboardList className="w-6 h-6 text-[#824ef2]" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Lesson Plans</h1>
+            <p className="text-sm text-slate-500">Plan and track your lessons</p>
           </div>
         </div>
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button onClick={() => setShowForm(true)} className="text-xs sm:text-sm">+ <span className="hidden sm:inline">New </span>Plan</Button>
-        </motion.div>
-      </motion.div>
-
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700"
-        >
-          {error}
-          <button onClick={() => setError(null)} className="ml-2 underline">
-            Dismiss
-          </button>
-        </motion.div>
-      )}
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0 * 0.1 }}
-        >
-          <AnimatedStatCard
-            title="Total"
-            value={stats.total}
-            icon={<BookOpen className="w-5 h-5 text-white" />}
-            iconBgColor="bg-purple-500"
-            delay={0}
-          />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1 * 0.1 }}
-        >
-          <AnimatedStatCard
-            title="Draft"
-            value={stats.draft}
-            icon={<AlertCircle className="w-5 h-5 text-gray-600" />}
-            iconBgColor="bg-gray-100"
-            delay={1}
-          />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 2 * 0.1 }}
-        >
-          <AnimatedStatCard
-            title="Scheduled"
-            value={stats.scheduled}
-            icon={<Clock className="w-5 h-5 text-white" />}
-            iconBgColor="bg-sky-500"
-            delay={2}
-          />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 3 * 0.1 }}
-          className="hidden sm:block"
-        >
-          <AnimatedStatCard
-            title="In Progress"
-            value={stats.inProgress}
-            icon={<Clock className="w-5 h-5 text-white" />}
-            iconBgColor="bg-amber-500"
-            delay={3}
-          />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 4 * 0.1 }}
-          className="hidden sm:block"
-        >
-          <AnimatedStatCard
-            title="Completed"
-            value={stats.completed}
-            icon={<CheckCircle className="w-5 h-5 text-white" />}
-            iconBgColor="bg-emerald-500"
-            delay={4}
-          />
-        </motion.div>
+        <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors">
+          <Plus className="w-4 h-4" /> Create Plan
+        </button>
       </div>
 
-      {/* Filter */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600">Filter:</span>
-        <select
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value as LessonPlanStatus | '')}
-        >
-          <option value="">All</option>
-          <option value={LessonPlanStatus.DRAFT}>Draft</option>
-          <option value={LessonPlanStatus.SCHEDULED}>Scheduled</option>
-          <option value={LessonPlanStatus.IN_PROGRESS}>In Progress</option>
-          <option value={LessonPlanStatus.COMPLETED}>Completed</option>
-        </select>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SchoolStatCard icon={<ClipboardList className="w-5 h-5" />} color="blue" label="Total Plans" value={stats.total} />
+        <SchoolStatCard icon={<CheckCircle className="w-5 h-5" />} color="green" label="Completed" value={stats.completed} />
+        <SchoolStatCard icon={<Clock className="w-5 h-5" />} color="amber" label="In Progress" value={stats.inProgress} />
+        <SchoolStatCard icon={<Calendar className="w-5 h-5" />} color="purple" label="This Week" value={stats.thisWeek} />
       </div>
 
-      {/* Lesson Plans List */}
-      <AnimatePresence>
-        {filteredPlans.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <GlassCard className="p-8 sm:p-12 text-center bg-white/80">
-              <motion.div
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="text-4xl sm:text-5xl mb-3"
-              >
-                📖
-              </motion.div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-                No lesson plans yet
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-600">
-                Create your first lesson plan to get started
-              </p>
-            </GlassCard>
-          </motion.div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {filteredPlans.map((plan, idx) => (
-              <motion.div
-                key={plan.id || plan._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3, delay: idx * 0.05 }}
-                whileHover={{ y: -4 }}
-              >
-                <GlassCard
-                  className="p-4 sm:p-5 bg-white/90 cursor-pointer h-full"
-                  onClick={() => setSelectedPlan(plan)}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="font-semibold text-gray-900 flex-1 pr-2 line-clamp-2">
-                      {plan.title}
-                    </div>
-                    <motion.span
-                      whileHover={{ scale: 1.05 }}
-                      className={`text-xs px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0 ml-2 ${statusColors[plan.status]}`}
-                    >
-                      {plan.status.replace('_', ' ')}
-                    </motion.span>
-                  </div>
-                  <div className="text-xs text-gray-600 space-y-1.5 mb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-700">Subject:</span>
-                      <span>{plan.subjectId?.name || 'N/A'}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-700">Class:</span>
-                      <span>{plan.classId?.name || 'N/A'} {plan.section ? `(${plan.section})` : ''}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-700">Date:</span>
-                      <span>{new Date(plan.scheduledDate).toLocaleDateString()}</span>
-                    </div>
-                    {plan.duration && (
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-700">Duration:</span>
-                        <span>{plan.duration} min</span>
-                      </div>
-                    )}
-                  </div>
-                  {plan.objectives && plan.objectives.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.2 }}
-                      className="mb-4 py-2 px-3 bg-purple-50 rounded-lg"
-                    >
-                      <div className="text-xs text-purple-700 font-medium">
-                        {plan.objectives.length} objective{plan.objectives.length > 1 ? 's' : ''}
-                      </div>
-                    </motion.div>
-                  )}
-                  <div className="flex gap-2 pt-2 border-t border-gray-100">
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full text-xs"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedPlan(plan);
-                        }}
-                      >
-                        <Eye className="w-3.5 h-3.5 mr-1" />View
-                      </Button>
-                    </motion.div>
-                    {plan.status !== LessonPlanStatus.COMPLETED && (
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
-                        <Button
-                          size="sm"
-                          className="w-full text-xs bg-purple-600 hover:bg-purple-700"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const nextStatus =
-                              plan.status === LessonPlanStatus.DRAFT
-                                ? LessonPlanStatus.SCHEDULED
-                                : plan.status === LessonPlanStatus.SCHEDULED
-                                ? LessonPlanStatus.IN_PROGRESS
-                                : LessonPlanStatus.COMPLETED;
-                            handleStatusChange(plan.id || plan._id, nextStatus);
-                          }}
-                        >
-                          {plan.status === LessonPlanStatus.DRAFT
-                            ? 'Schedule'
-                            : plan.status === LessonPlanStatus.SCHEDULED
-                            ? 'Start'
-                            : 'Complete'}
-                        </Button>
-                      </motion.div>
-                    )}
-                  </div>
-                </GlassCard>
-              </motion.div>
+      {/* Filter + List */}
+      <div className="bg-white rounded-xl border border-slate-200" ref={menuRef}>
+        <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-slate-900">Lesson Plans</h2>
+          <div className="flex gap-2">
+            {[{ key: 'all', label: 'All' }, { key: 'draft', label: 'Draft' }, { key: 'scheduled', label: 'Scheduled' }, { key: 'in_progress', label: 'In Progress' }, { key: 'completed', label: 'Completed' }].map((f) => (
+              <button key={f.key} onClick={() => setFilterStatus(f.key)} className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${filterStatus === f.key ? 'bg-[#824ef2] text-white border-[#824ef2]' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
+                {f.label}
+              </button>
             ))}
           </div>
-        )}
-      </AnimatePresence>
+        </div>
 
-      {/* Create Form Modal */}
-      <SlideSheet
-        isOpen={showForm}
-        onClose={() => setShowForm(false)}
-        title="Create Lesson Plan"
-        size="lg"
-        footer={
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={submitting} form="lesson-plan-form">
-              {submitting ? 'Creating...' : 'Create Lesson Plan'}
-            </Button>
+        <div className="divide-y divide-slate-100">
+          {filtered.length === 0 ? (
+            <div className="py-16 text-center">
+              <ClipboardList className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+              <p className="text-slate-500">No lesson plans found</p>
+            </div>
+          ) : (
+            filtered.map((plan) => (
+              <div key={plan.id} className="flex items-center gap-4 p-4 px-5 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { setSelectedPlan(plan); setShowDetailModal(true); }}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <h3 className="font-semibold text-slate-900 truncate">{plan.title}</h3>
+                  </div>
+                  <p className="text-sm text-slate-500">{plan.subject} &bull; {plan.class} &bull; {plan.duration}</p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${statusColors[plan.status]}`}>
+                      {statusLabels[plan.status]}
+                    </span>
+                    <span className="text-xs text-slate-400">{new Date(plan.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  </div>
+                </div>
+                <div className="relative flex-shrink-0">
+                  <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === plan.id ? null : plan.id); }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
+                  {openMenuId === plan.id && (
+                    <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 w-36 z-20">
+                      <button onClick={(e) => { e.stopPropagation(); setSelectedPlan(plan); setShowDetailModal(true); setOpenMenuId(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                        <Eye className="w-4 h-4" /> View
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, id: plan.id }); setOpenMenuId(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                        <Trash2 className="w-4 h-4" /> Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Create Modal */}
+      <FormModal open={showForm} onClose={() => setShowForm(false)} title="Create Lesson Plan" size="lg" footer={
+        <>
+          <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+          <button type="submit" form="lp-form" className="px-6 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors">Create</button>
+        </>
+      }>
+        <form id="lp-form" onSubmit={handleCreate} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Title <span className="text-red-500">*</span></label>
+            <input type="text" className={inputClass} value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required placeholder="Lesson title..." />
           </div>
-        }
-      >
-        <form id="lesson-plan-form" onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1">
-                    Class *
-                  </label>
-                  <select
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                    value={formData.classId}
-                    onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
-                    required
-                  >
-                    <option value="">Select Class</option>
-                    {classes.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name} ({c.grade})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1">
-                    Subject *
-                  </label>
-                  <select
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                    value={formData.subjectId}
-                    onChange={(e) => setFormData({ ...formData, subjectId: e.target.value })}
-                    required
-                  >
-                    <option value="">Select Subject</option>
-                    {subjects.map((s) => (
-                      <option key={s._id} value={s._id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">Title *</label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="e.g., Introduction to Algebra"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                  rows={2}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Brief description of the lesson..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">
-                  Learning Objectives
-                </label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                    value={objectiveInput}
-                    onChange={(e) => setObjectiveInput(e.target.value)}
-                    placeholder="Add an objective..."
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addObjective();
-                      }
-                    }}
-                  />
-                  <Button type="button" variant="outline" onClick={addObjective}>
-                    Add
-                  </Button>
-                </div>
-                {formData.objectives && formData.objectives.length > 0 && (
-                  <ul className="space-y-1">
-                    {formData.objectives.map((obj, i) => (
-                      <li
-                        key={i}
-                        className="flex items-center justify-between bg-gray-50 rounded px-3 py-2 text-sm"
-                      >
-                        <span className="text-gray-700">{obj}</span>
-                        <button
-                          type="button"
-                          className="text-red-500 hover:text-red-700"
-                          onClick={() => removeObjective(i)}
-                        >
-                          x
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">
-                  Lesson Content
-                </label>
-                <textarea
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                  rows={4}
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  placeholder="Detailed lesson content..."
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1">
-                    Scheduled Date *
-                  </label>
-                  <input
-                    type="date"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                    value={formData.scheduledDate}
-                    onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1">
-                    Duration (minutes)
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                    value={formData.duration || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, duration: parseInt(e.target.value) || undefined })
-                    }
-                    min={1}
-                    placeholder="45"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">
-                  Teacher Notes
-                </label>
-                <textarea
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                  rows={2}
-                  value={formData.teacherNotes}
-                  onChange={(e) => setFormData({ ...formData, teacherNotes: e.target.value })}
-                  placeholder="Private notes for yourself..."
-                />
-              </div>
-            </form>
-      </SlideSheet>
-
-      {/* View Detail Modal */}
-      <SlideSheet
-        isOpen={!!selectedPlan}
-        onClose={() => setSelectedPlan(null)}
-        title={selectedPlan?.title || ''}
-        size="md"
-        footer={
-          selectedPlan ? (
-            <div className="flex justify-between gap-3 w-full">
-              <Button
-                variant="outline"
-                onClick={() => handleDelete(selectedPlan.id || selectedPlan._id)}
-                className="text-red-600 hover:bg-red-50"
-              >
-                Delete
-              </Button>
-              <div className="flex gap-2">
-                {selectedPlan.status !== LessonPlanStatus.COMPLETED && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      const nextStatus =
-                        selectedPlan.status === LessonPlanStatus.DRAFT
-                          ? LessonPlanStatus.SCHEDULED
-                          : selectedPlan.status === LessonPlanStatus.SCHEDULED
-                          ? LessonPlanStatus.IN_PROGRESS
-                          : LessonPlanStatus.COMPLETED;
-                      handleStatusChange(selectedPlan.id || selectedPlan._id, nextStatus);
-                      setSelectedPlan(null);
-                    }}
-                  >
-                    {selectedPlan.status === LessonPlanStatus.DRAFT
-                      ? 'Schedule'
-                      : selectedPlan.status === LessonPlanStatus.SCHEDULED
-                      ? 'Start Lesson'
-                      : 'Mark Complete'}
-                  </Button>
-                )}
-                <Button variant="outline" onClick={() => setSelectedPlan(null)}>
-                  Close
-                </Button>
-              </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Subject</label>
+              <select className={`${inputClass} cursor-pointer`} value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })}>
+                {['Mathematics', 'Physics'].map((s) => <option key={s}>{s}</option>)}
+              </select>
             </div>
-          ) : undefined
-        }
-      >
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Class</label>
+              <select className={`${inputClass} cursor-pointer`} value={formData.class} onChange={(e) => setFormData({ ...formData, class: e.target.value })}>
+                {['Class 10-A', 'Class 10-B', 'Class 9-A', 'Class 9-B', 'Class 8-A', 'Class 7-C'].map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Date <span className="text-red-500">*</span></label>
+              <input type="date" className={inputClass} value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Duration</label>
+              <input type="text" className={inputClass} value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} placeholder="e.g., 45 min" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Objectives (one per line)</label>
+            <textarea className={`${inputClass} resize-none`} rows={3} value={formData.objectives} onChange={(e) => setFormData({ ...formData, objectives: e.target.value })} placeholder="Learning objectives..." />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Activities</label>
+            <textarea className={`${inputClass} resize-none`} rows={2} value={formData.activities} onChange={(e) => setFormData({ ...formData, activities: e.target.value })} placeholder="Planned activities..." />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Resources</label>
+            <input type="text" className={inputClass} value={formData.resources} onChange={(e) => setFormData({ ...formData, resources: e.target.value })} placeholder="Required resources..." />
+          </div>
+        </form>
+      </FormModal>
+
+      {/* Detail Modal */}
+      <FormModal open={showDetailModal && !!selectedPlan} onClose={() => { setShowDetailModal(false); setSelectedPlan(null); }} title={selectedPlan?.title || ''} size="lg" footer={
+        <button onClick={() => { setShowDetailModal(false); setSelectedPlan(null); }} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">Close</button>
+      }>
         {selectedPlan && (
-          <>
-            <div className="flex items-center gap-2 mb-4">
-              <span className={`text-xs px-2 py-1 rounded ${statusColors[selectedPlan.status]}`}>
-                {selectedPlan.status.replace('_', ' ')}
-              </span>
+          <div className="space-y-5">
+            <div className="flex items-center gap-2">
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusColors[selectedPlan.status]}`}>{statusLabels[selectedPlan.status]}</span>
+              <span className="text-xs text-slate-500">{selectedPlan.subject} &bull; {selectedPlan.class} &bull; {selectedPlan.duration}</span>
             </div>
-
-            <div className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-4 text-gray-600">
-                <div>
-                  <span className="font-medium">Subject:</span>{' '}
-                  {selectedPlan.subjectId?.name || 'N/A'}
-                </div>
-                <div>
-                  <span className="font-medium">Class:</span> {selectedPlan.classId?.name || 'N/A'}{' '}
-                  {selectedPlan.section ? `(${selectedPlan.section})` : ''}
-                </div>
-                <div>
-                  <span className="font-medium">Scheduled:</span>{' '}
-                  {new Date(selectedPlan.scheduledDate).toLocaleDateString()}
-                </div>
-                {selectedPlan.duration && (
-                  <div>
-                    <span className="font-medium">Duration:</span> {selectedPlan.duration} min
-                  </div>
-                )}
-                {selectedPlan.completedDate && (
-                  <div>
-                    <span className="font-medium">Completed:</span>{' '}
-                    {new Date(selectedPlan.completedDate).toLocaleDateString()}
-                  </div>
-                )}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                <p className="text-xs text-slate-500 mb-1">Date</p>
+                <p className="text-sm font-semibold text-slate-900">{new Date(selectedPlan.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
               </div>
-
-              {selectedPlan.description && (
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-1">Description</h4>
-                  <p className="text-gray-600">{selectedPlan.description}</p>
-                </div>
-              )}
-
-              {selectedPlan.objectives && selectedPlan.objectives.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-1">
-                    Learning Objectives
-                  </h4>
-                  <ul className="list-disc list-inside text-gray-600">
-                    {selectedPlan.objectives.map((obj, i) => (
-                      <li key={i}>{obj}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {selectedPlan.content && (
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-1">
-                    Lesson Content
-                  </h4>
-                  <div className="bg-gray-50 rounded-lg p-3 text-gray-700 whitespace-pre-wrap">
-                    {selectedPlan.content}
-                  </div>
-                </div>
-              )}
-
-              {selectedPlan.teacherNotes && (
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-1">
-                    Teacher Notes
-                  </h4>
-                  <p className="text-gray-600 italic">
-                    {selectedPlan.teacherNotes}
-                  </p>
-                </div>
-              )}
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                <p className="text-xs text-slate-500 mb-1">Duration</p>
+                <p className="text-sm font-semibold text-slate-900">{selectedPlan.duration}</p>
+              </div>
             </div>
-          </>
+            {selectedPlan.objectives.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-2">Objectives</h4>
+                <ul className="list-disc list-inside space-y-1">
+                  {selectedPlan.objectives.map((obj, i) => <li key={i} className="text-sm text-slate-700">{obj}</li>)}
+                </ul>
+              </div>
+            )}
+            {selectedPlan.activities && (
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-2">Activities</h4>
+                <p className="text-sm text-slate-700 bg-slate-50 rounded-lg p-3 border border-slate-200">{selectedPlan.activities}</p>
+              </div>
+            )}
+            {selectedPlan.resources && (
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-2">Resources</h4>
+                <p className="text-sm text-slate-700">{selectedPlan.resources}</p>
+              </div>
+            )}
+            {selectedPlan.notes && (
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-2">Notes</h4>
+                <p className="text-sm text-slate-600 italic">{selectedPlan.notes}</p>
+              </div>
+            )}
+          </div>
         )}
-      </SlideSheet>
-    </div>
+      </FormModal>
+
+      <ConfirmModal open={confirmModal.open} title="Delete Lesson Plan" message="Are you sure you want to delete this lesson plan?" confirmLabel="Delete" confirmColor="red" onConfirm={() => handleDelete(confirmModal.id)} onCancel={() => setConfirmModal({ open: false, id: '' })} />
+    </section>
   );
 }

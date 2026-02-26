@@ -1,528 +1,297 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet } from '@/components/ui';
+import { useState, useEffect, useMemo } from 'react';
+import { leaveRequestService } from '../../../../lib/services/leave-request.service';
+import { SchoolStatCard, FormModal, ConfirmModal, useToast } from '../../../../components/school';
 import {
-  leaveRequestService,
-  LeaveRequest,
-  LeaveType,
-  LeaveStatus,
-  CreateLeaveRequestDto,
-  LeaveStats,
-} from '../../../../lib/services/leave-request.service';
-import { Calendar, CheckCircle2, Clock, AlertCircle, Leaf } from 'lucide-react';
+  FileText,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Plus,
+  CalendarCheck,
+  Eye,
+} from 'lucide-react';
+
+// ── Mock data ──
+interface MockLeave {
+  id: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  days: number;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  appliedOn: string;
+  contact: string;
+}
+
+const MOCK_LEAVES: MockLeave[] = [
+  { id: 'l1', type: 'Sick Leave', startDate: '2025-03-15', endDate: '2025-03-16', days: 2, reason: 'Doctor appointment and recovery', status: 'pending', appliedOn: '2025-03-10', contact: '9876543210' },
+  { id: 'l2', type: 'Casual Leave', startDate: '2025-03-20', endDate: '2025-03-20', days: 1, reason: 'Personal family function', status: 'pending', appliedOn: '2025-03-08', contact: '9876543210' },
+  { id: 'l3', type: 'Earned Leave', startDate: '2025-02-10', endDate: '2025-02-14', days: 5, reason: 'Vacation travel with family', status: 'approved', appliedOn: '2025-01-25', contact: '9876543210' },
+  { id: 'l4', type: 'Sick Leave', startDate: '2025-01-22', endDate: '2025-01-22', days: 1, reason: 'Fever and cold', status: 'approved', appliedOn: '2025-01-21', contact: '9876543210' },
+  { id: 'l5', type: 'Casual Leave', startDate: '2025-01-05', endDate: '2025-01-06', days: 2, reason: 'Personal work', status: 'approved', appliedOn: '2025-01-02', contact: '9876543210' },
+  { id: 'l6', type: 'Earned Leave', startDate: '2024-12-23', endDate: '2024-12-31', days: 7, reason: 'Year-end vacation', status: 'approved', appliedOn: '2024-12-10', contact: '9876543210' },
+  { id: 'l7', type: 'Casual Leave', startDate: '2024-11-15', endDate: '2024-11-15', days: 1, reason: 'Government office work', status: 'approved', appliedOn: '2024-11-12', contact: '9876543210' },
+  { id: 'l8', type: 'Sick Leave', startDate: '2024-10-20', endDate: '2024-10-21', days: 2, reason: 'Dental procedure', status: 'rejected', appliedOn: '2024-10-18', contact: '9876543210' },
+];
+
+const typeColors: Record<string, string> = {
+  'Sick Leave': 'bg-red-100 text-red-700',
+  'Casual Leave': 'bg-blue-100 text-blue-700',
+  'Earned Leave': 'bg-green-100 text-green-700',
+  'Maternity Leave': 'bg-purple-100 text-purple-700',
+  'Unpaid Leave': 'bg-slate-100 text-slate-700',
+};
+
+const statusColors: Record<string, string> = {
+  pending: 'bg-amber-100 text-amber-700',
+  approved: 'bg-green-100 text-green-700',
+  rejected: 'bg-red-100 text-red-700',
+};
 
 export default function TeacherLeaveRequestsPage() {
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
-  const [stats, setStats] = useState<LeaveStats | null>(null);
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [leaves, setLeaves] = useState<MockLeave[]>(MOCK_LEAVES);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [selectedLeave, setSelectedLeave] = useState<MockLeave | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
-  // Form state
-  const [formData, setFormData] = useState<CreateLeaveRequestDto>({
-    leaveType: LeaveType.CASUAL,
-    startDate: new Date().toISOString().split('T')[0] ?? '',
-    endDate: new Date().toISOString().split('T')[0] ?? '',
+  const [formData, setFormData] = useState({
+    type: 'Sick Leave',
+    startDate: '',
+    endDate: '',
     reason: '',
-    contactDuringLeave: '',
-    isHalfDay: false,
+    contact: '',
   });
 
   useEffect(() => {
-    loadData();
+    const t = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(t);
   }, []);
 
-  async function loadData() {
-    try {
-      setLoading(true);
-      const [requestsData, statsData] = await Promise.all([
-        leaveRequestService.getMyRequests(),
-        leaveRequestService.getMyStats(),
-      ]);
-      setLeaveRequests(requestsData);
-      setStats(statsData);
-    } catch (err) {
-      setError('Failed to load leave requests');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const stats = useMemo(() => ({
+    total: leaves.length,
+    pending: leaves.filter((l) => l.status === 'pending').length,
+    approved: leaves.filter((l) => l.status === 'approved').length,
+    rejected: leaves.filter((l) => l.status === 'rejected').length,
+  }), [leaves]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const filtered = useMemo(() => {
+    if (statusFilter === 'all') return leaves;
+    return leaves.filter((l) => l.status === statusFilter);
+  }, [leaves, statusFilter]);
+
+  function handleApply(e: React.FormEvent) {
     e.preventDefault();
-    if (!formData.reason.trim()) return;
-
-    try {
-      setSubmitting(true);
-      await leaveRequestService.create(formData);
-      await loadData();
-      resetForm();
-      setShowForm(false);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to submit leave request');
-    } finally {
-      setSubmitting(false);
-    }
+    if (!formData.startDate || !formData.reason.trim()) return;
+    const start = new Date(formData.startDate);
+    const end = new Date(formData.endDate || formData.startDate);
+    const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1);
+    const newLeave: MockLeave = {
+      id: `l${Date.now()}`,
+      type: formData.type,
+      startDate: formData.startDate,
+      endDate: formData.endDate || formData.startDate,
+      days,
+      reason: formData.reason,
+      status: 'pending',
+      appliedOn: new Date().toISOString().split('T')[0]!,
+      contact: formData.contact,
+    };
+    setLeaves((prev) => [newLeave, ...prev]);
+    setFormData({ type: 'Sick Leave', startDate: '', endDate: '', reason: '', contact: '' });
+    setShowForm(false);
+    showToast('success', 'Leave request submitted');
   }
 
-  async function handleCancel(id: string) {
-    if (!confirm('Are you sure you want to cancel this leave request?')) return;
-    try {
-      await leaveRequestService.cancel(id);
-      await loadData();
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  function resetForm() {
-    setFormData({
-      leaveType: LeaveType.CASUAL,
-      startDate: new Date().toISOString().split('T')[0] ?? '',
-      endDate: new Date().toISOString().split('T')[0] ?? '',
-      reason: '',
-      contactDuringLeave: '',
-      isHalfDay: false,
-    });
-  }
-
-  const statusColors: Record<LeaveStatus, string> = {
-    [LeaveStatus.PENDING]: 'bg-yellow-100 text-yellow-700',
-    [LeaveStatus.APPROVED]: 'bg-green-100 text-green-700',
-    [LeaveStatus.REJECTED]: 'bg-red-100 text-red-700',
-    [LeaveStatus.CANCELLED]: 'bg-gray-100 text-gray-700',
-  };
-
-  const leaveTypeLabels: Record<LeaveType, string> = {
-    [LeaveType.SICK]: 'Sick Leave',
-    [LeaveType.CASUAL]: 'Casual Leave',
-    [LeaveType.EARNED]: 'Earned Leave',
-    [LeaveType.MATERNITY]: 'Maternity Leave',
-    [LeaveType.PATERNITY]: 'Paternity Leave',
-    [LeaveType.UNPAID]: 'Unpaid Leave',
-    [LeaveType.OTHER]: 'Other',
-  };
+  const inputClass = 'w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] hover:border-slate-300 transition-all';
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center space-y-3">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            className="w-12 h-12 border-4 border-green-200 border-t-green-600 rounded-full mx-auto"
-          />
-          <div className="text-gray-500">Loading leave requests...</div>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="w-10 h-10 text-[#824ef2] animate-spin" />
+        <p className="mt-4 text-slate-500">Loading leave requests...</p>
       </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-4 sm:space-y-6"
-    >
+    <section className="space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
-              Leave Requests
-              <Icon3D bgColor="bg-emerald-500" size="sm">
-                <Leaf className="w-3.5 h-3.5" />
-              </Icon3D>
-            </h1>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">
-              Apply for leave and track requests
-            </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+            <CalendarCheck className="w-6 h-6 text-[#824ef2]" />
           </div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button onClick={() => setShowForm(true)} className="text-xs sm:text-sm">
-              + <span className="hidden sm:inline">Apply for </span>Leave
-            </Button>
-          </motion.div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Leave Requests</h1>
+            <p className="text-sm text-slate-500">Apply for leave and track your requests</p>
+          </div>
         </div>
-      </motion.div>
+        <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors">
+          <Plus className="w-4 h-4" /> Apply for Leave
+        </button>
+      </div>
 
-      {/* Error Alert */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 flex items-center justify-between"
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SchoolStatCard icon={<FileText className="w-5 h-5" />} color="blue" label="Total Requests" value={stats.total} />
+        <SchoolStatCard icon={<Clock className="w-5 h-5" />} color="amber" label="Pending" value={stats.pending} />
+        <SchoolStatCard icon={<CheckCircle className="w-5 h-5" />} color="green" label="Approved" value={stats.approved} />
+        <SchoolStatCard icon={<XCircle className="w-5 h-5" />} color="red" label="Rejected" value={stats.rejected} />
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex gap-2 border-b border-slate-200">
+        {[{ key: 'all', label: 'All' }, { key: 'pending', label: 'Pending' }, { key: 'approved', label: 'Approved' }, { key: 'rejected', label: 'Rejected' }].map((f) => (
+          <button
+            key={f.key}
+            onClick={() => setStatusFilter(f.key)}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              statusFilter === f.key ? 'border-[#824ef2] text-[#824ef2]' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
           >
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" />
-              <span>{error}</span>
-            </div>
-            <button onClick={() => setError(null)} className="ml-2 underline hover:no-underline">
-              Dismiss
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {f.label}
+          </button>
+        ))}
+      </div>
 
-      {/* Leave Stats */}
-      {stats && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <GlassCard className="p-4 sm:p-6 bg-gray-50 border-emerald-100" hover={false}>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-              Leave Summary (This Year)
-              <Icon3D bgColor="bg-emerald-500" size="sm">
-                <Calendar className="w-3.5 h-3.5" />
-              </Icon3D>
-            </h3>
-            <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0 }}
-                className="text-center p-2 sm:p-3 bg-white/60 backdrop-blur rounded-lg border border-emerald-100 hover:border-emerald-300 transition-all"
-              >
-                <div className="text-lg sm:text-xl font-bold text-gray-900">
-                  {stats.totalDays}
-                </div>
-                <div className="text-xs text-gray-600">Total</div>
-              </motion.div>
-              {Object.entries(stats.byType).map(([type, days], index) => (
-                <motion.div
-                  key={type}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: (index + 1) * 0.05 }}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  className="text-center p-2 sm:p-3 bg-white/60 backdrop-blur rounded-lg border border-emerald-100 hover:border-emerald-300 transition-all cursor-pointer"
-                >
-                  <div className="text-lg sm:text-xl font-bold text-gray-900">{days}</div>
-                  <div className="text-xs text-gray-600 truncate">
-                    {leaveTypeLabels[type as LeaveType]?.split(' ')[0] || type}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </GlassCard>
-        </motion.div>
-      )}
-
-      {/* Leave Requests List */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-        <GlassCard className="p-0 bg-white/90" hover={false}>
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              My Leave Requests
-            </h3>
-          </div>
-          {leaveRequests.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="p-8 text-center text-gray-500"
-            >
-              <div className="text-4xl mb-3">📅</div>
-              <p>No leave requests yet.</p>
-            </motion.div>
-          ) : (
-            <div className="divide-y divide-gray-200">
-              <AnimatePresence>
-                {leaveRequests.map((request, index) => (
-                  <motion.div
-                    key={request._id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ delay: index * 0.05 }}
-                    whileHover={{ backgroundColor: 'rgba(236, 252, 245, 0.5)' }}
-                    className="p-4 cursor-pointer transition-all group"
-                    onClick={() => setSelectedRequest(request)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">
-                            {leaveTypeLabels[request.leaveType]}
-                          </span>
-                          <span className={`text-xs px-2 py-0.5 rounded ${statusColors[request.status]}`}>
-                            {request.status}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          {new Date(request.startDate).toLocaleDateString()} -{' '}
-                          {new Date(request.endDate).toLocaleDateString()}
-                          <span className="ml-2">({request.numberOfDays} day{request.numberOfDays !== 1 ? 's' : ''})</span>
-                        </div>
-                        <div className="text-sm text-gray-500 mt-1 line-clamp-1">
-                          {request.reason}
-                        </div>
-                      </div>
-                      {request.status === LeaveStatus.PENDING && (
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCancel(request._id);
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </motion.div>
-                      )}
-                    </div>
-                    {request.approverComment && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-2 text-sm text-gray-600 bg-emerald-50 rounded p-2 border border-emerald-100"
-                      >
-                        <span className="font-medium">Admin:</span> {request.approverComment}
-                      </motion.div>
+      {/* Leave List */}
+      <div className="bg-white rounded-xl border border-slate-200">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50">
+                <th className="text-left py-3 px-5 font-medium text-slate-500">Type</th>
+                <th className="text-left py-3 px-5 font-medium text-slate-500">Date Range</th>
+                <th className="text-left py-3 px-5 font-medium text-slate-500">Days</th>
+                <th className="text-left py-3 px-5 font-medium text-slate-500">Status</th>
+                <th className="text-left py-3 px-5 font-medium text-slate-500">Applied On</th>
+                <th className="text-left py-3 px-5 font-medium text-slate-500 w-12"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((leave) => (
+                <tr key={leave.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
+                  <td className="py-3 px-5">
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${typeColors[leave.type] || 'bg-slate-100 text-slate-700'}`}>
+                      {leave.type}
+                    </span>
+                  </td>
+                  <td className="py-3 px-5 text-slate-700">
+                    {new Date(leave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {leave.startDate !== leave.endDate && (
+                      <> — {new Date(leave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>
                     )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
-        </GlassCard>
-      </motion.div>
+                  </td>
+                  <td className="py-3 px-5 text-slate-600">{leave.days} {leave.days === 1 ? 'day' : 'days'}</td>
+                  <td className="py-3 px-5">
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusColors[leave.status]}`}>
+                      {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
+                    </span>
+                  </td>
+                  <td className="py-3 px-5 text-slate-500">
+                    {new Date(leave.appliedOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </td>
+                  <td className="py-3 px-5">
+                    <button
+                      onClick={() => { setSelectedLeave(leave); setShowDetailModal(true); }}
+                      className="p-1.5 text-slate-400 hover:text-[#824ef2] hover:bg-slate-100 rounded-lg transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-500">
+                    <FileText className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                    No leave requests found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-      {/* Apply Leave Modal */}
-      <SlideSheet
-        isOpen={showForm}
-        onClose={() => setShowForm(false)}
-        title="Apply for Leave"
-        size="md"
-        footer={
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={submitting} form="leave-form">
-              {submitting ? 'Submitting...' : 'Submit Request'}
-            </Button>
+      {/* Apply Modal */}
+      <FormModal open={showForm} onClose={() => setShowForm(false)} title="Apply for Leave" size="md" footer={
+        <>
+          <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+          <button type="submit" form="leave-form" className="px-6 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors">Submit Request</button>
+        </>
+      }>
+        <form id="leave-form" onSubmit={handleApply} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Leave Type</label>
+            <select className={`${inputClass} cursor-pointer`} value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
+              {['Sick Leave', 'Casual Leave', 'Earned Leave', 'Unpaid Leave'].map((t) => <option key={t}>{t}</option>)}
+            </select>
           </div>
-        }
-      >
-        <form id="leave-form" onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">
-                  Leave Type *
-                </label>
-                <select
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                  value={formData.leaveType}
-                  onChange={(e) => setFormData({ ...formData, leaveType: e.target.value as LeaveType })}
-                  required
-                >
-                  {Object.entries(leaveTypeLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1">
-                    Start Date *
-                  </label>
-                  <input
-                    type="date"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1">
-                    End Date *
-                  </label>
-                  <input
-                    type="date"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    min={formData.startDate}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={formData.isHalfDay}
-                    onChange={(e) => setFormData({ ...formData, isHalfDay: e.target.checked })}
-                    className="rounded"
-                  />
-                  Half Day Leave
-                </label>
-                {formData.isHalfDay && (
-                  <select
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                    value={formData.halfDayType || 'FIRST_HALF'}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        halfDayType: e.target.value as 'FIRST_HALF' | 'SECOND_HALF',
-                      })
-                    }
-                  >
-                    <option value="FIRST_HALF">First Half</option>
-                    <option value="SECOND_HALF">Second Half</option>
-                  </select>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">
-                  Reason *
-                </label>
-                <textarea
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                  rows={3}
-                  value={formData.reason}
-                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                  placeholder="Please provide a reason for your leave request..."
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">
-                  Contact During Leave
-                </label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900"
-                  value={formData.contactDuringLeave}
-                  onChange={(e) => setFormData({ ...formData, contactDuringLeave: e.target.value })}
-                  placeholder="Phone number or alternate contact"
-                />
-              </div>
-            </form>
-      </SlideSheet>
-
-      {/* View Detail Modal */}
-      <SlideSheet
-        isOpen={!!selectedRequest}
-        onClose={() => setSelectedRequest(null)}
-        title={selectedRequest ? leaveTypeLabels[selectedRequest.leaveType] : ''}
-        size="md"
-        footer={
-          selectedRequest ? (
-            <div className="flex justify-end gap-3">
-              {selectedRequest.status === LeaveStatus.PENDING && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    handleCancel(selectedRequest._id);
-                    setSelectedRequest(null);
-                  }}
-                  className="text-red-600"
-                >
-                  Cancel Request
-                </Button>
-              )}
-              <Button variant="outline" onClick={() => setSelectedRequest(null)}>
-                Close
-              </Button>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Start Date <span className="text-red-500">*</span></label>
+              <input type="date" className={inputClass} value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} required />
             </div>
-          ) : undefined
-        }
-      >
-        {selectedRequest && (
-          <>
-            <div className="flex items-center gap-2 mb-4">
-              <span className={`text-xs px-2 py-1 rounded ${statusColors[selectedRequest.status]}`}>
-                {selectedRequest.status}
-              </span>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">End Date</label>
+              <input type="date" className={inputClass} value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Reason <span className="text-red-500">*</span></label>
+            <textarea className={`${inputClass} resize-none`} rows={3} value={formData.reason} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} required placeholder="Reason for leave..." />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Contact During Leave</label>
+            <input type="text" className={inputClass} value={formData.contact} onChange={(e) => setFormData({ ...formData, contact: e.target.value })} placeholder="Phone number" />
+          </div>
+        </form>
+      </FormModal>
 
-            <div className="space-y-3 text-sm">
-              <div className="grid grid-cols-2 gap-4 text-gray-600">
-                <div>
-                  <span className="font-medium">Start Date:</span>{' '}
-                  {new Date(selectedRequest.startDate).toLocaleDateString()}
-                </div>
-                <div>
-                  <span className="font-medium">End Date:</span>{' '}
-                  {new Date(selectedRequest.endDate).toLocaleDateString()}
-                </div>
-                <div>
-                  <span className="font-medium">Duration:</span> {selectedRequest.numberOfDays} day
-                  {selectedRequest.numberOfDays !== 1 ? 's' : ''}
-                  {selectedRequest.isHalfDay && ` (${selectedRequest.halfDayType?.replace('_', ' ')})`}
-                </div>
-                <div>
-                  <span className="font-medium">Applied:</span>{' '}
-                  {new Date(selectedRequest.createdAt).toLocaleDateString()}
-                </div>
-              </div>
-
-              <div>
-                <span className="font-medium text-gray-900">Reason:</span>
-                <p className="text-gray-600 mt-1">{selectedRequest.reason}</p>
-              </div>
-
-              {selectedRequest.contactDuringLeave && (
-                <div>
-                  <span className="font-medium text-gray-900">Contact:</span>
-                  <p className="text-gray-600">{selectedRequest.contactDuringLeave}</p>
-                </div>
-              )}
-
-              {selectedRequest.approvedBy && (
-                <div className="pt-3 border-t border-gray-200">
-                  <div className="text-gray-600">
-                    <span className="font-medium">
-                      {selectedRequest.status === LeaveStatus.APPROVED ? 'Approved' : 'Rejected'} by:
-                    </span>{' '}
-                    {selectedRequest.approvedBy.firstName} {selectedRequest.approvedBy.lastName}
-                  </div>
-                  {selectedRequest.approvedAt && (
-                    <div className="text-gray-500 text-xs mt-1">
-                      on {new Date(selectedRequest.approvedAt).toLocaleString()}
-                    </div>
-                  )}
-                  {selectedRequest.approverComment && (
-                    <div className="mt-2 bg-gray-50 rounded p-2">
-                      {selectedRequest.approverComment}
-                    </div>
-                  )}
-                </div>
-              )}
+      {/* Detail Modal */}
+      <FormModal open={showDetailModal && !!selectedLeave} onClose={() => { setShowDetailModal(false); setSelectedLeave(null); }} title="Leave Request Details" size="md" footer={
+        <button onClick={() => { setShowDetailModal(false); setSelectedLeave(null); }} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">Close</button>
+      }>
+        {selectedLeave && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${typeColors[selectedLeave.type]}`}>{selectedLeave.type}</span>
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusColors[selectedLeave.status]}`}>{selectedLeave.status.charAt(0).toUpperCase() + selectedLeave.status.slice(1)}</span>
             </div>
-          </>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                <p className="text-xs text-slate-500 mb-1">Date Range</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  {new Date(selectedLeave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {selectedLeave.startDate !== selectedLeave.endDate && ` — ${new Date(selectedLeave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                </p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                <p className="text-xs text-slate-500 mb-1">Duration</p>
+                <p className="text-sm font-semibold text-slate-900">{selectedLeave.days} {selectedLeave.days === 1 ? 'day' : 'days'}</p>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-slate-900 mb-2">Reason</h4>
+              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                <p className="text-sm text-slate-700">{selectedLeave.reason}</p>
+              </div>
+            </div>
+            {selectedLeave.contact && (
+              <div className="text-sm text-slate-500">Contact: {selectedLeave.contact}</div>
+            )}
+            <div className="text-xs text-slate-400">Applied on {new Date(selectedLeave.appliedOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+          </div>
         )}
-      </SlideSheet>
-    </motion.div>
+      </FormModal>
+    </section>
   );
 }

@@ -1,316 +1,259 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../../../contexts/auth-context';
-import { getCurrentSchoolId, getEntities, type TimetableEntry } from '../../../../lib/data-store';
-import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D } from '@/components/ui';
-import { Calendar, Clock, Book, Download } from 'lucide-react';
+import { SchoolStatCard } from '../../../../components/school';
+import {
+  Clock,
+  BookOpen,
+  Users,
+  Coffee,
+  Loader2,
+  Calendar,
+} from 'lucide-react';
 
-export default function TimetablePage() {
-  const { user } = useAuth();
-  const schoolId = useMemo(() => getCurrentSchoolId(), []);
-  const [entities] = useState(() => getEntities(schoolId));
-  const [week, setWeek] = useState('This Week');
-  const [refreshing, setRefreshing] = useState(false);
+// ── Mock timetable ──
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  const teacherEmail = user?.email || '';
-  const assignedClassIds = useMemo(
-    () => entities.teacherAssignments?.[teacherEmail] || [],
-    [entities.teacherAssignments, teacherEmail]
-  );
+interface Period {
+  time: string;
+  subject: string;
+  class: string;
+  room: string;
+  color: string;
+}
 
-  const classesForTeacher = useMemo(() => {
-    const all = entities.classes || [];
-    if (!assignedClassIds || assignedClassIds.length === 0) return all;
-    return all.filter((c) => assignedClassIds.includes(c.id));
-  }, [entities.classes, assignedClassIds]);
+const subjectColors: Record<string, string> = {
+  Mathematics: 'bg-blue-50 border-blue-200 text-blue-700',
+  Physics: 'bg-purple-50 border-purple-200 text-purple-700',
+  Chemistry: 'bg-green-50 border-green-200 text-green-700',
+  English: 'bg-amber-50 border-amber-200 text-amber-700',
+  Free: 'bg-slate-50 border-slate-200 text-slate-400',
+};
 
-  const [selectedClass, setSelectedClass] = useState(() => classesForTeacher[0]?.id || '');
+const MOCK_TIMETABLE: Record<string, Period[]> = {
+  Monday: [
+    { time: '08:00 - 08:45', subject: 'Mathematics', class: 'Class 10-A', room: 'Room 201', color: 'blue' },
+    { time: '08:50 - 09:35', subject: 'Mathematics', class: 'Class 9-B', room: 'Room 203', color: 'blue' },
+    { time: '10:00 - 10:45', subject: 'Physics', class: 'Class 8-A', room: 'Lab 1', color: 'purple' },
+    { time: '10:50 - 11:35', subject: 'Free', class: '', room: '', color: 'slate' },
+    { time: '12:15 - 13:00', subject: 'Mathematics', class: 'Class 7-C', room: 'Room 108', color: 'blue' },
+    { time: '13:05 - 13:50', subject: 'Physics', class: 'Class 9-A', room: 'Lab 2', color: 'purple' },
+  ],
+  Tuesday: [
+    { time: '08:00 - 08:45', subject: 'Physics', class: 'Class 10-A', room: 'Lab 1', color: 'purple' },
+    { time: '08:50 - 09:35', subject: 'Free', class: '', room: '', color: 'slate' },
+    { time: '10:00 - 10:45', subject: 'Mathematics', class: 'Class 10-B', room: 'Room 205', color: 'blue' },
+    { time: '10:50 - 11:35', subject: 'Mathematics', class: 'Class 8-A', room: 'Room 201', color: 'blue' },
+    { time: '12:15 - 13:00', subject: 'Physics', class: 'Class 7-C', room: 'Lab 2', color: 'purple' },
+    { time: '13:05 - 13:50', subject: 'Mathematics', class: 'Class 9-B', room: 'Room 203', color: 'blue' },
+  ],
+  Wednesday: [
+    { time: '08:00 - 08:45', subject: 'Mathematics', class: 'Class 9-A', room: 'Room 201', color: 'blue' },
+    { time: '08:50 - 09:35', subject: 'Physics', class: 'Class 10-B', room: 'Lab 1', color: 'purple' },
+    { time: '10:00 - 10:45', subject: 'Free', class: '', room: '', color: 'slate' },
+    { time: '10:50 - 11:35', subject: 'Mathematics', class: 'Class 10-A', room: 'Room 201', color: 'blue' },
+    { time: '12:15 - 13:00', subject: 'Physics', class: 'Class 8-A', room: 'Lab 2', color: 'purple' },
+    { time: '13:05 - 13:50', subject: 'Free', class: '', room: '', color: 'slate' },
+  ],
+  Thursday: [
+    { time: '08:00 - 08:45', subject: 'Mathematics', class: 'Class 7-C', room: 'Room 108', color: 'blue' },
+    { time: '08:50 - 09:35', subject: 'Mathematics', class: 'Class 10-A', room: 'Room 201', color: 'blue' },
+    { time: '10:00 - 10:45', subject: 'Physics', class: 'Class 9-A', room: 'Lab 1', color: 'purple' },
+    { time: '10:50 - 11:35', subject: 'Physics', class: 'Class 10-B', room: 'Lab 2', color: 'purple' },
+    { time: '12:15 - 13:00', subject: 'Free', class: '', room: '', color: 'slate' },
+    { time: '13:05 - 13:50', subject: 'Mathematics', class: 'Class 9-B', room: 'Room 203', color: 'blue' },
+  ],
+  Friday: [
+    { time: '08:00 - 08:45', subject: 'Physics', class: 'Class 8-A', room: 'Lab 1', color: 'purple' },
+    { time: '08:50 - 09:35', subject: 'Mathematics', class: 'Class 9-A', room: 'Room 201', color: 'blue' },
+    { time: '10:00 - 10:45', subject: 'Mathematics', class: 'Class 10-B', room: 'Room 205', color: 'blue' },
+    { time: '10:50 - 11:35', subject: 'Free', class: '', room: '', color: 'slate' },
+    { time: '12:15 - 13:00', subject: 'Physics', class: 'Class 10-A', room: 'Lab 2', color: 'purple' },
+    { time: '13:05 - 13:50', subject: 'Mathematics', class: 'Class 7-C', room: 'Room 108', color: 'blue' },
+  ],
+  Saturday: [
+    { time: '08:00 - 08:45', subject: 'Mathematics', class: 'Class 10-A', room: 'Room 201', color: 'blue' },
+    { time: '08:50 - 09:35', subject: 'Physics', class: 'Class 9-B', room: 'Lab 1', color: 'purple' },
+    { time: '10:00 - 10:45', subject: 'Free', class: '', room: '', color: 'slate' },
+    { time: '10:50 - 11:35', subject: 'Free', class: '', room: '', color: 'slate' },
+    { time: '12:15 - 13:00', subject: 'Mathematics', class: 'Class 8-A', room: 'Room 201', color: 'blue' },
+    { time: '13:05 - 13:50', subject: 'Free', class: '', room: '', color: 'slate' },
+  ],
+};
 
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  const clsName = entities.classes.find((c) => c.id === selectedClass)?.name || '';
+export default function TeacherTimetablePage() {
+  const [view, setView] = useState<'weekly' | 'daily'>('weekly');
+  const todayIdx = new Date().getDay(); // 0=Sun, 1=Mon, ...
+  const todayName = todayIdx === 0 ? 'Monday' : DAYS[todayIdx - 1] || 'Monday';
+  const [selectedDay, setSelectedDay] = useState(todayName);
 
-  const allEntries = (entities.timetable[selectedClass] || []) as TimetableEntry[];
-  const dataByDay: Record<string, TimetableEntry[]> = days.reduce((acc, d) => {
-    acc[d] = allEntries.filter((x) => x.day === d);
-    return acc;
-  }, {} as Record<string, TimetableEntry[]>);
-
-  const todayName = new Date().toLocaleDateString(undefined, { weekday: 'long' });
-
-  function downloadCSV() {
-    const rows: string[] = [];
-    rows.push(['Day', 'Subject', 'Start', 'End', 'Class'].join(','));
-    for (const d of days) {
-      const list = dataByDay[d] || [];
-      for (const s of list) {
-        rows.push(
-          [d, s.subject, s.start, s.end, clsName]
-            .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-            .join(',')
-        );
-      }
-    }
-    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `timetable-${clsName || 'class'}-${week.replace(/\s+/g, '-').toLowerCase()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function printPDF() {
-    const w = window.open('', '_blank');
-    if (!w) return;
-    const style = `
-      <style>
-        body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; padding: 16px; color: #111827; }
-        h1 { font-size: 18px; margin: 0 0 8px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #e5e7eb; padding: 8px; font-size: 12px; text-align: left; }
-        th { background: #f3f4f6; }
-      </style>`;
-    const rows: string[] = [];
-    for (const d of days) {
-      const entries = dataByDay[d] || [];
-      if (entries.length === 0) continue;
-      rows.push(
-        `<tr><td>${d}</td><td>${entries.map((e) => `${e.subject} (${e.start}-${e.end})`).join('<br/>')}</td></tr>`
-      );
-    }
-    const html = `
-      <html><head>${style}</head><body>
-        <h1>Timetable - ${clsName} - ${week}</h1>
-        <table>
-          <thead><tr><th>Day</th><th>Sessions</th></tr></thead>
-          <tbody>${rows.join('')}</tbody>
-        </table>
-      </body></html>
-    `;
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-    setTimeout(() => {
-      w.print();
-      w.close();
-    }, 300);
-  }
-
-  const totalSessions = useMemo(
-    () => Object.values(dataByDay).reduce((sum, arr) => sum + arr.length, 0),
-    [dataByDay]
-  );
-
-  const sessionsByDay = useMemo(
-    () => Object.entries(dataByDay).filter(([_, sessions]) => sessions.length > 0).length,
-    [dataByDay]
-  );
+  const allPeriods = useMemo(() => Object.values(MOCK_TIMETABLE).flat(), []);
+  const totalPeriods = allPeriods.length;
+  const subjects = useMemo(() => new Set(allPeriods.filter((p) => p.subject !== 'Free').map((p) => p.subject)), [allPeriods]);
+  const classes = useMemo(() => new Set(allPeriods.filter((p) => p.class).map((p) => p.class)), [allPeriods]);
+  const freePeriods = allPeriods.filter((p) => p.subject === 'Free').length;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <section className="space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex items-center justify-between gap-3 flex-wrap"
-      >
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Icon3D bgColor="bg-violet-500" size="lg">
-            <Calendar className="w-6 h-6" />
-          </Icon3D>
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Timetable</h1>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">View your weekly class schedule</p>
+          <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+            <Calendar className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">My Schedule</h1>
+            <p className="text-sm text-slate-500">Weekly timetable and class schedule</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <select
-              className="border border-gray-300 bg-white text-gray-900 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30"
-              value={week}
-              onChange={(e) => setWeek(e.target.value)}
-            >
-              {['This Week', 'Next Week', 'Last Week'].map((w) => (
-                <option key={w} value={w}>
-                  {w}
-                </option>
-              ))}
-            </select>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <select
-              className="border border-gray-300 bg-white text-gray-900 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm max-w-[100px] sm:max-w-none focus:outline-none focus:ring-2 focus:ring-violet-500/30"
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-            >
-              {classesForTeacher.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              size="sm"
-              variant="outline"
-              className="hidden sm:inline-flex"
-              onClick={() => {
-                setRefreshing(true);
-                setTimeout(() => setRefreshing(false), 600);
-              }}
-            >
-              Refresh {refreshing ? '…' : ''}
-            </Button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button size="sm" variant="outline" onClick={printPDF} className="text-xs sm:text-sm">
-              <Download className="w-3.5 h-3.5 mr-1" />
-              <span className="hidden sm:inline">Download </span>PDF
-            </Button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button size="sm" variant="outline" onClick={downloadCSV} className="text-xs sm:text-sm">
-              <Download className="w-3.5 h-3.5 mr-1" />
-              <span className="hidden sm:inline">Download </span>CSV
-            </Button>
-          </motion.div>
-        </div>
-      </motion.div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0 * 0.1 }}
-        >
-          <AnimatedStatCard
-            title="Total Sessions"
-            value={totalSessions}
-            icon={<Clock className="w-5 h-5 text-white" />}
-            iconBgColor="bg-violet-500"
-            delay={0}
-          />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1 * 0.1 }}
-        >
-          <AnimatedStatCard
-            title="Days Scheduled"
-            value={sessionsByDay}
-            icon={<Calendar className="w-5 h-5 text-white" />}
-            iconBgColor="bg-cyan-500"
-            delay={1}
-          />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 2 * 0.1 }}
-          className="col-span-2 sm:col-span-1"
-        >
-          <AnimatedStatCard
-            title="Class"
-            value={clsName || 'Select a class'}
-            icon={<Book className="w-5 h-5 text-white" />}
-            iconBgColor="bg-amber-500"
-            delay={2}
-          />
-        </motion.div>
-      </div>
-
-      {/* Timetable Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
-        {days.map((d, dayIdx) => (
-          <motion.div
-            key={d}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: dayIdx * 0.05 }}
-          >
-            <GlassCard
-              className={`p-3 sm:p-4 bg-white/90 h-full ${
-                d === todayName ? 'ring-2 ring-violet-400' : ''
+        <div className="flex gap-2">
+          {(['weekly', 'daily'] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                view === v ? 'bg-[#824ef2] text-white border-[#824ef2]' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
             >
-              <div className="font-semibold text-gray-900 mb-2 sm:mb-3 flex items-center justify-between text-sm sm:text-base">
-                <span className="truncate">{d.slice(0, 3)}<span className="hidden sm:inline">{d.slice(3)}</span></span>
-                {d === todayName && (
-                  <motion.span
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                    className="text-xs bg-violet-100 text-violet-700 px-1.5 sm:px-2 py-0.5 rounded flex-shrink-0"
-                  >
-                    Today
-                  </motion.span>
-                )}
-              </div>
-              {(dataByDay[d] || []).length === 0 ? (
-                <div className="text-xs sm:text-sm text-gray-500 italic text-center py-4">No sessions</div>
-              ) : (
-                <div className="space-y-1.5 sm:space-y-2">
-                  {(dataByDay[d] || []).map((s, sessionIdx) => (
-                    <motion.div
-                      key={s.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: dayIdx * 0.05 + sessionIdx * 0.05 }}
-                      whileHover={{ y: -2 }}
-                      className="p-2 sm:p-3 rounded-lg border border-violet-100 hover:shadow-md transition-all ease-in-out bg-gray-50"
-                    >
-                      <div className="text-xs sm:text-sm text-gray-800 font-medium truncate">{s.subject}</div>
-                      <div className="text-xs text-gray-500 mt-0.5 sm:mt-1 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {s.start} – {s.end}
-                      </div>
-                      <div className="text-xs text-gray-400 mt-0.5 sm:mt-1 truncate hidden sm:block">{clsName}</div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </GlassCard>
-          </motion.div>
-        ))}
+              {v === 'weekly' ? 'Weekly View' : 'Daily View'}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Empty State */}
-      <AnimatePresence>
-        {days.every((d) => (dataByDay[d] || []).length === 0) && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <GlassCard className="p-8 sm:p-12 text-center bg-white/80">
-              <motion.div
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="text-4xl sm:text-5xl mb-3"
-              >
-                📆
-              </motion.div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-                No timetable found
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-600 mb-4">
-                Contact admin to set up your schedule for this week
-              </p>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button onClick={() => alert('Request sent')}>Request Update</Button>
-              </motion.div>
-            </GlassCard>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SchoolStatCard icon={<Clock className="w-5 h-5" />} color="blue" label="Total Periods" value={totalPeriods} />
+        <SchoolStatCard icon={<BookOpen className="w-5 h-5" />} color="purple" label="Subjects" value={subjects.size} />
+        <SchoolStatCard icon={<Users className="w-5 h-5" />} color="green" label="Classes" value={classes.size} />
+        <SchoolStatCard icon={<Coffee className="w-5 h-5" />} color="amber" label="Free Periods" value={freePeriods} />
+      </div>
+
+      {/* Weekly View */}
+      {view === 'weekly' && (
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[800px]">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="text-left py-3 px-4 font-medium text-slate-500 w-28">Time</th>
+                  {DAYS.map((day) => (
+                    <th
+                      key={day}
+                      className={`text-left py-3 px-3 font-medium ${
+                        day === todayName ? 'text-[#824ef2] bg-[#824ef2]/5' : 'text-slate-500'
+                      }`}
+                    >
+                      {day}
+                      {day === todayName && (
+                        <span className="ml-1.5 text-[10px] bg-[#824ef2] text-white px-1.5 py-0.5 rounded-full">Today</span>
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(MOCK_TIMETABLE['Monday'] || []).map((_, idx) => (
+                  <tr key={idx} className="border-b border-slate-100 last:border-b-0">
+                    <td className="py-2 px-4 text-xs text-slate-500 font-medium align-top pt-3">
+                      {MOCK_TIMETABLE['Monday']?.[idx]?.time}
+                    </td>
+                    {DAYS.map((day) => {
+                      const period = MOCK_TIMETABLE[day]?.[idx];
+                      if (!period) return <td key={day} className="py-2 px-3" />;
+                      const isFree = period.subject === 'Free';
+                      const colorMap: Record<string, string> = {
+                        blue: 'bg-blue-50 border-blue-200',
+                        purple: 'bg-purple-50 border-purple-200',
+                        green: 'bg-green-50 border-green-200',
+                        amber: 'bg-amber-50 border-amber-200',
+                        slate: 'bg-slate-50 border-slate-200',
+                      };
+                      const textMap: Record<string, string> = {
+                        blue: 'text-blue-700',
+                        purple: 'text-purple-700',
+                        green: 'text-green-700',
+                        amber: 'text-amber-700',
+                        slate: 'text-slate-400',
+                      };
+                      const isToday = day === todayName;
+                      return (
+                        <td key={day} className={`py-2 px-3 ${isToday ? 'bg-[#824ef2]/[0.02]' : ''}`}>
+                          <div className={`rounded-lg border p-2.5 ${colorMap[period.color] || colorMap.slate}`}>
+                            <p className={`font-medium text-xs ${textMap[period.color] || textMap.slate}`}>
+                              {isFree ? 'Free Period' : period.subject}
+                            </p>
+                            {!isFree && (
+                              <>
+                                <p className="text-[11px] text-slate-500 mt-0.5">{period.class}</p>
+                                <p className="text-[11px] text-slate-400">{period.room}</p>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Daily View */}
+      {view === 'daily' && (
+        <div className="bg-white rounded-xl border border-slate-200">
+          <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-slate-900">{selectedDay}&apos;s Schedule</h2>
+            <div className="flex gap-2 flex-wrap">
+              {DAYS.map((day) => (
+                <button
+                  key={day}
+                  onClick={() => setSelectedDay(day)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                    selectedDay === day
+                      ? 'bg-[#824ef2] text-white border-[#824ef2]'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  {day.slice(0, 3)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="divide-y divide-slate-100">
+            {(MOCK_TIMETABLE[selectedDay] || []).map((period, idx) => {
+              const isFree = period.subject === 'Free';
+              return (
+                <div key={idx} className="flex items-center gap-4 p-4 px-5 hover:bg-slate-50 transition-colors">
+                  <div className="flex-shrink-0 w-20 text-center">
+                    <p className="text-xs text-slate-500 font-medium">{period.time.split(' - ')[0]}</p>
+                    <p className="text-[10px] text-slate-400">{period.time.split(' - ')[1]}</p>
+                  </div>
+                  <div className={`w-1 h-12 rounded-full ${isFree ? 'bg-slate-200' : period.color === 'blue' ? 'bg-blue-400' : period.color === 'purple' ? 'bg-purple-400' : 'bg-green-400'}`} />
+                  <div className="flex-1">
+                    <p className={`font-semibold ${isFree ? 'text-slate-400' : 'text-slate-900'}`}>
+                      {isFree ? 'Free Period' : period.subject}
+                    </p>
+                    {!isFree && (
+                      <p className="text-sm text-slate-500 mt-0.5">
+                        {period.class} &bull; {period.room}
+                      </p>
+                    )}
+                  </div>
+                  {!isFree && (
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${subjectColors[period.subject] || 'bg-slate-100 text-slate-600'}`}>
+                      {period.subject}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </section>
   );
 }

@@ -1,330 +1,278 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../../../contexts/auth-context';
-import { getCurrentSchoolId, getEntities } from '../../../../lib/data-store';
-import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D } from '@/components/ui';
+import { useState, useMemo } from 'react';
+import { SchoolStatCard } from '../../../../components/school';
 import {
   BarChart3,
-  TrendingUp,
   Users,
-  PieChart,
+  TrendingUp,
+  FileText,
+  Loader2,
+  Download,
+  Printer,
 } from 'lucide-react';
 
-export default function ReportsPage() {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const schoolId = useMemo(() => getCurrentSchoolId(), []);
-  const entities = useMemo(() => getEntities(schoolId), [schoolId]);
+// ── Mock data ──
+const MOCK_CLASS_PERFORMANCE = [
+  { class: 'Class 10-A', subject: 'Mathematics', avgScore: 82, highest: 98, lowest: 45, students: 31 },
+  { class: 'Class 10-B', subject: 'Mathematics', avgScore: 78, highest: 95, lowest: 42, students: 30 },
+  { class: 'Class 9-A', subject: 'Mathematics', avgScore: 76, highest: 92, lowest: 38, students: 29 },
+  { class: 'Class 9-B', subject: 'Mathematics', avgScore: 74, highest: 90, lowest: 35, students: 28 },
+  { class: 'Class 8-A', subject: 'Physics', avgScore: 71, highest: 88, lowest: 32, students: 26 },
+  { class: 'Class 7-C', subject: 'Physics', avgScore: 68, highest: 85, lowest: 28, students: 24 },
+];
 
-  const teacherEmail = user?.email || '';
-  const assignedClassIds = useMemo(
-    () => entities.teacherAssignments?.[teacherEmail] || [],
-    [entities.teacherAssignments, teacherEmail]
-  );
+const MOCK_ATTENDANCE_SUMMARY = [
+  { class: 'Class 10-A', avgAttendance: 94, totalDays: 120, present: 113, absent: 7 },
+  { class: 'Class 10-B', avgAttendance: 91, totalDays: 120, present: 109, absent: 11 },
+  { class: 'Class 9-A', avgAttendance: 88, totalDays: 120, present: 106, absent: 14 },
+  { class: 'Class 9-B', avgAttendance: 92, totalDays: 120, present: 110, absent: 10 },
+  { class: 'Class 8-A', avgAttendance: 89, totalDays: 120, present: 107, absent: 13 },
+  { class: 'Class 7-C', avgAttendance: 86, totalDays: 120, present: 103, absent: 17 },
+];
 
-  const allowedClasses = useMemo(() => {
-    const all = entities.classes || [];
-    if (!assignedClassIds || assignedClassIds.length === 0) return all;
-    return all.filter((c) => assignedClassIds.includes(c.id));
-  }, [entities.classes, assignedClassIds]);
+const MOCK_STUDENT_RANKINGS = [
+  { rank: 1, name: 'Ananya Iyer', class: 'Class 10-A', score: 98 },
+  { rank: 2, name: 'Priya Patel', class: 'Class 10-A', score: 96 },
+  { rank: 3, name: 'Meera Nair', class: 'Class 10-A', score: 94 },
+  { rank: 4, name: 'Ishita Bansal', class: 'Class 9-B', score: 92 },
+  { rank: 5, name: 'Aarav Sharma', class: 'Class 10-A', score: 91 },
+  { rank: 6, name: 'Sneha Reddy', class: 'Class 10-A', score: 88 },
+  { rank: 7, name: 'Divya Kumari', class: 'Class 9-B', score: 87 },
+  { rank: 8, name: 'Aditya Kapoor', class: 'Class 10-B', score: 86 },
+  { rank: 9, name: 'Rohan Gupta', class: 'Class 10-A', score: 85 },
+  { rank: 10, name: 'Arjun Singh', class: 'Class 10-A', score: 83 },
+];
 
-  const allowedClassIds = useMemo(() => new Set(allowedClasses.map((c) => c.id)), [allowedClasses]);
+type ReportType = 'performance' | 'attendance' | 'student' | 'exam';
 
-  // Build last 5 weeks
-  const labels: string[] = useMemo(() => {
-    const now = new Date();
-    const day = (now.getDay() + 6) % 7; // Mon=0
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - day);
-    const out: string[] = [];
-    for (let i = 4; i >= 0; i--) {
-      out.push(i === 0 ? 'This Week' : `W-${i}`);
-    }
-    return out;
-  }, []);
+export default function TeacherReportsPage() {
+  const [reportType, setReportType] = useState<ReportType>('performance');
 
-  const weekRanges = useMemo(() => {
-    const now = new Date();
-    const day = (now.getDay() + 6) % 7;
-    const monday = new Date(now);
-    monday.setHours(0, 0, 0, 0);
-    monday.setDate(now.getDate() - day);
-    const ranges: { start: Date; end: Date }[] = [];
-    for (let i = 4; i >= 0; i--) {
-      const start = new Date(monday);
-      start.setDate(monday.getDate() - i * 7);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      end.setHours(23, 59, 59, 999);
-      ranges.push({ start, end });
-    }
-    return ranges;
-  }, []);
-
-  // Homework completion per week
-  const homeworkRate = useMemo(() => {
-    const byClass = entities.homework || {};
-    const totals = Array(5).fill(0);
-    const completed = Array(5).fill(0);
-    for (const [classId, list] of Object.entries(byClass)) {
-      if (!allowedClassIds.has(classId)) continue;
-      for (const hw of list || []) {
-        const due = new Date(hw.due);
-        for (let i = 0; i < weekRanges.length; i++) {
-          const { start, end } = weekRanges[i]!;
-          if (due >= start && due <= end) {
-            totals[i]++;
-            if ((hw.status || 'Pending') === 'Completed') completed[i]++;
-            break;
-          }
-        }
-      }
-    }
-    return totals.map((t, i) => (t > 0 ? Math.round((completed[i]! / t) * 100) : 0));
-  }, [entities.homework, allowedClassIds, weekRanges]);
-
-  // Attendance percentage per week
-  const attendancePct = useMemo(() => {
-    const att = entities.attendance || {};
-    const classIdToStrength = new Map<string, number>();
-    for (const c of entities.classes) classIdToStrength.set(c.id, c.strength || 0);
-
-    const sums = Array(5).fill(0);
-    const counts = Array(5).fill(0);
-    for (const [dateStr, byClass] of Object.entries(att)) {
-      const d = new Date(dateStr);
-      let weekIdx = -1;
-      for (let i = 0; i < weekRanges.length; i++) {
-        const { start, end } = weekRanges[i]!;
-        if (d >= start && d <= end) {
-          weekIdx = i;
-          break;
-        }
-      }
-      if (weekIdx < 0) continue;
-      for (const [classId, records] of Object.entries(byClass || {})) {
-        if (!allowedClassIds.has(classId)) continue;
-        const present = Object.values(records || {}).filter(Boolean).length;
-        const total = classIdToStrength.get(classId) || Object.keys(records || {}).length || 0;
-        if (total <= 0) continue;
-        const pct = (present / total) * 100;
-        sums[weekIdx] += pct;
-        counts[weekIdx] += 1;
-      }
-    }
-    return sums.map((s, i) => (counts[i]! > 0 ? Math.round(s / counts[i]!) : 0));
-  }, [entities.attendance, entities.classes, allowedClassIds, weekRanges]);
-
-  // Performance trend
-  const perfTrend = useMemo(
-    () => homeworkRate.map((v, i) => Math.round((v + (attendancePct[i] || 0)) / 2)),
-    [homeworkRate, attendancePct]
-  );
-
-  const SectionCard = ({ title, data, bgColor }: { title: string; data: number[]; bgColor: string }) => {
-    const max = Math.max(1, ...data);
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <GlassCard className="p-6 bg-white/90" hover={false}>
-          <h3 className="font-semibold mb-4 text-gray-900 flex items-center gap-2">
-            {title}
-            <Icon3D bgColor="bg-gray-500" size="sm">
-              <BarChart3 className="w-3.5 h-3.5" />
-            </Icon3D>
-          </h3>
-          <div className="h-40 flex items-end gap-2">
-            <AnimatePresence>
-              {data.map((v, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ delay: i * 0.1, duration: 0.5 }}
-                  className="flex-1 flex flex-col items-center gap-1"
-                >
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.1 + 0.3 }}
-                    className="text-xs font-medium text-gray-600"
-                  >
-                    {v}%
-                  </motion.div>
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: `${Math.round((v / max) * 100)}%` }}
-                    transition={{ delay: i * 0.1, duration: 0.6, ease: 'easeOut' }}
-                    whileHover={{ scale: 1.05, originY: 'bottom' }}
-                    className={`w-full ${bgColor} rounded-t transition-all`}
-                    title={`${labels[i]}: ${v}%`}
-                  />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="mt-3 grid grid-cols-5 text-[10px] text-gray-500"
-          >
-            {labels.map((l, i) => (
-              <div key={i} className="text-center">
-                {l}
-              </div>
-            ))}
-          </motion.div>
-        </GlassCard>
-      </motion.div>
-    );
-  };
-
-  function downloadCSV() {
-    const rows: string[] = [];
-    rows.push(['Metric', 'Week', 'Value'].join(','));
-    labels.forEach((w, i) => {
-      rows.push(['Attendance %', w, attendancePct[i] ?? ''].join(','));
-      rows.push(['Homework Rate %', w, homeworkRate[i] ?? ''].join(','));
-      rows.push(['Performance %', w, perfTrend[i] ?? ''].join(','));
-    });
-    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'teacher-reports.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+  function scoreColor(val: number) {
+    if (val >= 85) return 'text-green-600';
+    if (val >= 70) return 'text-blue-600';
+    if (val >= 55) return 'text-amber-600';
+    return 'text-red-600';
   }
 
-  function printPDF() {
-    const w = window.open('', '_blank');
-    if (!w) return;
-    const style = `
-      <style>
-        body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; padding: 16px; color: #111827; }
-        h1 { font-size: 18px; margin: 0 0 12px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { border: 1px solid #e5e7eb; padding: 8px; font-size: 12px; text-align: left; }
-        th { background: #f3f4f6; }
-      </style>`;
-    const buildRows = (name: string, arr: number[]) =>
-      labels.map((w, i) => `<tr><td>${name}</td><td>${w}</td><td>${arr[i] ?? ''}</td></tr>`).join('');
-    const html = `
-      <html><head>${style}</head><body>
-        <h1>Teacher Reports Summary</h1>
-        <table>
-          <thead><tr><th>Metric</th><th>Week</th><th>Value (%)</th></tr></thead>
-          <tbody>
-            ${buildRows('Attendance', attendancePct)}
-            ${buildRows('Homework Rate', homeworkRate)}
-            ${buildRows('Performance', perfTrend)}
-          </tbody>
-        </table>
-      </body></html>
-    `;
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-    setTimeout(() => {
-      w.print();
-      w.close();
-    }, 300);
+  function barWidth(val: number) {
+    return `${Math.min(val, 100)}%`;
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <section className="space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex items-center justify-between gap-3 flex-wrap"
-      >
-        <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
-            Reports
-            <Icon3D bgColor="bg-purple-500" size="sm">
-              <PieChart className="w-3.5 h-3.5" />
-            </Icon3D>
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1">
-            View performance analytics
-          </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+            <BarChart3 className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Reports</h1>
+            <p className="text-sm text-slate-500">View class performance and analytics</p>
+          </div>
         </div>
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="flex gap-2 sm:gap-3"
-        >
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Button variant="outline" onClick={printPDF} className="text-xs sm:text-sm">
-              <span className="hidden sm:inline">Export </span>PDF
-            </Button>
-          </motion.div>
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Button variant="outline" onClick={downloadCSV} className="text-xs sm:text-sm">
-              <span className="hidden sm:inline">Download </span>CSV
-            </Button>
-          </motion.div>
-        </motion.div>
-      </motion.div>
+        <div className="flex gap-2">
+          <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+            <Download className="w-4 h-4" /> Export PDF
+          </button>
+          <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+            <Printer className="w-4 h-4" /> Print
+          </button>
+        </div>
+      </div>
 
-      {/* Stats Cards */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4"
-      >
-        <AnimatedStatCard
-          title="Avg Attendance"
-          value={attendancePct.length > 0 ? Math.round(attendancePct.reduce((a, b) => a + b, 0) / attendancePct.length) : 0}
-          icon={<Users className="w-5 h-5 text-purple-600" />}
-          iconBgColor="bg-purple-50"
-          delay={0}
-        />
-        <AnimatedStatCard
-          title="Avg Homework Rate"
-          value={homeworkRate.length > 0 ? Math.round(homeworkRate.reduce((a, b) => a + b, 0) / homeworkRate.length) : 0}
-          icon={<BarChart3 className="w-5 h-5 text-violet-600" />}
-          iconBgColor="bg-violet-50"
-          delay={1}
-        />
-        <AnimatedStatCard
-          title="Performance"
-          value={perfTrend.length > 0 ? Math.round(perfTrend.reduce((a, b) => a + b, 0) / perfTrend.length) : 0}
-          icon={<TrendingUp className="w-5 h-5 text-primary" />}
-          iconBgColor="bg-indigo-50"
-          delay={2}
-        />
-      </motion.div>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SchoolStatCard icon={<BarChart3 className="w-5 h-5" />} color="blue" label="Reports Generated" value={15} />
+        <SchoolStatCard icon={<Users className="w-5 h-5" />} color="green" label="Students Covered" value={142} />
+        <SchoolStatCard icon={<TrendingUp className="w-5 h-5" />} color="purple" label="Class Avg" value="76%" />
+        <SchoolStatCard icon={<FileText className="w-5 h-5" />} color="amber" label="Pending Reports" value={3} />
+      </div>
 
-      {/* Charts Grid */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6"
-      >
-        <SectionCard title="Attendance %" data={attendancePct} bgColor="bg-purple-500" />
-        <SectionCard title="Homework Rate" data={homeworkRate} bgColor="bg-gray-500" />
-        <SectionCard title="Performance Trend" data={perfTrend} bgColor="bg-primary" />
-      </motion.div>
-    </div>
+      {/* Report Type Selector */}
+      <div className="flex gap-2 border-b border-slate-200">
+        {([
+          { key: 'performance' as ReportType, label: 'Class Performance' },
+          { key: 'attendance' as ReportType, label: 'Attendance Summary' },
+          { key: 'student' as ReportType, label: 'Student Progress' },
+          { key: 'exam' as ReportType, label: 'Exam Analysis' },
+        ]).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setReportType(t.key)}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              reportType === t.key ? 'border-[#824ef2] text-[#824ef2]' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Class Performance */}
+      {reportType === 'performance' && (
+        <div className="bg-white rounded-xl border border-slate-200">
+          <div className="p-5 border-b border-slate-200">
+            <h2 className="text-lg font-semibold text-slate-900">Class-wise Performance</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Class</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Subject</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Average</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Highest</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Lowest</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500 w-48">Progress</th>
+                </tr>
+              </thead>
+              <tbody>
+                {MOCK_CLASS_PERFORMANCE.map((row) => (
+                  <tr key={`${row.class}-${row.subject}`} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-5 font-medium text-slate-900">{row.class}</td>
+                    <td className="py-3 px-5 text-slate-600">{row.subject}</td>
+                    <td className="py-3 px-5"><span className={`font-semibold ${scoreColor(row.avgScore)}`}>{row.avgScore}%</span></td>
+                    <td className="py-3 px-5 text-green-600 font-medium">{row.highest}%</td>
+                    <td className="py-3 px-5 text-red-600 font-medium">{row.lowest}%</td>
+                    <td className="py-3 px-5">
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-700 ${row.avgScore >= 80 ? 'bg-green-500' : row.avgScore >= 70 ? 'bg-blue-500' : 'bg-amber-500'}`} style={{ width: barWidth(row.avgScore) }} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Attendance Summary */}
+      {reportType === 'attendance' && (
+        <div className="bg-white rounded-xl border border-slate-200">
+          <div className="p-5 border-b border-slate-200">
+            <h2 className="text-lg font-semibold text-slate-900">Attendance Summary</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Class</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Avg Attendance</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Working Days</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Present</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Absent</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500 w-48">Progress</th>
+                </tr>
+              </thead>
+              <tbody>
+                {MOCK_ATTENDANCE_SUMMARY.map((row) => (
+                  <tr key={row.class} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-5 font-medium text-slate-900">{row.class}</td>
+                    <td className="py-3 px-5"><span className={`font-semibold ${scoreColor(row.avgAttendance)}`}>{row.avgAttendance}%</span></td>
+                    <td className="py-3 px-5 text-slate-600">{row.totalDays}</td>
+                    <td className="py-3 px-5 text-green-600 font-medium">{row.present}</td>
+                    <td className="py-3 px-5 text-red-600 font-medium">{row.absent}</td>
+                    <td className="py-3 px-5">
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-700 ${row.avgAttendance >= 90 ? 'bg-green-500' : row.avgAttendance >= 80 ? 'bg-blue-500' : 'bg-amber-500'}`} style={{ width: barWidth(row.avgAttendance) }} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Student Progress (Rankings) */}
+      {reportType === 'student' && (
+        <div className="bg-white rounded-xl border border-slate-200">
+          <div className="p-5 border-b border-slate-200">
+            <h2 className="text-lg font-semibold text-slate-900">Top Performing Students</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th className="text-left py-3 px-5 font-medium text-slate-500 w-16">Rank</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Student Name</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Class</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {MOCK_STUDENT_RANKINGS.map((r) => (
+                  <tr key={r.rank} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-5">
+                      <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
+                        r.rank <= 3 ? 'bg-[#824ef2]/10 text-[#824ef2]' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {r.rank}
+                      </span>
+                    </td>
+                    <td className="py-3 px-5 font-medium text-slate-900">{r.name}</td>
+                    <td className="py-3 px-5 text-slate-600">{r.class}</td>
+                    <td className="py-3 px-5"><span className={`font-semibold ${scoreColor(r.score)}`}>{r.score}%</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Exam Analysis */}
+      {reportType === 'exam' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white rounded-xl border border-slate-200 p-5 text-center">
+              <p className="text-xs text-slate-500 mb-1">Overall Average</p>
+              <p className="text-3xl font-bold text-[#824ef2]">76%</p>
+              <p className="text-xs text-green-600 mt-1">+3% from last term</p>
+            </div>
+            <div className="bg-white rounded-xl border border-slate-200 p-5 text-center">
+              <p className="text-xs text-slate-500 mb-1">Pass Rate</p>
+              <p className="text-3xl font-bold text-green-600">92%</p>
+              <p className="text-xs text-green-600 mt-1">+1% from last term</p>
+            </div>
+            <div className="bg-white rounded-xl border border-slate-200 p-5 text-center">
+              <p className="text-xs text-slate-500 mb-1">Distinction Rate</p>
+              <p className="text-3xl font-bold text-blue-600">28%</p>
+              <p className="text-xs text-amber-600 mt-1">-2% from last term</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <h3 className="text-base font-semibold text-slate-900 mb-4">Grade Distribution</h3>
+            <div className="space-y-3">
+              {[
+                { grade: 'A+ (90-100%)', count: 18, pct: 13, color: 'bg-green-500' },
+                { grade: 'A (80-89%)', count: 24, pct: 17, color: 'bg-blue-500' },
+                { grade: 'B+ (70-79%)', count: 32, pct: 23, color: 'bg-sky-400' },
+                { grade: 'B (60-69%)', count: 28, pct: 20, color: 'bg-amber-400' },
+                { grade: 'C (50-59%)', count: 20, pct: 14, color: 'bg-orange-400' },
+                { grade: 'D (40-49%)', count: 12, pct: 8, color: 'bg-red-400' },
+                { grade: 'F (Below 40%)', count: 8, pct: 5, color: 'bg-red-600' },
+              ].map((g) => (
+                <div key={g.grade}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-slate-600">{g.grade}</span>
+                    <span className="text-sm font-medium text-slate-700">{g.count} students ({g.pct}%)</span>
+                  </div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className={`h-full ${g.color} rounded-full transition-all duration-700`} style={{ width: `${g.pct * 3}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }

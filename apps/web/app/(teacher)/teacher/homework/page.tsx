@@ -1,359 +1,379 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../../../contexts/auth-context';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { SchoolStatCard, FormModal, ConfirmModal, useToast } from '../../../../components/school';
 import {
-  getCurrentSchoolId,
-  getEntities,
-  setHomework,
-  type Homework as HomeworkType,
-} from '../../../../lib/data-store';
-import { Button } from '@repo/ui/button';
-import { GlassCard, AnimatedStatCard, Icon3D, SlideSheet } from '@/components/ui';
-import { BookOpen, CheckCircle2, Clock, Trash2 } from 'lucide-react';
+  FileText,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  Loader2,
+  Plus,
+  MoreVertical,
+  Eye,
+  Trash2,
+} from 'lucide-react';
 
-export default function HomeworkPage() {
-  const { user } = useAuth();
-  const schoolId = useMemo(() => getCurrentSchoolId(), []);
-  const [entities, setEntities] = useState(() => getEntities(schoolId));
-  const [view, setView] = useState<HomeworkType | null>(null);
+// ── Mock data ──
+interface MockHomework {
+  id: string;
+  title: string;
+  class: string;
+  subject: string;
+  dueDate: string;
+  submissions: number;
+  totalStudents: number;
+  status: 'active' | 'graded' | 'overdue' | 'draft';
+  maxMarks: number;
+  description: string;
+}
 
-  const teacherEmail = user?.email || '';
-  const assignedClassIds = useMemo(
-    () => entities.teacherAssignments?.[teacherEmail] || [],
-    [entities.teacherAssignments, teacherEmail]
-  );
+interface MockSubmission {
+  id: string;
+  studentName: string;
+  submittedDate: string;
+  status: 'submitted' | 'late' | 'not_submitted';
+  grade: string;
+}
 
-  const allowedClasses = useMemo(() => {
-    const all = entities.classes || [];
-    if (!assignedClassIds || assignedClassIds.length === 0) return all;
-    return all.filter((c) => assignedClassIds.includes(c.id));
-  }, [entities.classes, assignedClassIds]);
+const MOCK_HOMEWORK: MockHomework[] = [
+  { id: 'h1', title: 'Quadratic Equations Practice Set', class: 'Class 10-A', subject: 'Mathematics', dueDate: '2025-03-10', submissions: 28, totalStudents: 31, status: 'active', maxMarks: 20, description: 'Solve all questions from exercise 4.1 and 4.2. Show complete working.' },
+  { id: 'h2', title: 'Newton Laws Worksheet', class: 'Class 8-A', subject: 'Physics', dueDate: '2025-03-08', submissions: 24, totalStudents: 26, status: 'active', maxMarks: 15, description: 'Complete the worksheet on Newton\'s three laws of motion.' },
+  { id: 'h3', title: 'Trigonometry Problems', class: 'Class 10-B', subject: 'Mathematics', dueDate: '2025-03-05', submissions: 30, totalStudents: 30, status: 'graded', maxMarks: 25, description: 'Chapter 8 practice problems.' },
+  { id: 'h4', title: 'Linear Equations Assignment', class: 'Class 9-B', subject: 'Mathematics', dueDate: '2025-03-03', submissions: 25, totalStudents: 28, status: 'graded', maxMarks: 20, description: 'Solve linear equations and graph them.' },
+  { id: 'h5', title: 'Optics Chapter Questions', class: 'Class 10-A', subject: 'Physics', dueDate: '2025-02-28', submissions: 29, totalStudents: 31, status: 'graded', maxMarks: 30, description: 'Answer all questions from chapter on optics.' },
+  { id: 'h6', title: 'Algebra Review Sheet', class: 'Class 7-C', subject: 'Mathematics', dueDate: '2025-02-25', submissions: 20, totalStudents: 24, status: 'graded', maxMarks: 15, description: 'Review exercises for algebra basics.' },
+  { id: 'h7', title: 'Wave Motion Lab Report', class: 'Class 9-A', subject: 'Physics', dueDate: '2025-03-02', submissions: 18, totalStudents: 29, status: 'overdue', maxMarks: 20, description: 'Write lab report on wave motion experiment.' },
+  { id: 'h8', title: 'Statistics Project', class: 'Class 10-A', subject: 'Mathematics', dueDate: '2025-03-01', submissions: 15, totalStudents: 31, status: 'overdue', maxMarks: 50, description: 'Collect data, analyze using statistical methods, present findings.' },
+];
 
-  const [classId, setClassId] = useState(() => allowedClasses[0]?.id || '');
-  const [title, setTitle] = useState('');
-  const [due, setDue] = useState(() => new Date(Date.now() + 86400000).toISOString().slice(0, 10));
-  const [description, setDescription] = useState('');
+const MOCK_SUBMISSIONS: MockSubmission[] = [
+  { id: 'sub1', studentName: 'Aarav Sharma', submittedDate: '2025-03-08', status: 'submitted', grade: '18/20' },
+  { id: 'sub2', studentName: 'Priya Patel', submittedDate: '2025-03-09', status: 'submitted', grade: '20/20' },
+  { id: 'sub3', studentName: 'Rohan Gupta', submittedDate: '2025-03-10', status: 'late', grade: '' },
+  { id: 'sub4', studentName: 'Sneha Reddy', submittedDate: '2025-03-08', status: 'submitted', grade: '16/20' },
+  { id: 'sub5', studentName: 'Arjun Singh', submittedDate: '', status: 'not_submitted', grade: '' },
+  { id: 'sub6', studentName: 'Ananya Iyer', submittedDate: '2025-03-07', status: 'submitted', grade: '19/20' },
+  { id: 'sub7', studentName: 'Vikram Joshi', submittedDate: '2025-03-11', status: 'late', grade: '' },
+  { id: 'sub8', studentName: 'Meera Nair', submittedDate: '2025-03-08', status: 'submitted', grade: '17/20' },
+];
+
+const statusColors: Record<string, string> = {
+  active: 'bg-blue-100 text-blue-700',
+  graded: 'bg-green-100 text-green-700',
+  overdue: 'bg-red-100 text-red-700',
+  draft: 'bg-slate-100 text-slate-700',
+};
+
+const submissionStatusColors: Record<string, string> = {
+  submitted: 'bg-green-100 text-green-700',
+  late: 'bg-amber-100 text-amber-700',
+  not_submitted: 'bg-red-100 text-red-700',
+};
+
+export default function TeacherHomeworkPage() {
+  const { showToast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'all' | 'submissions' | 'create'>('all');
+  const [homework, setHomework] = useState<MockHomework[]>(MOCK_HOMEWORK);
+  const [selectedHomework, setSelectedHomework] = useState<MockHomework | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState({ open: false, id: '' });
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    class: 'Class 10-A',
+    subject: 'Mathematics',
+    dueDate: '',
+    maxMarks: '20',
+  });
 
   useEffect(() => {
-    if (!classId && allowedClasses[0]) setClassId(allowedClasses[0].id);
-  }, [allowedClasses, classId]);
+    const t = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(t);
+  }, []);
 
-  if (allowedClasses.length === 0) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-      >
-        <GlassCard className="p-6 bg-white text-center">
-          <div className="text-4xl mb-3">📚</div>
-          <p className="text-sm text-gray-600">
-            No classes found. Classes are managed by the School Admin.
-          </p>
-        </GlassCard>
-      </motion.div>
-    );
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const stats = useMemo(() => ({
+    total: homework.length,
+    graded: homework.filter((h) => h.status === 'graded').length,
+    pending: homework.filter((h) => h.status === 'active').length,
+    overdue: homework.filter((h) => h.status === 'overdue').length,
+  }), [homework]);
+
+  function handleDelete(id: string) {
+    setHomework((prev) => prev.filter((h) => h.id !== id));
+    setConfirmModal({ open: false, id: '' });
+    showToast('success', 'Assignment deleted successfully');
   }
 
-  const list: HomeworkType[] = entities.homework[classId] || [];
-  const total = list.length;
-  const completed = list.filter((h) => h.status === 'Completed').length;
-  const pending = total - completed;
-
-  function addHomework() {
-    const trimmed = title.trim();
-    if (!trimmed) return;
-    const item: HomeworkType = {
-      id: `hw-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      title: trimmed,
-      due,
-      description: description.trim() || undefined,
-      status: 'Pending',
+  function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!formData.title.trim() || !formData.dueDate) return;
+    const newHw: MockHomework = {
+      id: `h${Date.now()}`,
+      title: formData.title,
+      class: formData.class,
+      subject: formData.subject,
+      dueDate: formData.dueDate,
+      submissions: 0,
+      totalStudents: 31,
+      status: 'active',
+      maxMarks: parseInt(formData.maxMarks, 10) || 20,
+      description: formData.description,
     };
-    setHomework(schoolId, classId, [item, ...list]);
-    setEntities(getEntities(schoolId));
-    setTitle('');
-    setDescription('');
+    setHomework((prev) => [newHw, ...prev]);
+    setFormData({ title: '', description: '', class: 'Class 10-A', subject: 'Mathematics', dueDate: '', maxMarks: '20' });
+    setShowForm(false);
+    showToast('success', 'Assignment created successfully');
   }
 
-  function removeHomework(id: string) {
-    const next = list.filter((h) => h.id !== id);
-    setHomework(schoolId, classId, next);
-    setEntities(getEntities(schoolId));
-  }
+  const inputClass = 'w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] hover:border-slate-300 transition-all';
 
-  function toggleComplete(id: string) {
-    const next: HomeworkType[] = list.map((h) =>
-      h.id === id
-        ? { ...h, status: (h.status === 'Completed' ? 'Pending' : 'Completed') as 'Pending' | 'Completed' }
-        : h
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="w-10 h-10 text-[#824ef2] animate-spin" />
+        <p className="mt-4 text-slate-500">Loading homework...</p>
+      </div>
     );
-    setHomework(schoolId, classId, next);
-    setEntities(getEntities(schoolId));
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <section className="space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
-          Homework Management
-          <Icon3D bgColor="bg-rose-500" size="sm">
-            <BookOpen className="w-3.5 h-3.5" />
-          </Icon3D>
-        </h1>
-        <p className="text-xs sm:text-sm text-gray-600 mt-1">Create and manage homework assignments for your classes</p>
-      </motion.div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+            <FileText className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Homework</h1>
+            <p className="text-sm text-slate-500">Manage assignments and submissions</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowForm(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
+        >
+          <Plus className="w-4 h-4" /> Create Assignment
+        </button>
+      </div>
 
-      {/* Stats Grid */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-3 gap-2 sm:gap-4"
-      >
-        <AnimatedStatCard
-          title="Total"
-          value={total}
-          icon={<BookOpen className="w-5 h-5 text-rose-600" />}
-          iconBgColor="bg-rose-50"
-          delay={0}
-        />
-        <AnimatedStatCard
-          title="Pending"
-          value={pending}
-          icon={<Clock className="w-5 h-5 text-amber-600" />}
-          iconBgColor="bg-amber-50"
-          delay={1}
-        />
-        <AnimatedStatCard
-          title="Completed"
-          value={completed}
-          icon={<CheckCircle2 className="w-5 h-5 text-green-600" />}
-          iconBgColor="bg-green-50"
-          delay={2}
-        />
-      </motion.div>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SchoolStatCard icon={<FileText className="w-5 h-5" />} color="blue" label="Total Assignments" value={stats.total} />
+        <SchoolStatCard icon={<CheckCircle className="w-5 h-5" />} color="green" label="Graded" value={stats.graded} />
+        <SchoolStatCard icon={<Clock className="w-5 h-5" />} color="amber" label="Pending Review" value={stats.pending} />
+        <SchoolStatCard icon={<AlertCircle className="w-5 h-5" />} color="red" label="Overdue" value={stats.overdue} />
+      </div>
 
-      {/* Add Homework Form */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-        <GlassCard className="p-4 sm:p-6 bg-white">
-          <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-            Create New Assignment
-            <Icon3D bgColor="bg-rose-500" size="sm">
-              <BookOpen className="w-3 h-3" />
-            </Icon3D>
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-3 sm:mb-4">
-            <div>
-              <label className="block text-sm text-gray-700 mb-1">Class</label>
-              <select
-                className="border border-gray-300 bg-white text-gray-900 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-rose-400 focus:outline-none"
-                value={classId}
-                onChange={(e) => setClassId(e.target.value)}
-              >
-                {allowedClasses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-slate-200">
+        {([
+          { key: 'all' as const, label: 'All Assignments' },
+          { key: 'submissions' as const, label: 'Submissions' },
+        ]).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              tab === t.key ? 'border-[#824ef2] text-[#824ef2]' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* All Assignments */}
+      {tab === 'all' && (
+        <div className="bg-white rounded-xl border border-slate-200" ref={menuRef}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Title</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Class</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Subject</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Due Date</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Submissions</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Status</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500 w-12"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {homework.map((hw) => (
+                  <tr key={hw.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-5 font-medium text-slate-900">{hw.title}</td>
+                    <td className="py-3 px-5 text-slate-600">{hw.class}</td>
+                    <td className="py-3 px-5 text-slate-600">{hw.subject}</td>
+                    <td className="py-3 px-5 text-slate-600">{new Date(hw.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
+                    <td className="py-3 px-5 text-slate-600">{hw.submissions}/{hw.totalStudents}</td>
+                    <td className="py-3 px-5">
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusColors[hw.status]}`}>
+                        {hw.status.charAt(0).toUpperCase() + hw.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="py-3 px-5">
+                      <div className="relative">
+                        <button
+                          onClick={() => setOpenMenuId(openMenuId === hw.id ? null : hw.id)}
+                          className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                        {openMenuId === hw.id && (
+                          <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 w-36 z-20">
+                            <button onClick={() => { setSelectedHomework(hw); setShowDetailModal(true); setOpenMenuId(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                              <Eye className="w-4 h-4" /> View
+                            </button>
+                            <button onClick={() => { setConfirmModal({ open: true, id: hw.id }); setOpenMenuId(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                              <Trash2 className="w-4 h-4" /> Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Submissions */}
+      {tab === 'submissions' && (
+        <div className="bg-white rounded-xl border border-slate-200">
+          <div className="p-5 border-b border-slate-200">
+            <h2 className="text-lg font-semibold text-slate-900">Submissions — Quadratic Equations Practice Set</h2>
+            <p className="text-sm text-slate-500 mt-1">Class 10-A &bull; Mathematics &bull; Due: Mar 10, 2025</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Student Name</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Submitted Date</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Status</th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                {MOCK_SUBMISSIONS.map((sub) => (
+                  <tr key={sub.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-5 font-medium text-slate-900">{sub.studentName}</td>
+                    <td className="py-3 px-5 text-slate-600">{sub.submittedDate ? new Date(sub.submittedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}</td>
+                    <td className="py-3 px-5">
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${submissionStatusColors[sub.status]}`}>
+                        {sub.status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                      </span>
+                    </td>
+                    <td className="py-3 px-5 text-slate-700 font-medium">{sub.grade || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Create Modal */}
+      <FormModal open={showForm} onClose={() => setShowForm(false)} title="Create New Assignment" size="lg" footer={
+        <>
+          <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+          <button type="submit" form="hw-form" className="px-6 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors">Create</button>
+        </>
+      }>
+        <form id="hw-form" onSubmit={handleCreate} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Title <span className="text-red-500">*</span></label>
+            <input type="text" className={inputClass} value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required placeholder="Assignment title..." />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Class</label>
+              <select className={`${inputClass} cursor-pointer`} value={formData.class} onChange={(e) => setFormData({ ...formData, class: e.target.value })}>
+                {['Class 10-A', 'Class 10-B', 'Class 9-A', 'Class 9-B', 'Class 8-A', 'Class 7-C'].map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-            <div className="relative">
-              <input
-                className="peer border border-gray-300 bg-white text-gray-900 rounded-lg px-3 pt-5 pb-2 text-sm w-full placeholder-transparent focus:ring-2 focus:ring-rose-400 focus:outline-none"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Title"
-              />
-              <label className="absolute left-3 top-2 text-xs text-gray-400 transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-2.5 peer-focus:top-2 peer-focus:text-xs">
-                Title
-              </label>
-            </div>
-            <div className="relative">
-              <input
-                type="date"
-                className="peer border border-gray-300 bg-white text-gray-900 rounded-lg px-3 pt-5 pb-2 text-sm w-full placeholder-transparent focus:ring-2 focus:ring-rose-400 focus:outline-none"
-                value={due}
-                onChange={(e) => setDue(e.target.value)}
-                placeholder="Due"
-              />
-              <label className="absolute left-3 top-2 text-xs text-gray-400">Due Date</label>
-            </div>
-            <div className="sm:col-span-3">
-              <textarea
-                className="border border-gray-300 bg-white text-gray-900 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-rose-400 focus:outline-none"
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Instructions or additional details…"
-              />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Subject</label>
+              <select className={`${inputClass} cursor-pointer`} value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })}>
+                {['Mathematics', 'Physics'].map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
             </div>
           </div>
-          <div className="flex justify-end">
-            <Button onClick={addHomework} disabled={!title.trim()}>
-              Add Homework
-            </Button>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Due Date <span className="text-red-500">*</span></label>
+              <input type="date" className={inputClass} value={formData.dueDate} onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Max Marks</label>
+              <input type="number" className={inputClass} value={formData.maxMarks} onChange={(e) => setFormData({ ...formData, maxMarks: e.target.value })} />
+            </div>
           </div>
-        </GlassCard>
-      </motion.div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
+            <textarea className={`${inputClass} resize-none`} rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Assignment details..." />
+          </div>
+        </form>
+      </FormModal>
 
-      {/* Homework List */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {list.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="col-span-full"
-            >
-              <GlassCard className="py-12 sm:py-16 text-center bg-white">
-                <div className="text-3xl sm:text-4xl mb-3">📚</div>
-                <p className="text-sm sm:text-base text-gray-500">No homework assignments yet for this class.</p>
-              </GlassCard>
-            </motion.div>
-          )}
-          <AnimatePresence>
-            {list.map((h, index) => (
-              <motion.div
-                key={h.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ delay: index * 0.05 }}
-                whileHover={{ y: -4 }}
-              >
-                <GlassCard
-                  className="p-4 sm:p-5 bg-white cursor-pointer h-full flex flex-col"
-                  onClick={() => setView(h)}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="font-medium text-gray-900 flex-1 pr-2">{h.title}</div>
-                    <motion.span
-                      whileHover={{ scale: 1.05 }}
-                      className={`text-xs px-2 py-0.5 rounded whitespace-nowrap flex-shrink-0 ${
-                        h.status === 'Completed'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-rose-100 text-rose-700'
-                      }`}
-                    >
-                      {h.status || 'Pending'}
-                    </motion.span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
-                    <Clock className="w-3 h-3" />
-                    Due: {h.due}
-                  </div>
-                  {h.description && (
-                    <div className="text-sm text-gray-600 mt-2 mb-3 line-clamp-2 flex-1">{h.description}</div>
-                  )}
-                  <div className="mt-auto flex items-center gap-2">
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="flex-1"
-                    >
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleComplete(h.id);
-                        }}
-                        className="w-full text-xs"
-                      >
-                        {h.status === 'Completed' ? 'Pending' : 'Complete'}
-                      </Button>
-                    </motion.div>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm('Delete this homework?')) removeHomework(h.id);
-                      }}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </motion.button>
-                  </div>
-                </GlassCard>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      </motion.div>
-
-      {/* Quick view modal */}
-      <SlideSheet
-        isOpen={!!view}
-        onClose={() => setView(null)}
-        title={view?.title || ''}
-        size="sm"
-        footer={
-          view ? (
-            <div className="flex gap-2 justify-end">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    toggleComplete(view.id);
-                    setView(null);
-                  }}
-                >
-                  {view.status === 'Completed' ? 'Mark Pending' : 'Mark Complete'}
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setView(null)}
-                >
-                  Close
-                </Button>
-              </motion.div>
-            </div>
-          ) : undefined
-        }
-      >
-        {view && (
-          <>
-            <div className="flex items-center gap-4 text-sm mb-4">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                view.status === 'Completed'
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-rose-100 text-rose-700'
-              }`}>
-                {view.status || 'Pending'}
-              </span>
-              <div className="text-gray-600 flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                Due: {view.due}
+      {/* Detail Modal */}
+      <FormModal open={showDetailModal && !!selectedHomework} onClose={() => { setShowDetailModal(false); setSelectedHomework(null); }} title={selectedHomework?.title || ''} size="md" footer={
+        <button onClick={() => { setShowDetailModal(false); setSelectedHomework(null); }} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">Close</button>
+      }>
+        {selectedHomework && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                <p className="text-xs text-slate-500 mb-1">Class</p>
+                <p className="text-sm font-semibold text-slate-900">{selectedHomework.class}</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                <p className="text-xs text-slate-500 mb-1">Subject</p>
+                <p className="text-sm font-semibold text-slate-900">{selectedHomework.subject}</p>
               </div>
             </div>
-            {view.description && (
-              <div className="text-sm text-gray-700 bg-gray-50 p-4 rounded-lg whitespace-pre-wrap border border-gray-200">
-                {view.description}
-              </div>
-            )}
-          </>
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+              <p className="text-sm text-slate-700">{selectedHomework.description}</p>
+            </div>
+            <div className="flex items-center gap-4 text-sm text-slate-500">
+              <span>Due: {new Date(selectedHomework.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+              <span>Max Marks: {selectedHomework.maxMarks}</span>
+              <span>Submissions: {selectedHomework.submissions}/{selectedHomework.totalStudents}</span>
+            </div>
+          </div>
         )}
-      </SlideSheet>
-    </div>
+      </FormModal>
+
+      {/* Confirm Delete */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title="Delete Assignment"
+        message="Are you sure you want to delete this assignment? This action cannot be undone."
+        confirmLabel="Delete"
+        confirmColor="red"
+        onConfirm={() => handleDelete(confirmModal.id)}
+        onCancel={() => setConfirmModal({ open: false, id: '' })}
+      />
+    </section>
   );
 }
