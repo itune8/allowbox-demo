@@ -50,9 +50,7 @@ export const ROUTES = {
 
   // Parent Routes
   PARENT_DASHBOARD: '/parent',
-  PARENT_CHILDREN: '/parent/children',
   PARENT_FEES: '/parent/fees',
-  PARENT_PAYMENTS: '/parent/payments',
 } as const;
 
 // Role to Dashboard Mapping
