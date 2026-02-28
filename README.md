@@ -1,4 +1,4 @@
-# Allowbox Frontend - Turborepo
+ccbcvbcfgh# Allowbox Frontend - Turborepo
 
 **Multi-tenant SaaS platform for school management**
 
