@@ -1,6 +1,6 @@
 ccbcvbcfgh# Allowbox Frontend - Turborepo
 
-**Multi-tenant SaaS platform for school management**
+**Multi-tenant SaaS platform for school management** jn
 
 <!-- Last deployed: 2026-02-08 -->
 
