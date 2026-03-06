@@ -564,8 +564,8 @@ export default function FinancePage() {
                     <td className="px-4 py-3 font-medium text-slate-900">{payment.invoiceId}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-1.5 rounded-lg bg-[#824ef2]/10 flex-shrink-0">
-                          <Building2 className="w-3.5 h-3.5 text-[#824ef2]" />
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ backgroundColor: '#824ef2' }}>
+                          {payment.schoolName.split(/\s+/).map(w => w.charAt(0).toUpperCase()).join('').slice(0, 3)}
                         </div>
                         <div>
                           <p className="font-medium text-slate-900">{payment.schoolName}</p>

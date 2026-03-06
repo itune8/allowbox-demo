@@ -492,7 +492,7 @@ export default function StudentPromotionPage() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50">
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="pl-[68px] pr-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Student
                   </th>
                   <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -1116,14 +1116,8 @@ export default function StudentPromotionPage() {
         </div>
       )}
 
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Academic Year 2023-24</h1>
-          <p className="text-sm text-slate-600 mt-1">
-            Promote students to next academic year
-          </p>
-        </div>
+      {/* Actions */}
+      <div className="flex items-center justify-end">
         <button
           onClick={() => setShowBulkModal(true)}
           className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
@@ -1178,7 +1172,7 @@ export default function StudentPromotionPage() {
             setSelectedSectionFilter(null);
             setPage(1);
           }}
-          className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-colors ${
             viewMode === 'all'
               ? 'bg-[#824ef2] text-white'
               : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
@@ -1191,7 +1185,7 @@ export default function StudentPromotionPage() {
             setViewMode('byClass');
             setPage(1);
           }}
-          className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-colors ${
             viewMode === 'byClass'
               ? 'bg-[#824ef2] text-white'
               : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'

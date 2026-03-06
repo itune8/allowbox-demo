@@ -851,17 +851,6 @@ export default function SchoolGradesPage() {
       )}
 
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
-            <GraduationCap className="w-6 h-6 text-[#824ef2]" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Exams & Results</h1>
-            <p className="text-sm text-slate-600">Manage school examinations and events</p>
-          </div>
-        </div>
-      </div>
 
       {/* Main Tabs: Exams | Events */}
       <div className="border-b border-slate-200">

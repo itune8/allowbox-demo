@@ -173,18 +173,7 @@ export default function SchoolMessagesPage() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-            <MessageSquare className="w-6 h-6 text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Messages</h1>
-            <p className="text-sm text-slate-600">
-              Send announcements and messages to parents, teachers, and students
-            </p>
-          </div>
-        </div>
+      <div className="flex items-center justify-end">
         <button
           onClick={() => setShowFormModal(true)}
           className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors"

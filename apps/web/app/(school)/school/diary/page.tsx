@@ -353,18 +353,7 @@ export default function SchoolDiaryPage() {
   return (
     <section className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-purple-100">
-            <BookMarked className="w-6 h-6 text-[#824ef2]" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Daily Diary</h1>
-            <p className="text-sm text-slate-600 mt-1">
-              Send daily updates and communications to parents
-            </p>
-          </div>
-        </div>
+      <div className="flex items-center justify-end">
         <div className="flex gap-2">
           {activeTab === 'student' && selectedClassId && (
             <button

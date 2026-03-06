@@ -204,8 +204,22 @@ export default function SchoolsPage() {
     return '$0';
   };
 
+  const getSchoolInitials = (name: string) => {
+    return name
+      .split(/\s+/)
+      .map(word => word.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 3);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Schools Management</h1>
+        <p className="text-slate-500 mt-1">View, manage, and monitor all registered schools</p>
+      </div>
+
       {/* Success Banner */}
       {banner && (
         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700 flex items-center gap-2">
@@ -262,7 +276,7 @@ export default function SchoolsPage() {
                     setActiveTab(tab.key);
                     setCurrentPage(1);
                   }}
-                  className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
+                  className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
                     activeTab === tab.key
                       ? 'text-white'
                       : 'text-slate-600 hover:bg-slate-100'
@@ -330,10 +344,7 @@ export default function SchoolsPage() {
                 <tr>
                   <td colSpan={7} className="px-5 py-12 text-center">
                     <div className="flex flex-col items-center gap-3">
-                      <div
-                        className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin"
-                        style={{ borderColor: '#824ef2', borderTopColor: 'transparent' }}
-                      />
+                      <div className="w-8 h-8 border-2 border-[#824ef2] border-t-transparent rounded-full animate-spin" />
                       <span className="text-slate-500">Loading schools...</span>
                     </div>
                   </td>
@@ -358,8 +369,8 @@ export default function SchoolsPage() {
                     >
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="p-1.5 rounded-lg" style={{ backgroundColor: '#824ef2' + '1a' }}>
-                            <Building2 className="w-4 h-4" style={{ color: '#824ef2' }} />
+                          <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#824ef2' }}>
+                            {getSchoolInitials(school.schoolName)}
                           </div>
                           <div>
                             <p className="font-semibold text-slate-900">{school.schoolName}</p>
@@ -373,9 +384,11 @@ export default function SchoolsPage() {
                         {getLocation(school)}
                       </td>
                       <td className="px-5 py-3.5">
-                        <div>
+                        <div className="flex flex-col items-start">
                           <StatusBadge value={school.subscriptionPlan} type="plan" />
-                          <p className="text-xs text-slate-400 mt-0.5">{getPlanPrice(school.subscriptionPlan)}</p>
+                          {school.subscriptionPlan !== 'free' && (
+                            <p className="text-xs text-slate-400 mt-0.5">{getPlanPrice(school.subscriptionPlan)}</p>
+                          )}
                         </div>
                       </td>
                       <td className="px-5 py-3.5">

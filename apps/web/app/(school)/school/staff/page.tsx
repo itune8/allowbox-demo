@@ -478,12 +478,12 @@ export default function StaffPage() {
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Teacher</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Employee ID</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Type</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Department</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                    <th className="pl-[64px] pr-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-[22%]">Teacher</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-[16%]">Employee ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-[14%]">Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-[16%]">Department</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-[14%]">Status</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider w-[18%]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -545,7 +545,7 @@ export default function StaffPage() {
                         <td className="px-4 py-3 text-slate-600 font-mono text-xs">
                           {member.employeeId || '—'}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-left">
                           <SchoolStatusBadge
                             value={member.role === 'teacher' ? 'class_teacher' : member.role === 'tenant_admin' ? 'approved' : 'active'}
                             showDot={false}
@@ -554,7 +554,7 @@ export default function StaffPage() {
                         <td className="px-4 py-3 text-slate-600 text-sm">
                           {member.qualification || '—'}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-left">
                           <SchoolStatusBadge value={member.isActive !== false ? 'active' : 'inactive'} />
                         </td>
                         <td className="px-4 py-3 text-right">

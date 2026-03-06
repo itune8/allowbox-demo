@@ -12,7 +12,7 @@ import {
   Download,
   BarChart3,
   Check,
-  MoreVertical,
+  Eye,
   ChevronDown,
   Filter,
 } from 'lucide-react';
@@ -128,7 +128,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#824ef2] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -148,6 +148,14 @@ export default function DashboardPage() {
     const totalUsers = (school.studentCount || 0) + (school.teacherCount || 0);
     const monthly = Math.round(pricePerUser * totalUsers);
     return `$${monthly.toLocaleString()}/mo`;
+  };
+
+  const getSchoolInitials = (name: string) => {
+    return name
+      .split(/\s+/)
+      .map(word => word.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 3);
   };
 
   const getTimeAgo = (dateStr?: string) => {
@@ -203,9 +211,11 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Quick Actions - Left Panel */}
         <div className="lg:col-span-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-5 h-full">
-            <h2 className="text-lg font-semibold text-slate-900 mb-5">Quick Actions</h2>
-            <div className="space-y-3">
+          <div className="bg-white rounded-xl border border-slate-200 h-full">
+            <div className="px-5 py-4 border-b border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-900">Quick Actions</h2>
+            </div>
+            <div className="p-5 space-y-3">
               <button
                 onClick={() => router.push('/platform/schools')}
                 className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
@@ -273,8 +283,8 @@ export default function DashboardPage() {
                       className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="p-2 rounded-lg bg-purple-100 flex-shrink-0">
-                          <Building2 className="w-5 h-5 text-purple-600" />
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ backgroundColor: '#824ef2' }}>
+                          {getSchoolInitials(school.schoolName)}
                         </div>
                         <div className="min-w-0">
                           <p className="font-medium text-slate-900 truncate">{school.schoolName}</p>
@@ -381,8 +391,8 @@ export default function DashboardPage() {
                   <tr key={school._id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="p-1.5 rounded-lg bg-purple-50">
-                          <Building2 className="w-4 h-4 text-purple-600" />
+                        <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#824ef2' }}>
+                          {getSchoolInitials(school.schoolName)}
                         </div>
                         <div>
                           <span className="font-medium text-slate-900 block">{school.schoolName}</span>
@@ -405,9 +415,11 @@ export default function DashboardPage() {
                     <td className="px-5 py-3.5">
                       <button
                         onClick={() => handleViewDetails(school)}
-                        className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-lg transition-colors"
+                        style={{ backgroundColor: '#824ef2' }}
                       >
-                        <MoreVertical className="w-4 h-4" />
+                        <Eye className="w-3.5 h-3.5" />
+                        View
                       </button>
                     </td>
                   </tr>

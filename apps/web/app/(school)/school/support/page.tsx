@@ -82,7 +82,7 @@ export default function SchoolSupportPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-10 h-10 text-slate-400 animate-spin" />
+        <Loader2 className="w-10 h-10 text-[#824ef2] animate-spin" />
       </div>
     );
   }
@@ -90,18 +90,6 @@ export default function SchoolSupportPage() {
   return (
     <section className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-[#824ef2] rounded-xl flex items-center justify-center text-white">
-            <HelpCircle className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Support Tickets</h1>
-            <p className="text-sm text-slate-600">View and track support tickets from your school</p>
-          </div>
-        </div>
-      </div>
-
       {/* Error Banner */}
       {error && (
         <div className="bg-white rounded-xl border border-red-200 px-4 py-3 flex items-center justify-between">

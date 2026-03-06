@@ -269,12 +269,8 @@ export default function SubjectsPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Subjects</h1>
-          <p className="mt-1 text-sm text-slate-500">Manage school subjects and curriculum</p>
-        </div>
+      {/* Actions */}
+      <div className="flex items-center justify-end gap-3">
         <div className="flex items-center gap-3">
           <button className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
             <Download className="w-4 h-4" />
@@ -322,7 +318,7 @@ export default function SubjectsPage() {
       <div className="bg-white rounded-xl border border-slate-200 p-4">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm text-slate-600">Category:</span>
+            <span className="text-sm text-slate-600 w-[70px] flex-shrink-0">Category:</span>
             <div className="flex flex-wrap gap-2">
               {[
                 { value: '', label: 'All' },
@@ -348,7 +344,7 @@ export default function SubjectsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm text-slate-600">Status:</span>
+            <span className="text-sm text-slate-600 w-[70px] flex-shrink-0">Status:</span>
             <div className="flex flex-wrap gap-2">
               {[
                 { value: '', label: 'All' },
@@ -379,7 +375,7 @@ export default function SubjectsPage() {
           <table className="min-w-full text-sm hidden md:table">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Subject</th>
+                <th className="pl-[64px] pr-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Subject</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Code</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Category</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Credits</th>

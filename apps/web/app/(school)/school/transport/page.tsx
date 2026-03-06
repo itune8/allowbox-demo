@@ -690,18 +690,6 @@ export default function SchoolTransportPage() {
   return (
     <section className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-slate-100">
-            <Bus className="w-6 h-6 text-slate-700" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Transport Management</h1>
-            <p className="text-sm text-slate-600 mt-1">Manage vehicles, routes, and student transportation</p>
-          </div>
-        </div>
-      </div>
-
       {/* Error banner */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">

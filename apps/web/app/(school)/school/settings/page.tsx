@@ -164,17 +164,6 @@ export default function SettingsPage() {
 
   return (
     <section className="space-y-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
-          <Settings className="w-6 h-6 text-slate-600" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">School Settings</h1>
-          <p className="text-sm text-slate-500">Manage your school profile, preferences, and security</p>
-        </div>
-      </div>
-
       {/* ─── Section 1: School Profile ─── */}
       <div className="bg-white rounded-xl border border-slate-200 p-6">
         <div className="flex items-start justify-between mb-6">

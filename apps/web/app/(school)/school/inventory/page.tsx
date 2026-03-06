@@ -412,16 +412,7 @@ export default function SchoolInventoryPage() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
-            <Package className="w-6 h-6 text-slate-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Inventory Management</h1>
-            <p className="text-sm text-slate-500">Track school assets, supplies, and library books</p>
-          </div>
-        </div>
+      <div className="flex items-center justify-end">
         <button
           onClick={() => {
             if (activeTab === 'items') {

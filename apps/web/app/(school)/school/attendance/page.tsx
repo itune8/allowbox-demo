@@ -68,16 +68,6 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-2">
-            Attendance Management
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">Mark and track student attendance for all classes</p>
-        </div>
-      </div>
-
       {/* Main Card */}
       <div className="bg-white rounded-xl border border-slate-200 p-6">
         {/* Controls */}

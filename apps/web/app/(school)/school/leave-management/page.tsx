@@ -425,17 +425,6 @@ export default function LeaveManagementPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-xl bg-[#824ef2] flex items-center justify-center flex-shrink-0">
-          <CalendarCheck className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Leave Management</h1>
-          <p className="text-sm text-slate-500">Review and manage staff leave requests</p>
-        </div>
-      </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <SchoolStatCard
@@ -697,7 +686,7 @@ export default function LeaveManagementPage() {
                       <th className="text-left px-4 py-4 text-xs font-semibold text-slate-600 uppercase">Days</th>
                       <th className="text-left px-4 py-4 text-xs font-semibold text-slate-600 uppercase">Status</th>
                       <th className="text-left px-4 py-4 text-xs font-semibold text-slate-600 uppercase">Applied On</th>
-                      <th className="text-left px-4 py-4 text-xs font-semibold text-slate-600 uppercase">Actions</th>
+                      <th className="text-right px-4 py-4 text-xs font-semibold text-slate-600 uppercase">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -739,7 +728,7 @@ export default function LeaveManagementPage() {
                         <td className="px-4 py-4 text-sm text-slate-500">
                           {new Date(request.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-4 text-right">
                           <button
                             onClick={(e) => { e.stopPropagation(); handleOpenDetails(request); }}
                             className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"

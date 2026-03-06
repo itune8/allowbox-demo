@@ -618,16 +618,7 @@ export default function AssignmentsOverviewPage() {
 
 function PageHeader() {
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
-          <FileText className="w-6 h-6 text-[#824ef2]" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Assignments Overview</h1>
-          <p className="text-sm text-slate-500">Track assignment completion across all classes</p>
-        </div>
-      </div>
+    <div className="flex items-center justify-end gap-3">
       <div className="flex items-center gap-3">
         <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
           <Download className="w-4 h-4" />

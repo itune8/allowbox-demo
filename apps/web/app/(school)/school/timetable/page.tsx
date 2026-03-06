@@ -354,19 +354,6 @@ export default function TimetablePage() {
   if (view === 'classes') {
     return (
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#824ef2]/10">
-              <Calendar className="h-6 w-6 text-[#824ef2]" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Timetable</h1>
-              <p className="text-sm text-slate-600">Manage class schedules and periods</p>
-            </div>
-          </div>
-        </div>
-
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <SchoolStatCard icon={<Calendar className="w-5 h-5" />} color="purple" label="Total Classes" value={classes.length} />

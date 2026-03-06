@@ -436,16 +436,7 @@ export default function SchoolEventsPage() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
-            <Calendar className="w-6 h-6 text-[#824ef2]" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Events</h1>
-            <p className="text-sm text-slate-500">Manage school events and activities</p>
-          </div>
-        </div>
+      <div className="flex items-center justify-end">
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"

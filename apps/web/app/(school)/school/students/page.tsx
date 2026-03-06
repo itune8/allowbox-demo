@@ -133,7 +133,7 @@ export default function StudentsPage() {
       const sections = cls.sections || ['A'];
       return {
         id: cls._id || '',
-        name: cls.name || `Grade ${cls.grade}`,
+        name: cls.name || `Class ${cls.grade}`,
         sections: typeof sections[0] === 'string' ? sections as string[] : (sections as any[]).map((s: any) => s.name || s),
         studentCount: classStudents.length,
         cls,
@@ -529,7 +529,7 @@ export default function StudentsPage() {
                     paginatedStudents.map((student) => (
                       <tr key={student.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-3">
-                          <button onClick={() => setShowDetailsModal(student)} className="text-[#824ef2] font-medium hover:underline text-sm">
+                          <button onClick={() => setShowDetailsModal(student)} className="text-slate-900 font-medium hover:underline text-sm">
                             {student.studentId || '—'}
                           </button>
                         </td>
@@ -723,7 +723,7 @@ export default function StudentsPage() {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Class</label>
                 <select value={formData.classId} onChange={(e) => setFormData({ ...formData, classId: e.target.value })} className={inputClass}>
                   <option value="">Select class</option>
-                  {classes.map(cls => <option key={cls._id} value={cls._id}>{cls.name} (Grade {cls.grade})</option>)}
+                  {classes.map(cls => <option key={cls._id} value={cls._id}>{cls.name} (Class {cls.grade})</option>)}
                 </select>
               </div>
               <div>

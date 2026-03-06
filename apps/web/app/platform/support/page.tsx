@@ -508,7 +508,7 @@ export default function SupportPage() {
               <button
                 key={tab.key}
                 onClick={() => setStatusFilter(tab.key)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                   statusFilter === tab.key
                     ? 'text-white'
                     : 'text-slate-600 bg-slate-100 hover:bg-slate-200'
@@ -516,7 +516,7 @@ export default function SupportPage() {
                 style={statusFilter === tab.key ? { backgroundColor: '#824ef2' } : undefined}
               >
                 {tab.label}
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                <span className={`text-xs px-1.5 py-0.5 rounded-md ${
                   statusFilter === tab.key
                     ? 'bg-white/20 text-white'
                     : 'bg-slate-200 text-slate-500'

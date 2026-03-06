@@ -324,7 +324,7 @@ export default function UsersPage() {
             <button
               key={tab.key}
               onClick={() => setFilterRole(tab.key)}
-              className={`px-4 py-1.5 text-sm font-medium rounded-full border transition-colors ${
+              className={`px-4 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
                 filterRole === tab.key
                   ? 'text-white border-transparent'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -393,17 +393,19 @@ export default function UsersPage() {
                     </button>
                     {openMenuId === (user._id || user.id) && (
                       <div className="absolute right-0 top-8 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-10 py-1">
-                        <button
-                          onClick={() => {
-                            setOpenMenuId(null);
-                            setSelectedUser(user);
-                            setShowDetailsModal(true);
-                          }}
-                          className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                        >
-                          <BarChart3 className="w-3.5 h-3.5" />
-                          View Details
-                        </button>
+                        {!isFinance && (
+                          <button
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              setSelectedUser(user);
+                              setShowDetailsModal(true);
+                            }}
+                            className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                          >
+                            <BarChart3 className="w-3.5 h-3.5" />
+                            View Details
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setOpenMenuId(null);
@@ -565,8 +567,8 @@ export default function UsersPage() {
                   </>
                 )}
 
-                {/* View Details link for Sales */}
-                {isSales && (
+                {/* View Details link for Sales & Support */}
+                {(isSales || isSupport) && (
                   <div className="mt-3 pt-3 border-t border-slate-100 text-center">
                     <button
                       onClick={() => {

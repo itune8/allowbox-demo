@@ -171,7 +171,22 @@ function IncidentTrendsChart({ records }: { records: HealthRecord[] }) {
     y: padY + plotH - (v / max) * plotH,
   }));
 
-  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+  // Build smooth cubic bezier path
+  const buildSmoothPath = (pts: typeof points) => {
+    if (pts.length < 2) return '';
+    let path = `M${pts[0]!.x.toFixed(1)},${pts[0]!.y.toFixed(1)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const curr = pts[i]!;
+      const next = pts[i + 1]!;
+      const tension = 0.3;
+      const dx = next.x - curr.x;
+      const cp1x = curr.x + dx * tension;
+      const cp2x = next.x - dx * tension;
+      path += ` C${cp1x.toFixed(1)},${curr.y.toFixed(1)} ${cp2x.toFixed(1)},${next.y.toFixed(1)} ${next.x.toFixed(1)},${next.y.toFixed(1)}`;
+    }
+    return path;
+  };
+  const linePath = buildSmoothPath(points);
   const lastPt = points[points.length - 1] ?? { x: padX + plotW, y: padY + plotH };
   const firstPt = points[0] ?? { x: padX, y: padY + plotH };
   const areaPath = `${linePath} L${lastPt.x},${padY + plotH} L${firstPt.x},${padY + plotH} Z`;
@@ -584,15 +599,8 @@ export default function SchoolHealthPage() {
 
   return (
     <section className="space-y-6">
-      {/* ============= HEADER ============= */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Health Records</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Manage student health incidents, checkups, and medical history.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
+      {/* ============= ACTIONS ============= */}
+      <div className="flex items-center justify-end gap-2 flex-wrap">
           <button
             onClick={() => showToast('info', 'Report export started')}
             className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
@@ -611,7 +619,6 @@ export default function SchoolHealthPage() {
           >
             <Plus className="w-4 h-4" /> Log Incident
           </button>
-        </div>
       </div>
 
       {/* ============= TABS ============= */}
