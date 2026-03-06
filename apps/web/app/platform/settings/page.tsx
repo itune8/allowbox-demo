@@ -517,10 +517,10 @@ export default function SettingsPage() {
       </div>
 
       {/* Main Layout: Sidebar + Content */}
-      <div className="flex gap-6">
+      <div className="flex gap-6 items-start">
         {/* Left Sidebar Navigation */}
-        <div className="w-56 flex-shrink-0 hidden lg:block">
-          <div className="sticky top-6 bg-white rounded-xl border border-slate-200 p-2 space-y-0.5">
+        <div className="w-56 flex-shrink-0 hidden lg:block sticky top-20 self-start">
+          <div className="bg-white rounded-xl border border-slate-200 p-2 space-y-0.5">
             {sidebarItems.map((item) => (
               <button
                 key={item.key}

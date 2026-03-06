@@ -20,25 +20,25 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
-const DAYS: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+const DEFAULT_DAYS: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 const DAY_LABELS: Record<string, string> = {
   monday: 'Monday',
   tuesday: 'Tuesday',
   wednesday: 'Wednesday',
   thursday: 'Thursday',
   friday: 'Friday',
+  saturday: 'Saturday',
 };
-const PERIODS = Array.from({ length: 8 }, (_, i) => i + 1);
-const DEFAULT_TIMES: Record<number, { start: string; end: string }> = {
-  1: { start: '08:00', end: '08:45' },
-  2: { start: '08:50', end: '09:35' },
-  3: { start: '09:40', end: '10:25' },
-  4: { start: '10:40', end: '11:25' },
-  5: { start: '11:30', end: '12:15' },
-  6: { start: '13:00', end: '13:45' },
-  7: { start: '13:50', end: '14:35' },
-  8: { start: '14:40', end: '15:25' },
-};
+const INITIAL_PERIODS = [
+  { id: 1, start: '08:00', end: '08:45' },
+  { id: 2, start: '08:50', end: '09:35' },
+  { id: 3, start: '09:40', end: '10:25' },
+  { id: 4, start: '10:40', end: '11:25' },
+  { id: 5, start: '11:30', end: '12:15' },
+  { id: 6, start: '13:00', end: '13:45' },
+  { id: 7, start: '13:50', end: '14:35' },
+  { id: 8, start: '14:40', end: '15:25' },
+];
 
 const slotColors = [
   { bg: 'bg-blue-50', border: 'border-blue-200', hover: 'hover:bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
@@ -93,6 +93,14 @@ export default function TimetablePage() {
   const [formStartTime, setFormStartTime] = useState('08:00');
   const [formEndTime, setFormEndTime] = useState('08:45');
   const [saving, setSaving] = useState(false);
+
+  // Periods & days management
+  const [periods, setPeriods] = useState(INITIAL_PERIODS);
+  const [days, setDays] = useState<DayOfWeek[]>(DEFAULT_DAYS);
+  const hasSaturday = days.includes('saturday');
+  const [editingPeriod, setEditingPeriod] = useState<number | null>(null);
+  const [editPeriodStart, setEditPeriodStart] = useState('');
+  const [editPeriodEnd, setEditPeriodEnd] = useState('');
 
   // Subject color map
   const subjectColorMap = useMemo(() => {
@@ -219,7 +227,8 @@ export default function TimetablePage() {
       setFormSubject(subjects[0]?._id || '');
       setFormTeacher('');
       setFormRoom('');
-      const times = DEFAULT_TIMES[period] || { start: '08:00', end: '08:45' };
+      const pData = periods.find(p => p.id === period);
+      const times = pData ? { start: pData.start, end: pData.end } : { start: '08:00', end: '08:45' };
       setFormStartTime(times.start);
       setFormEndTime(times.end);
       setShowAddModal(true);
@@ -384,11 +393,10 @@ export default function TimetablePage() {
                   onClick={() => handleClassClick(cls)}
                   className="bg-white rounded-xl border border-slate-200 hover:border-[#824ef2]/40 hover:shadow-md transition-all text-left group"
                 >
-                  <div className={`h-2 rounded-t-xl ${color}`} />
                   <div className="p-5">
                     <div className="flex items-start justify-between mb-3">
-                      <div className={`w-10 h-10 rounded-lg ${color} bg-opacity-10 flex items-center justify-center`}>
-                        <BookOpen className="w-5 h-5 text-white" />
+                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                        <BookOpen className="w-5 h-5 text-slate-600" />
                       </div>
                       <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-[#824ef2] transition-colors" />
                     </div>
@@ -502,39 +510,115 @@ export default function TimetablePage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-slate-200 w-36">
                     Period
                   </th>
-                  {DAYS.map(day => (
+                  {days.map(day => (
                     <th
                       key={day}
-                      className={`px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider border-r border-slate-200 last:border-r-0 ${
-                        day === todayName
-                          ? 'text-[#824ef2] bg-[#824ef2]/5'
-                          : 'text-slate-500'
-                      }`}
+                      className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider border-r border-slate-200 text-slate-500"
                     >
                       <div className="flex items-center justify-center gap-2">
                         {DAY_LABELS[day]}
-                        {day === todayName && (
-                          <span className="text-[10px] bg-[#824ef2] text-white px-1.5 py-0.5 rounded-full font-medium normal-case">
-                            Today
-                          </span>
+                        {day === 'saturday' && (
+                          <button
+                            onClick={() => setDays(DEFAULT_DAYS)}
+                            className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors"
+                            title="Remove Saturday"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
                         )}
                       </div>
                     </th>
                   ))}
+                  {!hasSaturday && (
+                    <th className="px-2 py-3 text-center w-12">
+                      <button
+                        onClick={() => setDays([...DEFAULT_DAYS, 'saturday'])}
+                        className="p-1.5 rounded-lg hover:bg-[#824ef2]/10 text-slate-400 hover:text-[#824ef2] transition-colors"
+                        title="Add Saturday"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {PERIODS.map(period => {
-                  const times = DEFAULT_TIMES[period];
+                {periods.map(pData => {
+                  const period = pData.id;
+                  const isEditing = editingPeriod === period;
                   return (
-                    <tr key={period} className="hover:bg-slate-50/50">
+                    <tr key={period} className="hover:bg-slate-50/50 group/row">
                       <td className="px-4 py-3 border-r border-slate-200 bg-slate-50/80">
-                        <div className="text-sm font-semibold text-slate-900">Period {period}</div>
-                        {times && (
-                          <div className="text-xs text-slate-500 mt-0.5">{times.start} - {times.end}</div>
+                        {isEditing ? (
+                          <div className="space-y-1.5">
+                            <div className="text-sm font-semibold text-slate-900">Period {period}</div>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="time"
+                                value={editPeriodStart}
+                                onChange={(e) => setEditPeriodStart(e.target.value)}
+                                className="w-[90px] text-xs border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-[#824ef2]"
+                              />
+                              <span className="text-xs text-slate-400">-</span>
+                              <input
+                                type="time"
+                                value={editPeriodEnd}
+                                onChange={(e) => setEditPeriodEnd(e.target.value)}
+                                className="w-[90px] text-xs border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-[#824ef2]"
+                              />
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => {
+                                  setPeriods(prev => prev.map(p => p.id === period ? { ...p, start: editPeriodStart, end: editPeriodEnd } : p));
+                                  setEditingPeriod(null);
+                                }}
+                                className="text-[10px] px-2 py-0.5 bg-[#824ef2] text-white rounded hover:bg-[#6b3fd4] transition-colors"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingPeriod(null)}
+                                className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded hover:bg-slate-200 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-sm font-semibold text-slate-900">Period {period}</div>
+                              <div className="text-xs text-slate-500 mt-0.5">{pData.start} - {pData.end}</div>
+                            </div>
+                            <div className="flex gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingPeriod(period);
+                                  setEditPeriodStart(pData.start);
+                                  setEditPeriodEnd(pData.end);
+                                }}
+                                className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+                                title="Edit period time"
+                              >
+                                <Edit3 className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPeriods(prev => prev.filter(p => p.id !== period));
+                                }}
+                                className="p-1 rounded hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors"
+                                title="Delete period"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </td>
-                      {DAYS.map(day => {
+                      {days.map(day => {
                         const slot = getTimetableSlot(day, period);
                         const colors = slot ? subjectColorMap[slot.subjectId] : null;
 
@@ -542,7 +626,7 @@ export default function TimetablePage() {
                           <td
                             key={`${day}-${period}`}
                             className={`px-2 py-2 border-r border-slate-200 last:border-r-0 cursor-pointer transition-all ${
-                              day === todayName ? 'bg-[#824ef2]/[0.02]' : ''
+                              ''
                             }`}
                             onClick={() => handleCellClick(day, period)}
                           >
@@ -588,9 +672,32 @@ export default function TimetablePage() {
                           </td>
                         );
                       })}
+                      {!hasSaturday && <td className="w-12" />}
                     </tr>
                   );
                 })}
+                <tr>
+                  <td colSpan={days.length + 1 + (hasSaturday ? 0 : 1)} className="px-4 py-3">
+                    <button
+                      onClick={() => {
+                        const lastPeriod = periods[periods.length - 1];
+                        const newId = lastPeriod ? lastPeriod.id + 1 : 1;
+                        // Auto-calculate next time: 5 min after last period ends
+                        const lastEnd = lastPeriod?.end || '08:00';
+                        const parts = lastEnd.split(':').map(Number);
+                        const h = parts[0] ?? 8, m = parts[1] ?? 0;
+                        const startMin = (h * 60 + m + 10) % (24 * 60);
+                        const endMin = startMin + 45;
+                        const fmt = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+                        setPeriods(prev => [...prev, { id: newId, start: fmt(startMin), end: fmt(endMin) }]);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-[#824ef2] hover:bg-[#824ef2]/5 rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Period
+                    </button>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -659,7 +766,7 @@ export default function TimetablePage() {
                 onChange={e => setFormDay(e.target.value as DayOfWeek)}
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] outline-none"
               >
-                {DAYS.map(d => (
+                {days.map(d => (
                   <option key={d} value={d}>{DAY_LABELS[d]}</option>
                 ))}
               </select>
@@ -671,16 +778,16 @@ export default function TimetablePage() {
                 onChange={e => {
                   const p = Number(e.target.value);
                   setFormPeriod(p);
-                  const times = DEFAULT_TIMES[p];
-                  if (times) {
-                    setFormStartTime(times.start);
-                    setFormEndTime(times.end);
+                  const pData = periods.find(pd => pd.id === p);
+                  if (pData) {
+                    setFormStartTime(pData.start);
+                    setFormEndTime(pData.end);
                   }
                 }}
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] outline-none"
               >
-                {PERIODS.map(p => (
-                  <option key={p} value={p}>Period {p}</option>
+                {periods.map(p => (
+                  <option key={p.id} value={p.id}>Period {p.id}</option>
                 ))}
               </select>
             </div>

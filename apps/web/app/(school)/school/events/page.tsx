@@ -483,7 +483,7 @@ export default function SchoolEventsPage() {
                 <button
                   key={btn.key}
                   onClick={() => setScopeFilter(btn.key)}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors border ${
+                  className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors border ${
                     scopeFilter === btn.key
                       ? 'bg-[#824ef2] text-white border-[#824ef2]'
                       : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'

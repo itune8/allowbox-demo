@@ -27,6 +27,7 @@ import {
   Search,
   Download,
   ChevronRight,
+  ArrowLeft,
   Eye,
   Loader2,
   AlertCircle,
@@ -155,9 +156,8 @@ export default function FeesPage() {
 
   // ── Drill-down state (for Fees & Invoice tab) ──
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-  const [showSectionsModal, setShowSectionsModal] = useState(false);
+  const [feeView, setFeeView] = useState<'main' | 'sections' | 'students'>('main');
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
-  const [showStudentsModal, setShowStudentsModal] = useState(false);
   const [selectedStudentInvoice, setSelectedStudentInvoice] = useState<Invoice | null>(null);
   const [showPaymentHistoryModal, setShowPaymentHistoryModal] = useState(false);
   const [classStudents, setClassStudents] = useState<Student[]>([]);
@@ -258,12 +258,23 @@ export default function FeesPage() {
     setSelectedClassId(classId);
     setSelectedSection(null);
     loadClassStudents(classId);
-    setShowSectionsModal(true);
+    setFeeView('sections');
   }
 
   function handleSectionClick(section: string | null) {
     setSelectedSection(section);
-    setShowStudentsModal(true);
+    setFeeView('students');
+  }
+
+  function goBackToFeeMain() {
+    setFeeView('main');
+    setSelectedClassId(null);
+    setSelectedSection(null);
+  }
+
+  function goBackToFeeSections() {
+    setFeeView('sections');
+    setSelectedSection(null);
   }
 
   function handleViewPaymentHistory(invoice: Invoice) {
@@ -350,7 +361,7 @@ export default function FeesPage() {
   // ──────────────────────────────────────────
   function handleAddStructure() {
     setEditingStructure(null);
-    setStructureForm(defaultFeeStructureForm);
+    setStructureForm({ ...defaultFeeStructureForm, classId: setupSelectedClassId, category: 'fixed' });
     setShowStructureForm(true);
   }
 
@@ -369,12 +380,12 @@ export default function FeesPage() {
       frequency: structure.frequency || 'monthly',
       category: structure.isRecurring ? 'optional' : 'fixed',
     });
-    setShowStructureForm(true);
+    setShowStructureForm(false);
   }
 
   async function handleStructureSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!structureForm.name.trim() || !structureForm.amount || !structureForm.classId) {
+    if (!structureForm.name.trim() || !structureForm.amount) {
       showToast('error', 'Please fill in required fields');
       return;
     }
@@ -383,8 +394,8 @@ export default function FeesPage() {
       const data: CreateFeeStructureDto = {
         name: structureForm.name,
         amount: parseFloat(structureForm.amount),
-        classId: structureForm.classId,
-        academicYear: structureForm.academicYear,
+        classId: structureForm.classId || setupSelectedClassId,
+        academicYear: structureForm.academicYear || new Date().getFullYear().toString(),
         term: structureForm.term || undefined,
         description: structureForm.description || undefined,
         isActive: structureForm.isActive,
@@ -658,7 +669,7 @@ export default function FeesPage() {
       {/* ════════════════════════════════════════ */}
       {/* TAB 1: Fees & Invoice                   */}
       {/* ════════════════════════════════════════ */}
-      {activeTab === 'invoices' && (
+      {activeTab === 'invoices' && feeView === 'main' && (
         <>
           {/* Search & Filter Bar */}
           <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
@@ -777,6 +788,131 @@ export default function FeesPage() {
       )}
 
       {/* ════════════════════════════════════════ */}
+      {/* INLINE: Sections View (Level 2)          */}
+      {/* ════════════════════════════════════════ */}
+      {activeTab === 'invoices' && feeView === 'sections' && selectedClassData && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 text-sm text-slate-500">
+            <button onClick={goBackToFeeMain} className="hover:text-[#824ef2] transition-colors">Fees & Invoice</button>
+            <ChevronRight className="w-4 h-4" />
+            <span className="text-slate-900 font-medium">{selectedClassData.name}</span>
+          </div>
+          <button
+            onClick={goBackToFeeMain}
+            className="text-sm text-[#824ef2] hover:underline flex items-center gap-1"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Classes
+          </button>
+
+          <h2 className="text-lg font-semibold text-slate-900">{selectedClassData.name} - Sections</h2>
+          <p className="text-sm text-slate-500">Select a section to view student-level fee details.</p>
+
+          {/* All Sections card */}
+          <div
+            onClick={() => handleSectionClick(null)}
+            className="bg-white rounded-xl border border-slate-200 hover:border-[#824ef2] p-5 cursor-pointer transition-all hover:shadow-md"
+          >
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-12 h-12 rounded-full bg-[#824ef2]/10 flex items-center justify-center">
+                <Users className="w-6 h-6 text-[#824ef2]" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-slate-900">All Sections</h4>
+                <p className="text-xs text-slate-500">{selectedClassInvoices.length} students total</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div>
+                <p className="text-xs text-slate-400">Total</p>
+                <p className="font-semibold text-slate-900">${selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Collected</p>
+                <p className="font-semibold text-emerald-600">${selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Pending</p>
+                <p className="font-semibold text-orange-600">
+                  ${(selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0) - selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0)).toLocaleString()}
+                </p>
+              </div>
+            </div>
+            {(() => {
+              const total = selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0);
+              const collected = selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0);
+              const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
+              return (
+                <div className="flex items-center gap-2 mt-3">
+                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden flex-1">
+                    <div className="h-full bg-[#824ef2] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="text-xs font-semibold text-[#824ef2]">{pct}%</span>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Section cards grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {selectedClassData.sections.map((section, idx) => {
+              const color = sectionBadgeColors[idx % sectionBadgeColors.length]!;
+              return (
+                <div
+                  key={section}
+                  onClick={() => handleSectionClick(section)}
+                  className="bg-white rounded-xl border border-slate-200 hover:border-[#824ef2] p-5 cursor-pointer transition-all hover:shadow-md"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-10 h-10 rounded-full ${color.bg} flex items-center justify-center ring-2 ${color.ring}`}>
+                      <span className={`text-base font-bold ${color.text}`}>{section}</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900">Section {section}</h4>
+                      <p className="text-xs text-slate-500">{selectedClassInvoices.length} students</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <p className="text-slate-400">Total</p>
+                      <p className="font-semibold text-slate-900">
+                        ${selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0).toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">Collected</p>
+                      <p className="font-semibold text-emerald-600">
+                        ${selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0).toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">Pending</p>
+                      <p className="font-semibold text-orange-600">
+                        ${(selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0) - selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0)).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  {(() => {
+                    const total = selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0);
+                    const collected = selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0);
+                    const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
+                    return (
+                      <div className="flex items-center gap-2 mt-3">
+                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden flex-1">
+                          <div className="h-full bg-[#824ef2] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-xs font-semibold text-[#824ef2]">{pct}%</span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════ */}
       {/* TAB 2: Setup Fees                       */}
       {/* ════════════════════════════════════════ */}
       {activeTab === 'setup' && (
@@ -861,49 +997,118 @@ export default function FeesPage() {
                   <div className="p-6 text-center text-sm text-slate-400">No fixed fees defined yet.</div>
                 ) : (
                   fixedFees.map(fee => (
-                    <div key={fee._id} className="flex items-center gap-4 px-5 py-3.5 group hover:bg-slate-50 transition-colors">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900">{fee.name}</p>
-                        {fee.description && <p className="text-xs text-slate-400 mt-0.5">{fee.description}</p>}
+                    editingStructure?._id === fee._id ? (
+                      <form key={fee._id} onSubmit={handleStructureSubmit} className="px-5 py-3 space-y-3 bg-slate-50">
+                        <div className="grid grid-cols-3 gap-3">
+                          <input type="text" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]" value={structureForm.name} onChange={e => setStructureForm({ ...structureForm, name: e.target.value })} placeholder="Fee Name *" required />
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
+                            <input type="number" className="w-full border border-slate-200 rounded-lg pl-7 pr-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]" value={structureForm.amount} onChange={e => setStructureForm({ ...structureForm, amount: e.target.value })} placeholder="0.00" required />
+                          </div>
+                          <input type="date" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]" value={structureForm.dueDate} onChange={e => setStructureForm({ ...structureForm, dueDate: e.target.value })} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button type="submit" disabled={submittingStructure} className="px-4 py-1.5 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] disabled:opacity-50">{submittingStructure ? 'Saving...' : 'Save'}</button>
+                          <button type="button" onClick={() => { setEditingStructure(null); setStructureForm(defaultFeeStructureForm); }} className="px-4 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-800">Cancel</button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div key={fee._id} className="flex items-center gap-4 px-5 py-3.5 group hover:bg-slate-50 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-900">{fee.name}</p>
+                        </div>
+                        <div className="text-sm font-semibold text-slate-900 w-28 text-right">
+                          ${fee.amount.toLocaleString()}
+                        </div>
+                        <div className="w-28">
+                          <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
+                            {fee.frequency || 'One-time'}
+                          </span>
+                        </div>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleEditStructure(fee)}
+                            className="p-1.5 rounded-lg hover:bg-blue-100 text-slate-400 hover:text-blue-600 transition-all"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStructureClick(fee._id)}
+                            className="p-1.5 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="text-sm font-semibold text-slate-900 w-28 text-right">
-                        ${fee.amount.toLocaleString()}
-                      </div>
-                      <div className="w-28">
-                        <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
-                          {fee.frequency || 'One-time'}
-                        </span>
-                      </div>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEditStructure(fee)}
-                          className="p-1.5 rounded-lg hover:bg-blue-100 text-slate-400 hover:text-blue-600 transition-all"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteStructureClick(fee._id)}
-                          className="p-1.5 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-all"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
+                    )
                   ))
                 )}
               </div>
               <div className="px-5 py-3 border-t border-slate-100">
-                <button
-                  onClick={() => {
-                    setStructureForm({ ...defaultFeeStructureForm, classId: setupSelectedClassId, category: 'fixed' });
-                    setEditingStructure(null);
-                    setShowStructureForm(true);
-                  }}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[#824ef2] hover:text-[#6b3fd4] transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add New Fixed Fee
-                </button>
+                {showStructureForm && structureForm.category === 'fixed' && !editingStructure ? (
+                  <form onSubmit={handleStructureSubmit} className="space-y-3">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <input
+                          type="text"
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                          value={structureForm.name}
+                          onChange={e => setStructureForm({ ...structureForm, name: e.target.value })}
+                          placeholder="Fee Name *"
+                          required
+                        />
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
+                        <input
+                          type="number"
+                          className="w-full border border-slate-200 rounded-lg pl-7 pr-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                          value={structureForm.amount}
+                          onChange={e => setStructureForm({ ...structureForm, amount: e.target.value })}
+                          placeholder="0.00"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="date"
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                          value={structureForm.dueDate}
+                          onChange={e => setStructureForm({ ...structureForm, dueDate: e.target.value })}
+                          placeholder="Due Date"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="submit"
+                        disabled={submittingStructure}
+                        className="px-4 py-1.5 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors disabled:opacity-50"
+                      >
+                        {submittingStructure ? 'Saving...' : 'Add'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowStructureForm(false); setStructureForm(defaultFeeStructureForm); }}
+                        className="px-4 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setStructureForm({ ...defaultFeeStructureForm, classId: setupSelectedClassId, category: 'fixed' });
+                      setEditingStructure(null);
+                      setShowStructureForm(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[#824ef2] hover:text-[#6b3fd4] transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add New Fixed Fee
+                  </button>
+                )}
               </div>
             </div>
 
@@ -921,49 +1126,118 @@ export default function FeesPage() {
                   <div className="p-6 text-center text-sm text-slate-400">No optional fees defined yet.</div>
                 ) : (
                   optionalFees.map(fee => (
-                    <div key={fee._id} className="flex items-center gap-4 px-5 py-3.5 group hover:bg-slate-50 transition-colors">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900">{fee.name}</p>
-                        {fee.description && <p className="text-xs text-slate-400 mt-0.5">{fee.description}</p>}
+                    editingStructure?._id === fee._id ? (
+                      <form key={fee._id} onSubmit={handleStructureSubmit} className="px-5 py-3 space-y-3 bg-slate-50">
+                        <div className="grid grid-cols-3 gap-3">
+                          <input type="text" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]" value={structureForm.name} onChange={e => setStructureForm({ ...structureForm, name: e.target.value })} placeholder="Fee Name *" required />
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
+                            <input type="number" className="w-full border border-slate-200 rounded-lg pl-7 pr-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]" value={structureForm.amount} onChange={e => setStructureForm({ ...structureForm, amount: e.target.value })} placeholder="0.00" required />
+                          </div>
+                          <input type="date" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]" value={structureForm.dueDate} onChange={e => setStructureForm({ ...structureForm, dueDate: e.target.value })} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button type="submit" disabled={submittingStructure} className="px-4 py-1.5 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] disabled:opacity-50">{submittingStructure ? 'Saving...' : 'Save'}</button>
+                          <button type="button" onClick={() => { setEditingStructure(null); setStructureForm(defaultFeeStructureForm); }} className="px-4 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-800">Cancel</button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div key={fee._id} className="flex items-center gap-4 px-5 py-3.5 group hover:bg-slate-50 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-900">{fee.name}</p>
+                        </div>
+                        <div className="text-sm font-semibold text-slate-900 w-28 text-right">
+                          ${fee.amount.toLocaleString()}
+                        </div>
+                        <div className="w-28">
+                          <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
+                            {fee.frequency || 'One-time'}
+                          </span>
+                        </div>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleEditStructure(fee)}
+                            className="p-1.5 rounded-lg hover:bg-blue-100 text-slate-400 hover:text-blue-600 transition-all"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStructureClick(fee._id)}
+                            className="p-1.5 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="text-sm font-semibold text-slate-900 w-28 text-right">
-                        ${fee.amount.toLocaleString()}
-                      </div>
-                      <div className="w-28">
-                        <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
-                          {fee.frequency || 'One-time'}
-                        </span>
-                      </div>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEditStructure(fee)}
-                          className="p-1.5 rounded-lg hover:bg-blue-100 text-slate-400 hover:text-blue-600 transition-all"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteStructureClick(fee._id)}
-                          className="p-1.5 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-all"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
+                    )
                   ))
                 )}
               </div>
               <div className="px-5 py-3 border-t border-slate-100">
-                <button
-                  onClick={() => {
-                    setStructureForm({ ...defaultFeeStructureForm, classId: setupSelectedClassId, category: 'optional', isRecurring: true });
-                    setEditingStructure(null);
-                    setShowStructureForm(true);
-                  }}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[#824ef2] hover:text-[#6b3fd4] transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add optional fee
-                </button>
+                {showStructureForm && structureForm.category === 'optional' && !editingStructure ? (
+                  <form onSubmit={handleStructureSubmit} className="space-y-3">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <input
+                          type="text"
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                          value={structureForm.name}
+                          onChange={e => setStructureForm({ ...structureForm, name: e.target.value })}
+                          placeholder="Fee Name *"
+                          required
+                        />
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
+                        <input
+                          type="number"
+                          className="w-full border border-slate-200 rounded-lg pl-7 pr-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                          value={structureForm.amount}
+                          onChange={e => setStructureForm({ ...structureForm, amount: e.target.value })}
+                          placeholder="0.00"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="date"
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
+                          value={structureForm.dueDate}
+                          onChange={e => setStructureForm({ ...structureForm, dueDate: e.target.value })}
+                          placeholder="Due Date"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="submit"
+                        disabled={submittingStructure}
+                        className="px-4 py-1.5 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors disabled:opacity-50"
+                      >
+                        {submittingStructure ? 'Saving...' : 'Add'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowStructureForm(false); setStructureForm(defaultFeeStructureForm); }}
+                        className="px-4 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setStructureForm({ ...defaultFeeStructureForm, classId: setupSelectedClassId, category: 'optional', isRecurring: true });
+                      setEditingStructure(null);
+                      setShowStructureForm(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[#824ef2] hover:text-[#6b3fd4] transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add optional fee
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1074,238 +1348,131 @@ export default function FeesPage() {
         </div>
       )}
 
-      {/* ════════════════════════════════════════ */}
-      {/* MODAL: Sections (Level 2)               */}
-      {/* ════════════════════════════════════════ */}
-      <FormModal
-        open={showSectionsModal}
-        onClose={() => setShowSectionsModal(false)}
-        title={selectedClassData ? `${selectedClassData.name} - Sections` : 'Sections'}
-        size="lg"
-      >
-        {selectedClassData && (
-          <div className="space-y-4">
-            <p className="text-sm text-slate-500">Select a section to view student-level fee details.</p>
 
-            {/* All Students card */}
-            <div
-              onClick={() => { setSelectedSection(null); setShowStudentsModal(true); }}
-              className="rounded-xl border-2 border-slate-200 hover:border-[#824ef2] p-5 cursor-pointer transition-all hover:shadow-md"
-            >
-              <div className="flex items-center gap-4 mb-3">
-                <div className="w-12 h-12 rounded-full bg-[#824ef2]/10 flex items-center justify-center">
-                  <Users className="w-6 h-6 text-[#824ef2]" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-slate-900">All Sections</h4>
-                  <p className="text-xs text-slate-500">{selectedClassInvoices.length} students total</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="text-xs text-slate-400">Total</p>
-                  <p className="font-semibold text-slate-900">${selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0).toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400">Collected</p>
-                  <p className="font-semibold text-emerald-600">${selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0).toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400">Pending</p>
-                  <p className="font-semibold text-orange-600">
-                    ${(selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0) - selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0)).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-              {(() => {
-                const total = selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0);
-                const collected = selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0);
-                const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
-                return (
-                  <div className="flex items-center gap-2 mt-3">
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden flex-1">
-                      <div className="h-full bg-[#824ef2] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
-                    </div>
-                    <span className="text-xs font-semibold text-[#824ef2]">{pct}%</span>
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* Section cards grid */}
-            <div className="grid grid-cols-2 gap-4">
-              {selectedClassData.sections.map((section, idx) => {
-                const color = sectionBadgeColors[idx % sectionBadgeColors.length]!;
-                return (
-                  <div
-                    key={section}
-                    onClick={() => handleSectionClick(section)}
-                    className="rounded-xl border border-slate-200 hover:border-[#824ef2] p-5 cursor-pointer transition-all hover:shadow-md"
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`w-10 h-10 rounded-full ${color.bg} flex items-center justify-center ring-2 ${color.ring}`}>
-                        <span className={`text-base font-bold ${color.text}`}>{section}</span>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-slate-900">Section {section}</h4>
-                        <p className="text-xs text-slate-500">{selectedClassInvoices.length} students</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3 text-xs">
-                      <div>
-                        <p className="text-slate-400">Total</p>
-                        <p className="font-semibold text-slate-900">
-                          ${selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0).toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400">Collected</p>
-                        <p className="font-semibold text-emerald-600">
-                          ${selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0).toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400">Pending</p>
-                        <p className="font-semibold text-orange-600">
-                          ${(selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0) - selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0)).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                    {(() => {
-                      const total = selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0);
-                      const collected = selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0);
-                      const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
-                      return (
-                        <div className="flex items-center gap-2 mt-3">
-                          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden flex-1">
-                            <div className="h-full bg-[#824ef2] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
-                          </div>
-                          <span className="text-xs font-semibold text-[#824ef2]">{pct}%</span>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                );
-              })}
-            </div>
+      {/* ════════════════════════════════════════ */}
+      {/* INLINE: Students Table (Level 3)         */}
+      {/* ════════════════════════════════════════ */}
+      {activeTab === 'invoices' && feeView === 'students' && selectedClassData && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 text-sm text-slate-500">
+            <button onClick={goBackToFeeMain} className="hover:text-[#824ef2] transition-colors">Fees & Invoice</button>
+            <ChevronRight className="w-4 h-4" />
+            <button onClick={goBackToFeeSections} className="hover:text-[#824ef2] transition-colors">{selectedClassData.name}</button>
+            <ChevronRight className="w-4 h-4" />
+            <span className="text-slate-900 font-medium">{selectedSection ? `Section ${selectedSection}` : 'All Students'}</span>
           </div>
-        )}
-      </FormModal>
+          <button
+            onClick={goBackToFeeSections}
+            className="text-sm text-[#824ef2] hover:underline flex items-center gap-1"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Sections
+          </button>
 
-      {/* ════════════════════════════════════════ */}
-      {/* MODAL: Students Table (Level 3)         */}
-      {/* ════════════════════════════════════════ */}
-      <FormModal
-        open={showStudentsModal}
-        onClose={() => setShowStudentsModal(false)}
-        title={
-          selectedClassData
-            ? selectedSection
-              ? `${selectedClassData.name} - Section ${selectedSection}`
-              : `${selectedClassData.name} - All Students`
-            : 'Students'
-        }
-        size="xl"
-      >
-        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-slate-900">
+            {selectedSection ? `${selectedClassData.name} - Section ${selectedSection}` : `${selectedClassData.name} - All Students`}
+          </h2>
+
           {sectionFilteredInvoices.length === 0 ? (
-            <div className="p-8 text-center">
+            <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
               <Users className="mx-auto w-12 h-12 text-slate-300" />
               <p className="mt-3 text-sm text-slate-500">No invoices found for this selection.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr className="text-left">
-                    <th className="py-3 px-4 font-semibold text-slate-700">Student</th>
-                    <th className="py-3 px-4 font-semibold text-slate-700">Roll No</th>
-                    <th className="py-3 px-4 font-semibold text-slate-700">Academic Fee</th>
-                    <th className="py-3 px-4 font-semibold text-slate-700">Add-on Fees</th>
-                    <th className="py-3 px-4 font-semibold text-slate-700">Total</th>
-                    <th className="py-3 px-4 font-semibold text-slate-700">Paid</th>
-                    <th className="py-3 px-4 font-semibold text-slate-700">Pending</th>
-                    <th className="py-3 px-4 font-semibold text-slate-700">Status</th>
-                    <th className="py-3 px-4 font-semibold text-slate-700 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {sectionFilteredInvoices.map(invoice => {
-                    const academicItems = invoice.items.filter(
-                      (_, idx) => idx === 0
-                    );
-                    const addonItems = invoice.items.slice(1);
-                    const academicFee = academicItems.reduce((s, it) => s + it.amount, 0);
-                    const pendingAmt = invoice.totalAmount - invoice.paidAmount;
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr className="text-left">
+                      <th className="py-3 px-4 font-semibold text-slate-700">Student</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700">Roll No</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700">Academic Fee</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700">Add-on Fees</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700">Total</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700">Paid</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700">Pending</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700">Status</th>
+                      <th className="py-3 px-4 font-semibold text-slate-700 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {sectionFilteredInvoices.map(invoice => {
+                      const academicItems = invoice.items.filter(
+                        (_, idx) => idx === 0
+                      );
+                      const addonItems = invoice.items.slice(1);
+                      const academicFee = academicItems.reduce((s, it) => s + it.amount, 0);
+                      const pendingAmt = invoice.totalAmount - invoice.paidAmount;
 
-                    return (
-                      <tr key={invoice._id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3 px-4">
-                          {invoice.student ? (
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#824ef2] text-xs font-semibold">
-                                {invoice.student.firstName?.[0]}{invoice.student.lastName?.[0]}
-                              </div>
-                              <div>
-                                <div className="font-medium text-slate-900">
-                                  {invoice.student.firstName} {invoice.student.lastName}
+                      return (
+                        <tr key={invoice._id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-3 px-4">
+                            {invoice.student ? (
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#824ef2] text-xs font-semibold">
+                                  {invoice.student.firstName?.[0]}{invoice.student.lastName?.[0]}
                                 </div>
-                                <div className="text-xs text-slate-400">{invoice.student.email}</div>
+                                <div>
+                                  <div className="font-medium text-slate-900">
+                                    {invoice.student.firstName} {invoice.student.lastName}
+                                  </div>
+                                  <div className="text-xs text-slate-400">{invoice.student.email}</div>
+                                </div>
                               </div>
-                            </div>
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-slate-600">
-                          {invoice.student?.studentId || '-'}
-                        </td>
-                        <td className="py-3 px-4 font-medium text-slate-900">
-                          ${academicFee.toLocaleString()}
-                        </td>
-                        <td className="py-3 px-4">
-                          {addonItems.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {addonItems.map((item, i) => (
-                                <span key={i} className="text-xs text-blue-600 hover:underline cursor-pointer">
-                                  {item.name}{i < addonItems.length - 1 ? ',' : ''}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-slate-400">None</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 font-semibold text-slate-900">
-                          ${invoice.totalAmount.toLocaleString()}
-                        </td>
-                        <td className="py-3 px-4 font-medium text-emerald-600">
-                          ${invoice.paidAmount.toLocaleString()}
-                        </td>
-                        <td className="py-3 px-4 font-medium text-orange-600">
-                          ${pendingAmt.toLocaleString()}
-                        </td>
-                        <td className="py-3 px-4">
-                          <SchoolStatusBadge value={invoice.status} />
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <button
-                            onClick={() => handleViewPaymentHistory(invoice)}
-                            className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#824ef2] transition-all"
-                            title="View Payment History"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                            ) : (
+                              <span className="text-slate-400">-</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-slate-600">
+                            {invoice.student?.studentId || '-'}
+                          </td>
+                          <td className="py-3 px-4 font-medium text-slate-900">
+                            ${academicFee.toLocaleString()}
+                          </td>
+                          <td className="py-3 px-4">
+                            {addonItems.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {addonItems.map((item, i) => (
+                                  <span key={i} className="text-xs text-blue-600 hover:underline cursor-pointer">
+                                    {item.name}{i < addonItems.length - 1 ? ',' : ''}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400">None</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 font-semibold text-slate-900">
+                            ${invoice.totalAmount.toLocaleString()}
+                          </td>
+                          <td className="py-3 px-4 font-medium text-emerald-600">
+                            ${invoice.paidAmount.toLocaleString()}
+                          </td>
+                          <td className="py-3 px-4 font-medium text-orange-600">
+                            ${pendingAmt.toLocaleString()}
+                          </td>
+                          <td className="py-3 px-4">
+                            <SchoolStatusBadge value={invoice.status} />
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <button
+                              onClick={() => handleViewPaymentHistory(invoice)}
+                              className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#824ef2] transition-all"
+                              title="View Payment History"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
-      </FormModal>
+      )}
 
       {/* ════════════════════════════════════════ */}
       {/* MODAL: Payment History (Level 4)        */}
@@ -1674,158 +1841,6 @@ export default function FeesPage() {
         </form>
       </FormModal>
 
-      {/* ════════════════════════════════════════ */}
-      {/* MODAL: Add / Edit Fee Structure         */}
-      {/* ════════════════════════════════════════ */}
-      <FormModal
-        open={showStructureForm}
-        onClose={() => setShowStructureForm(false)}
-        title={editingStructure ? 'Edit Fee Structure' : 'Add Fee Structure'}
-        size="lg"
-        footer={
-          <>
-            <button
-              type="button"
-              onClick={() => setShowStructureForm(false)}
-              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              form="structure-form"
-              disabled={submittingStructure}
-              className="px-6 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors flex items-center gap-2 disabled:opacity-50"
-            >
-              {submittingStructure ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
-              ) : (
-                <>{editingStructure ? <Edit className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {editingStructure ? 'Update' : 'Create'}</>
-              )}
-            </button>
-          </>
-        }
-      >
-        <form id="structure-form" onSubmit={handleStructureSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Fee Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
-              value={structureForm.name}
-              onChange={e => setStructureForm({ ...structureForm, name: e.target.value })}
-              placeholder="e.g., Tuition Fee, Lab Fee"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Amount <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
-                <input
-                  type="number"
-                  className="w-full border border-slate-200 rounded-lg pl-7 pr-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
-                  value={structureForm.amount}
-                  onChange={e => setStructureForm({ ...structureForm, amount: e.target.value })}
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Class <span className="text-red-500">*</span>
-              </label>
-              <select
-                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
-                value={structureForm.classId}
-                onChange={e => setStructureForm({ ...structureForm, classId: e.target.value })}
-                required
-              >
-                <option value="">Select class</option>
-                {classes.map(c => (
-                  <option key={c._id} value={c._id}>{c.name} ({c.grade})</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Academic Year</label>
-              <input
-                type="text"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
-                value={structureForm.academicYear}
-                onChange={e => setStructureForm({ ...structureForm, academicYear: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Due Date</label>
-              <input
-                type="date"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
-                value={structureForm.dueDate}
-                onChange={e => setStructureForm({ ...structureForm, dueDate: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
-            <textarea
-              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300 resize-none"
-              rows={2}
-              value={structureForm.description}
-              onChange={e => setStructureForm({ ...structureForm, description: e.target.value })}
-              placeholder="Fee description..."
-            />
-          </div>
-
-          <div className="flex items-center gap-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={structureForm.isActive}
-                onChange={e => setStructureForm({ ...structureForm, isActive: e.target.checked })}
-                className="rounded border-slate-300 text-[#824ef2] focus:ring-[#824ef2]/20"
-              />
-              <span className="text-sm font-medium text-slate-700">Active</span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={structureForm.isRecurring}
-                onChange={e => setStructureForm({ ...structureForm, isRecurring: e.target.checked })}
-                className="rounded border-slate-300 text-[#824ef2] focus:ring-[#824ef2]/20"
-              />
-              <span className="text-sm font-medium text-slate-700">Recurring</span>
-            </label>
-          </div>
-
-          {structureForm.isRecurring && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Frequency</label>
-              <select
-                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all hover:border-slate-300"
-                value={structureForm.frequency}
-                onChange={e => setStructureForm({ ...structureForm, frequency: e.target.value })}
-              >
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="semi-annually">Semi-Annually</option>
-                <option value="annually">Annually</option>
-              </select>
-            </div>
-          )}
-        </form>
-      </FormModal>
 
       {/* ════════════════════════════════════════ */}
       {/* MODAL: Add Additional Fee               */}

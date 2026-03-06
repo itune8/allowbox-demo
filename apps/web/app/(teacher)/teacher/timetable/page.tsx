@@ -211,7 +211,7 @@ export default function TeacherTimetablePage() {
                 <button
                   key={day}
                   onClick={() => setSelectedDay(day)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                     selectedDay === day
                       ? 'bg-[#824ef2] text-white border-[#824ef2]'
                       : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'

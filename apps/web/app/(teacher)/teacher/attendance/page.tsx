@@ -61,7 +61,7 @@ const MOCK_CLASSES = [
 ];
 
 const statusBtnClass = (active: boolean, color: string) =>
-  `px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+  `px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
     active
       ? color === 'green'
         ? 'bg-green-100 text-green-700 border-green-300'

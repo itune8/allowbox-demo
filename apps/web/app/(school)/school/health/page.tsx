@@ -191,43 +191,86 @@ function IncidentTrendsChart({ records }: { records: HealthRecord[] }) {
   const firstPt = points[0] ?? { x: padX, y: padY + plotH };
   const areaPath = `${linePath} L${lastPt.x},${padY + plotH} L${firstPt.x},${padY + plotH} Z`;
 
+  // Normalize points to 0-100% for responsive rendering
+  const pctPoints = values.map((v, i) => ({
+    xPct: (i / (values.length - 1)) * 100,
+    yPct: ((max - v) / max) * 100,
+  }));
+
+  // Build smooth path using percentage-based coordinates within a 0 0 100 100 viewBox
+  const buildPctPath = (pts: typeof pctPoints) => {
+    if (pts.length < 2) return '';
+    let path = `M${pts[0]!.xPct.toFixed(2)},${pts[0]!.yPct.toFixed(2)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const curr = pts[i]!;
+      const next = pts[i + 1]!;
+      const tension = 0.3;
+      const dx = next.xPct - curr.xPct;
+      const cp1x = curr.xPct + dx * tension;
+      const cp2x = next.xPct - dx * tension;
+      path += ` C${cp1x.toFixed(2)},${curr.yPct.toFixed(2)} ${cp2x.toFixed(2)},${next.yPct.toFixed(2)} ${next.xPct.toFixed(2)},${next.yPct.toFixed(2)}`;
+    }
+    return path;
+  };
+  const pctLinePath = buildPctPath(pctPoints);
+  const pctLastPt = pctPoints[pctPoints.length - 1] ?? { xPct: 100, yPct: 100 };
+  const pctFirstPt = pctPoints[0] ?? { xPct: 0, yPct: 100 };
+  const pctAreaPath = `${pctLinePath} L${pctLastPt.xPct},100 L${pctFirstPt.xPct},100 Z`;
+
+  const gridTicks = [0, 0.25, 0.5, 0.75, 1];
+
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5">
-      <h3 className="text-sm font-semibold text-slate-900 mb-4">Incident Trends</h3>
-      <svg viewBox={`0 0 ${w} ${h + 20}`} className="w-full" preserveAspectRatio="xMidYMid meet">
-        {/* Grid lines */}
-        {[0, 0.25, 0.5, 0.75, 1].map((t, i) => {
-          const y = padY + plotH * (1 - t);
-          return (
-            <g key={i}>
-              <line x1={padX} y1={y} x2={w - padX} y2={y} stroke="#e2e8f0" strokeWidth="1" />
-              <text x={padX - 6} y={y + 4} textAnchor="end" fill="#94a3b8" fontSize="10">
-                {Math.round(max * t)}
-              </text>
-            </g>
-          );
-        })}
-        {/* Area fill */}
-        <path d={areaPath} fill="url(#areaGrad)" opacity="0.3" />
-        <defs>
-          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#824ef2" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#824ef2" stopOpacity="0.05" />
-          </linearGradient>
-        </defs>
-        {/* Line */}
-        <path d={linePath} fill="none" stroke="#824ef2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        {/* Dots */}
-        {points.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r="4" fill="#824ef2" stroke="white" strokeWidth="2" />
-        ))}
-        {/* X labels */}
+    <div className="bg-white rounded-xl border border-slate-200 p-5 h-full">
+      <h3 className="text-sm font-semibold text-slate-900 mb-3">Incident Trends</h3>
+      <div className="flex" style={{ height: '180px' }}>
+        {/* Y-axis labels */}
+        <div className="flex flex-col justify-between pr-2 py-0" style={{ width: '32px' }}>
+          {gridTicks.map((t, i) => (
+            <span key={i} className="text-[11px] text-slate-400 text-right leading-none">
+              {Math.round(max * (1 - t))}
+            </span>
+          ))}
+        </div>
+        {/* Chart area */}
+        <div className="flex-1 relative">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+            {/* Grid lines */}
+            {gridTicks.map((t, i) => (
+              <line key={i} x1="0" y1={t * 100} x2="100" y2={t * 100} stroke="#e2e8f0" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+            ))}
+            {/* Area fill */}
+            <path d={pctAreaPath} fill="url(#areaGradHealth)" opacity="0.3" />
+            <defs>
+              <linearGradient id="areaGradHealth" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#824ef2" stopOpacity="0.6" />
+                <stop offset="100%" stopColor="#824ef2" stopOpacity="0.05" />
+              </linearGradient>
+            </defs>
+            {/* Line */}
+            <path d={pctLinePath} fill="none" stroke="#824ef2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          </svg>
+          {/* Dots rendered as absolute HTML elements so they don't stretch */}
+          {pctPoints.map((p, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 rounded-full bg-[#824ef2] border-2 border-white"
+              style={{
+                left: `${p.xPct}%`,
+                top: `${p.yPct}%`,
+                transform: 'translate(-50%, -50%)',
+              }}
+            />
+          ))}
+        </div>
+      </div>
+      {/* X-axis labels */}
+      <div className="flex justify-between mt-2" style={{ marginLeft: '32px' }}>
         {days.map((day, i) => (
-          <text key={i} x={padX + (i / (days.length - 1)) * plotW} y={h + 12} textAnchor="middle" fill="#94a3b8" fontSize="11">
+          <span key={i} className="text-[11px] text-slate-400 text-center">
             {day}
-          </text>
+          </span>
         ))}
-      </svg>
+      </div>
     </div>
   );
 }
@@ -273,10 +316,10 @@ function IncidentTypesChart({ records }: { records: HealthRecord[] }) {
   });
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5">
+    <div className="bg-white rounded-xl border border-slate-200 p-5 h-full flex flex-col">
       <h3 className="text-sm font-semibold text-slate-900 mb-4">Incident Types</h3>
-      <div className="flex items-center gap-6">
-        <svg viewBox="0 0 200 200" className="w-44 h-44 flex-shrink-0">
+      <div className="flex-1 flex items-center justify-center">
+        <svg viewBox="0 0 200 200" className="w-36 h-36">
           {arcs.map((a, i) => (
             <path key={i} d={a.path} fill={a.color} />
           ))}
@@ -287,15 +330,15 @@ function IncidentTypesChart({ records }: { records: HealthRecord[] }) {
             Total
           </text>
         </svg>
-        <div className="flex flex-col gap-2.5 flex-1">
-          {data.map((d, i) => (
-            <div key={i} className="flex items-center gap-2.5">
-              <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
-              <span className="text-sm text-slate-700 flex-1">{d.label}</span>
-              <span className="text-sm font-semibold text-slate-900">{d.count}</span>
-            </div>
-          ))}
-        </div>
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-slate-100">
+        {data.map((d, i) => (
+          <div key={i} className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
+            <span className="text-xs text-slate-600">{d.label}</span>
+            <span className="text-xs font-semibold text-slate-900">{d.count}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -592,9 +635,6 @@ export default function SchoolHealthPage() {
   // ---------- Render ----------
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'all', label: 'All Records' },
-    { key: 'clinic', label: 'Clinic Visits' },
-    { key: 'immunizations', label: 'Immunizations' },
-    { key: 'allergies', label: 'Allergies' },
   ];
 
   return (
@@ -621,22 +661,24 @@ export default function SchoolHealthPage() {
           </button>
       </div>
 
-      {/* ============= TABS ============= */}
-      <div className="flex gap-1 border-b border-slate-200">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              activeTab === tab.key
-                ? 'border-[#824ef2] text-[#824ef2]'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* ============= TABS (hidden when only one tab) ============= */}
+      {tabs.length > 1 && (
+        <div className="flex gap-1 border-b border-slate-200">
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                activeTab === tab.key
+                  ? 'border-[#824ef2] text-[#824ef2]'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ============= STAT CARDS ============= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -727,9 +769,13 @@ export default function SchoolHealthPage() {
       </div>
 
       {/* ============= CHARTS ============= */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <IncidentTrendsChart records={records} />
-        <IncidentTypesChart records={records} />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4" style={{ maxHeight: '320px' }}>
+        <div className="lg:col-span-8">
+          <IncidentTrendsChart records={records} />
+        </div>
+        <div className="lg:col-span-4">
+          <IncidentTypesChart records={records} />
+        </div>
       </div>
 
       {/* ============= RECORDS TABLE ============= */}
@@ -1002,17 +1048,17 @@ export default function SchoolHealthPage() {
               </div>
             )}
 
-            {/* Insurance */}
-            {(selectedRecord.insuranceProvider || selectedRecord.primaryPhysician) && (
+            {/* Additional Information */}
+            {(selectedRecord.insuranceProvider || selectedRecord.specialInstructions) && (
               <div>
                 <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
                   <Shield className="w-4 h-4 text-sky-500" /> Additional Information
                 </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  {selectedRecord.primaryPhysician && (
+                <div className="grid grid-cols-1 gap-3">
+                  {selectedRecord.specialInstructions && (
                     <div className="bg-slate-50 rounded-lg p-3">
-                      <p className="text-xs text-slate-500">Primary Physician</p>
-                      <p className="text-sm font-medium text-slate-900 mt-0.5">{selectedRecord.primaryPhysician}</p>
+                      <p className="text-xs text-slate-500">Incident Description</p>
+                      <p className="text-sm font-medium text-slate-900 mt-0.5">{selectedRecord.specialInstructions}</p>
                     </div>
                   )}
                   {selectedRecord.insuranceProvider && (
@@ -1025,17 +1071,6 @@ export default function SchoolHealthPage() {
               </div>
             )}
 
-            {/* Special Instructions */}
-            {selectedRecord.specialInstructions && (
-              <div>
-                <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                  <ClipboardList className="w-4 h-4 text-amber-500" /> Special Instructions
-                </h4>
-                <p className="bg-amber-50 p-3 rounded-lg border border-amber-100 text-amber-800 text-sm">
-                  {selectedRecord.specialInstructions}
-                </p>
-              </div>
-            )}
           </div>
         </FormModal>
       )}

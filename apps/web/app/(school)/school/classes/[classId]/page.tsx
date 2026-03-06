@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { classService, type Class } from '@/lib/services/class.service';
 import { userService, type User } from '@/lib/services/user.service';
 import { subjectService, type Subject } from '@/lib/services/subject.service';
@@ -11,10 +11,12 @@ import { Users, BookOpen, Layers, BarChart3 } from 'lucide-react';
 export default function ClassDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const classId = params?.classId as string;
+  const tabParam = searchParams?.get('tab') as 'overview' | 'sections' | 'subjects' | 'students' | null;
 
   // State
-  const [activeTab, setActiveTab] = useState<'overview' | 'sections' | 'subjects' | 'students'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'sections' | 'subjects' | 'students'>(tabParam || 'overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);

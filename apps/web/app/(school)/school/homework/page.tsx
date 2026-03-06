@@ -5,7 +5,7 @@ import { classService, Class } from '../../../../lib/services/class.service';
 import { homeworkService, Homework, HomeworkStatus } from '../../../../lib/services/homework.service';
 import { userService } from '../../../../lib/services/user.service';
 import { subjectService, Subject } from '../../../../lib/services/subject.service';
-import { FormModal, useToast } from '../../../../components/school';
+import { useToast } from '../../../../components/school';
 import {
   CheckCircle,
   Clock,
@@ -27,7 +27,7 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-type ViewLevel = 'classes' | 'sections' | 'studentDetail';
+type ViewLevel = 'classes' | 'sections' | 'students' | 'studentDetail';
 
 interface GeneratedAssignment {
   id: string;
@@ -242,7 +242,7 @@ export default function AssignmentsOverviewPage() {
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
-  const [showStudentsModal, setShowStudentsModal] = useState(false);
+
 
   // Search & filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -388,12 +388,11 @@ export default function AssignmentsOverviewPage() {
 
   function handleSectionClick(section: string) {
     setSelectedSection(section);
-    setShowStudentsModal(true);
+    setViewLevel('students');
   }
 
   function handleViewStudent(studentId: string) {
     setSelectedStudentId(studentId);
-    setShowStudentsModal(false);
     setViewLevel('studentDetail');
   }
 
@@ -406,9 +405,8 @@ export default function AssignmentsOverviewPage() {
   }
 
   function goBackToSections() {
-    setViewLevel('sections');
+    setViewLevel('students');
     setSelectedStudentId(null);
-    setShowStudentsModal(true);
   }
 
   // ---------- Loading state ----------
@@ -512,6 +510,96 @@ export default function AssignmentsOverviewPage() {
         />
       )}
 
+      {viewLevel === 'students' && selectedClass && selectedSection && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 text-sm text-slate-500">
+            <span>Classes</span>
+            <ChevronRight className="w-4 h-4" />
+            <span>{selectedClass.name}</span>
+            <ChevronRight className="w-4 h-4" />
+            <span className="text-slate-900 font-medium">Section {selectedSection}</span>
+          </div>
+          <button
+            onClick={() => { setViewLevel('sections'); setSelectedSection(null); }}
+            className="text-sm text-[#824ef2] hover:underline flex items-center gap-1"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Sections
+          </button>
+
+          <h2 className="text-lg font-semibold text-slate-900">Section {selectedSection} - Students</h2>
+          <p className="text-sm text-slate-500">Individual student assignment status</p>
+
+          {sectionStudents.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl border border-slate-200">
+              <Users className="w-10 h-10 mx-auto text-slate-400 mb-3" />
+              <p className="text-slate-600 font-medium">No students found</p>
+              <p className="text-sm text-slate-500 mt-1">No students in this section yet.</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left border-b border-slate-200 bg-slate-50">
+                      <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Student</th>
+                      <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Roll No</th>
+                      <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Total</th>
+                      <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Completed</th>
+                      <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Pending</th>
+                      <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Not Submitted</th>
+                      <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Avg Score</th>
+                      <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {sectionStudents.map((student) => (
+                      <tr key={student.studentId} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#824ef2] text-xs font-semibold">
+                              {student.avatar}
+                            </div>
+                            <span className="font-medium text-slate-900">{student.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-600">{student.rollNo}</td>
+                        <td className="py-3.5 px-4 text-slate-900 font-medium">{student.total}</td>
+                        <td className="py-3.5 px-4">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                            {student.completed}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                            {student.pending}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                            {student.notSubmitted}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-900 font-medium">{student.avgScore}%</td>
+                        <td className="py-3.5 px-4">
+                          <button
+                            onClick={() => handleViewStudent(student.studentId)}
+                            className="text-[#824ef2] hover:text-[#6b3fd4] text-sm font-medium flex items-center gap-1 transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {viewLevel === 'studentDetail' && selectedStudent && selectedClass && (
         <StudentDetailView
           student={selectedStudent}
@@ -520,92 +608,6 @@ export default function AssignmentsOverviewPage() {
           onBack={goBackToSections}
         />
       )}
-
-      {/* Students Modal */}
-      <FormModal
-        open={showStudentsModal}
-        onClose={() => setShowStudentsModal(false)}
-        title={`Section ${selectedSection} Students`}
-        size="xl"
-        footer={
-          <button
-            onClick={() => setShowStudentsModal(false)}
-            className="px-6 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
-          >
-            Close
-          </button>
-        }
-      >
-        <p className="text-sm text-slate-500 mb-5">Individual student assignment status</p>
-
-        {sectionStudents.length === 0 ? (
-          <div className="text-center py-12 bg-slate-50 rounded-xl border border-slate-200">
-            <Users className="w-10 h-10 mx-auto text-slate-400 mb-3" />
-            <p className="text-slate-600 font-medium">No students found</p>
-            <p className="text-sm text-slate-500 mt-1">No students in this section yet.</p>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-slate-200">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left border-b border-slate-200 bg-slate-50">
-                    <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Student</th>
-                    <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Roll No</th>
-                    <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Total</th>
-                    <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Completed</th>
-                    <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Pending</th>
-                    <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Not Submitted</th>
-                    <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Avg Score</th>
-                    <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {sectionStudents.map((student) => (
-                    <tr key={student.studentId} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#824ef2] text-xs font-semibold">
-                            {student.avatar}
-                          </div>
-                          <span className="font-medium text-slate-900">{student.name}</span>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-600">{student.rollNo}</td>
-                      <td className="py-3.5 px-4 text-slate-900 font-medium">{student.total}</td>
-                      <td className="py-3.5 px-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                          {student.completed}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                          {student.pending}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                          {student.notSubmitted}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-900 font-medium">{student.avgScore}%</td>
-                      <td className="py-3.5 px-4">
-                        <button
-                          onClick={() => handleViewStudent(student.studentId)}
-                          className="text-[#824ef2] hover:text-[#6b3fd4] text-sm font-medium flex items-center gap-1 transition-colors"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </FormModal>
     </section>
   );
 }

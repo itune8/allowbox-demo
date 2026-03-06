@@ -151,7 +151,7 @@ export default function TeacherMessagesPage() {
                   <button
                     key={f}
                     onClick={() => setFilter(f)}
-                    className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
+                    className={`px-3 py-1 text-xs font-medium rounded-lg border transition-colors ${
                       filter === f ? 'bg-[#824ef2] text-white border-[#824ef2]' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
                     }`}
                   >

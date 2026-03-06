@@ -425,7 +425,7 @@ export default function SchoolGradesPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setExamSubTab('all')}
-              className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-colors ${
                 examSubTab === 'all'
                   ? 'bg-[#824ef2] text-white'
                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
@@ -435,7 +435,7 @@ export default function SchoolGradesPage() {
             </button>
             <button
               onClick={() => setExamSubTab('approvals')}
-              className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-colors ${
                 examSubTab === 'approvals'
                   ? 'bg-[#824ef2] text-white'
                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
@@ -1102,7 +1102,7 @@ function ExamListView({
           <button
             key={f}
             onClick={() => setExamFilter(f)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               examFilter === f
                 ? 'bg-[#824ef2] text-white'
                 : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'

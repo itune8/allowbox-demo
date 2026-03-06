@@ -162,7 +162,7 @@ export default function TeacherLessonPlansPage() {
           <h2 className="text-lg font-semibold text-slate-900">Lesson Plans</h2>
           <div className="flex gap-2">
             {[{ key: 'all', label: 'All' }, { key: 'draft', label: 'Draft' }, { key: 'scheduled', label: 'Scheduled' }, { key: 'in_progress', label: 'In Progress' }, { key: 'completed', label: 'Completed' }].map((f) => (
-              <button key={f.key} onClick={() => setFilterStatus(f.key)} className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${filterStatus === f.key ? 'bg-[#824ef2] text-white border-[#824ef2]' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
+              <button key={f.key} onClick={() => setFilterStatus(f.key)} className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${filterStatus === f.key ? 'bg-[#824ef2] text-white border-[#824ef2]' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
                 {f.label}
               </button>
             ))}
