@@ -52,8 +52,8 @@ export const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
     setIsMobileOpen(false); // Close mobile menu on item click
   };
 
-  // Sidebar content component (reused for desktop and mobile)
-  const SidebarContent = () => (
+  // Sidebar content as JSX (not a component) to preserve scroll position across re-renders
+  const sidebarContent = (
     <>
       {/* Header */}
       <div className={cn(
@@ -181,7 +181,7 @@ export const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
           className
         )}
       >
-        <SidebarContent />
+        {sidebarContent}
 
         {/* Collapse toggle button */}
         <button
@@ -219,7 +219,7 @@ export const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
 
           {/* Drawer */}
           <aside className="absolute left-0 top-0 h-full w-64 bg-white shadow-lg flex flex-col">
-            <SidebarContent />
+            {sidebarContent}
           </aside>
         </div>
       )}

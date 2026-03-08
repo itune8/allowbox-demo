@@ -16,6 +16,7 @@ import {
   useToast,
   SchoolStatCard,
   Pagination,
+  CustomSelect,
 } from '../../../../components/school';
 import {
   Users,
@@ -467,19 +468,20 @@ export default function StudentPromotionPage() {
               }}
             />
           </div>
-          <select
+          <CustomSelect
             value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value as any);
+            onChange={(value) => {
+              setStatusFilter(value as any);
               setPage(1);
             }}
-            className="h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] transition-all"
-          >
-            <option value="all">All Status</option>
-            <option value="Promoted">Promoted</option>
-            <option value="Pending">Pending</option>
-            <option value="Results Pending">Results Pending</option>
-          </select>
+            options={[
+              { value: 'all', label: 'All Status' },
+              { value: 'Promoted', label: 'Promoted' },
+              { value: 'Pending', label: 'Pending' },
+              { value: 'Results Pending', label: 'Results Pending' },
+            ]}
+            size="sm"
+          />
           <button className="inline-flex items-center gap-2 h-10 px-4 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors">
             <Filter className="w-4 h-4" />
             Filters

@@ -5,7 +5,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { classService, type Class } from '@/lib/services/class.service';
 import { userService, type User } from '@/lib/services/user.service';
 import { subjectService, type Subject } from '@/lib/services/subject.service';
-import { SchoolStatCard, SchoolStatusBadge } from '../../../../../components/school';
+import { SchoolStatCard, SchoolStatusBadge, CustomSelect } from '../../../../../components/school';
 import { Users, BookOpen, Layers, BarChart3 } from 'lucide-react';
 
 export default function ClassDetailPage() {
@@ -409,16 +409,18 @@ export default function ClassDetailPage() {
                 Students ({filteredStudents.length})
               </h3>
               <div className="flex gap-2">
-                <select
+                <CustomSelect
                   value={selectedSection}
-                  onChange={(e) => setSelectedSection(e.target.value)}
-                  className="px-3 py-2 border border-slate-300 rounded-md text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
-                >
-                  <option value="all">All Sections</option>
-                  {classData.sections?.map((section) => (
-                    <option key={section} value={section}>Section {section}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setSelectedSection(value)}
+                  options={[
+                    { value: 'all', label: 'All Sections' },
+                    ...(classData.sections?.map((section) => ({
+                      value: section,
+                      label: `Section ${section}`,
+                    })) || []),
+                  ]}
+                  size="sm"
+                />
                 <input
                   type="text"
                   placeholder="Search students..."

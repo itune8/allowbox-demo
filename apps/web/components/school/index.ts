@@ -5,3 +5,4 @@ export { FormModal } from './form-modal';
 export { Pagination } from './pagination';
 export { SchoolStatusBadge } from './school-status-badge';
 export { ClassSectionCards } from './class-section-cards';
+export { CustomSelect } from './custom-select';

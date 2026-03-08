@@ -6,7 +6,7 @@ import { classService, type Class } from '@/lib/services/class.service';
 import { timetableService, type TimetableSlot, DayOfWeek } from '@/lib/services/timetable.service';
 import { subjectService, type Subject } from '@/lib/services/subject.service';
 import { userService, type User } from '@/lib/services/user.service';
-import { SchoolStatCard } from '../../../../../../components/school';
+import { SchoolStatCard, CustomSelect } from '../../../../../../components/school';
 import { Calendar, BookOpen, Users as UsersIcon, Clock } from 'lucide-react';
 
 const DAYS: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
@@ -183,15 +183,15 @@ export default function ClassTimetablePage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <select
+          <CustomSelect
             value={selectedSection}
-            onChange={(e) => setSelectedSection(e.target.value)}
-            className="px-4 py-2 border border-slate-300 rounded-md text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
-          >
-            {classData.sections?.map((section) => (
-              <option key={section} value={section}>Section {section}</option>
-            ))}
-          </select>
+            onChange={(value) => setSelectedSection(value)}
+            options={classData.sections?.map((section) => ({
+              value: section,
+              label: `Section ${section}`,
+            })) || []}
+            size="sm"
+          />
         </div>
       </div>
 

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { tenantService, type TenantData } from '../../../lib/services/tenant.service';
 import { userService, type User } from '../../../lib/services/user.service';
 import { classService, type Class } from '../../../lib/services/class.service';
-import { SchoolStatCard } from '../../../components/school';
+import { SchoolStatCard, CustomSelect } from '../../../components/school';
 import {
   Users,
   UserPlus,
@@ -186,45 +186,38 @@ export default function SchoolDashboardPage() {
   }
 
   // ---- Chart calculations ----
-  const chartW = 560;
-  const chartH = 250;
-  const padL = 50;
-  const padR = 30;
-  const padT = 50;
-  const padB = 35;
-  const innerW = chartW - padL - padR;
-  const innerH = chartH - padT - padB;
-
   // Y-axis range: 280k to 340k (matching reference)
   const yMin = 280000;
   const yMax = 340000;
   const yRange = yMax - yMin;
   const yTicks = [280000, 300000, 320000, 340000];
 
-  const toX = (i: number) => padL + (i / (chartData.length - 1)) * innerW;
-  const toY = (v: number) => padT + innerH - ((v - yMin) / yRange) * innerH;
+  // Percentage-based points for responsive chart (0-100 range)
+  const pctPoints = chartData.map((d, i) => ({
+    xPct: (i / (chartData.length - 1)) * 100,
+    yPct: ((yMax - d.value) / yRange) * 100,
+  }));
 
-  // Build smooth line path using cubic bezier curves
-  const buildSmoothPath = () => {
-    const points = chartData.map((d, i) => ({ x: toX(i), y: toY(d.value) }));
-    if (points.length < 2) return '';
-    let path = `M${points[0]!.x.toFixed(1)},${points[0]!.y.toFixed(1)}`;
-    for (let i = 0; i < points.length - 1; i++) {
-      const curr = points[i]!;
-      const next = points[i + 1]!;
+  // Build smooth line path using percentage coordinates in 0-100 viewBox
+  const buildPctPath = (pts: typeof pctPoints) => {
+    if (pts.length < 2) return '';
+    let path = `M${pts[0]!.xPct.toFixed(2)},${pts[0]!.yPct.toFixed(2)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const curr = pts[i]!;
+      const next = pts[i + 1]!;
       const tension = 0.3;
-      const dx = next.x - curr.x;
-      const cp1x = curr.x + dx * tension;
-      const cp2x = next.x - dx * tension;
-      path += ` C${cp1x.toFixed(1)},${curr.y.toFixed(1)} ${cp2x.toFixed(1)},${next.y.toFixed(1)} ${next.x.toFixed(1)},${next.y.toFixed(1)}`;
+      const dx = next.xPct - curr.xPct;
+      const cp1x = curr.xPct + dx * tension;
+      const cp2x = next.xPct - dx * tension;
+      path += ` C${cp1x.toFixed(2)},${curr.yPct.toFixed(2)} ${cp2x.toFixed(2)},${next.yPct.toFixed(2)} ${next.xPct.toFixed(2)},${next.yPct.toFixed(2)}`;
     }
     return path;
   };
-  const linePath = buildSmoothPath();
-
-  // Gradient area path (fill under the smooth line)
-  const lastPt = chartData.length - 1;
-  const areaPath = `${linePath} L${toX(lastPt).toFixed(1)},${(padT + innerH).toFixed(1)} L${padL},${(padT + innerH).toFixed(1)} Z`;
+  const feeLinePath = buildPctPath(pctPoints);
+  const feeLastPt = pctPoints[pctPoints.length - 1] ?? { xPct: 100, yPct: 100 };
+  const feeFirstPt = pctPoints[0] ?? { xPct: 0, yPct: 100 };
+  const feeAreaPath = `${feeLinePath} L${feeLastPt.xPct},100 L${feeFirstPt.xPct},100 Z`;
+  const gridTicks = yTicks.map(val => ((yMax - val) / yRange) * 100);
 
   return (
     <div className="space-y-6">
@@ -303,105 +296,96 @@ export default function SchoolDashboardPage() {
                 <TrendingUp className="w-5 h-5 text-[#824ef2]" />
                 <h2 className="text-lg font-semibold text-slate-900">Fee Collection Overview</h2>
               </div>
-              <div className="relative">
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="appearance-none bg-white border border-slate-200 rounded-lg px-3 py-1.5 pr-8 text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] cursor-pointer"
-                >
-                  <option value="2024">2024</option>
-                  <option value="2023">2023</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+              <CustomSelect
+                value={selectedYear}
+                onChange={setSelectedYear}
+                options={[{ value: '2024', label: '2024' }, { value: '2023', label: '2023' }]}
+                size="sm"
+              />
             </div>
-            <div className="p-5">
-            <svg
-              viewBox={`0 0 ${chartW} ${chartH}`}
-              className="w-full"
-              style={{ height: '260px' }}
-              onMouseLeave={() => setHoveredPoint(null)}
-            >
-              <defs>
-                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#824ef2" stopOpacity="0.15" />
-                  <stop offset="100%" stopColor="#824ef2" stopOpacity="0.01" />
-                </linearGradient>
-              </defs>
-
-              {/* Horizontal grid lines + Y-axis labels */}
-              {yTicks.map(val => (
-                <g key={val}>
-                  <text x={padL - 8} y={toY(val) + 4} textAnchor="end" className="text-[11px] fill-slate-400" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    {`${val / 1000}k`}
-                  </text>
-                  <line x1={padL} y1={toY(val)} x2={chartW - padR} y2={toY(val)} stroke="#f1f5f9" strokeWidth="1" />
-                </g>
-              ))}
-
+            <div className="px-5 pb-5 pt-2">
+              <div className="flex" style={{ height: '220px' }}>
+                {/* Y-axis labels */}
+                <div className="flex flex-col justify-between pr-2 py-0" style={{ width: '40px' }}>
+                  {yTicks.slice().reverse().map((val) => (
+                    <span key={val} className="text-[11px] text-slate-400 text-right leading-none">
+                      {`${val / 1000}k`}
+                    </span>
+                  ))}
+                </div>
+                {/* Chart area */}
+                <div className="flex-1 relative" onMouseLeave={() => setHoveredPoint(null)}>
+                  <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+                    {/* Grid lines */}
+                    {gridTicks.map((yPct, i) => (
+                      <line key={i} x1="0" y1={yPct} x2="100" y2={yPct} stroke="#f1f5f9" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+                    ))}
+                    {/* Area fill */}
+                    <path d={feeAreaPath} fill="url(#feeChartGrad)" />
+                    <defs>
+                      <linearGradient id="feeChartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#824ef2" stopOpacity="0.15" />
+                        <stop offset="100%" stopColor="#824ef2" stopOpacity="0.01" />
+                      </linearGradient>
+                    </defs>
+                    {/* Line */}
+                    <path d={feeLinePath} fill="none" stroke="#824ef2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                  </svg>
+                  {/* Dots as HTML */}
+                  {pctPoints.map((p, i) => (
+                    <div
+                      key={i}
+                      className="absolute cursor-pointer"
+                      style={{
+                        left: `${p.xPct}%`,
+                        top: `${p.yPct}%`,
+                        transform: 'translate(-50%, -50%)',
+                        width: '24px',
+                        height: '24px',
+                      }}
+                      onMouseEnter={() => setHoveredPoint(i)}
+                    >
+                      <div
+                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#824ef2] border-2 border-white transition-all duration-150"
+                        style={{
+                          width: hoveredPoint === i ? '10px' : '7px',
+                          height: hoveredPoint === i ? '10px' : '7px',
+                          boxShadow: hoveredPoint === i ? '0 0 6px rgba(130,78,242,0.4)' : 'none',
+                        }}
+                      />
+                    </div>
+                  ))}
+                  {/* Tooltip */}
+                  {hoveredPoint !== null && (() => {
+                    const d = chartData[hoveredPoint];
+                    if (!d) return null;
+                    const p = pctPoints[hoveredPoint]!;
+                    return (
+                      <div
+                        className="absolute z-10 pointer-events-none"
+                        style={{
+                          left: `${p.xPct}%`,
+                          top: `${p.yPct}%`,
+                          transform: 'translate(-50%, -120%)',
+                        }}
+                      >
+                        <div className="bg-slate-800/95 text-white rounded-lg px-3 py-2 text-center shadow-lg">
+                          <div className="text-[10px] text-slate-400">{d.month} {selectedYear}</div>
+                          <div className="text-sm font-semibold">${(d.value / 1000).toFixed(0)}K</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
               {/* X-axis labels */}
-              {chartData.map((d, i) => (
-                <text key={d.month} x={toX(i)} y={chartH - 8} textAnchor="middle" className="text-[11px] fill-slate-400" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  {d.month}
-                </text>
-              ))}
-
-              {/* Gradient fill under line */}
-              <path d={areaPath} fill="url(#chartGradient)" />
-
-              {/* Main purple line */}
-              <path d={linePath} fill="none" stroke="#824ef2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-
-              {/* Data point dots */}
-              {chartData.map((d, i) => (
-                <g key={`point-${i}`}>
-                  <circle
-                    cx={toX(i)}
-                    cy={toY(d.value)}
-                    r="12"
-                    fill="transparent"
-                    className="cursor-pointer"
-                    onMouseEnter={() => setHoveredPoint(i)}
-                  />
-                  <circle
-                    cx={toX(i)}
-                    cy={toY(d.value)}
-                    r={hoveredPoint === i ? 5 : 3.5}
-                    fill="#824ef2"
-                    stroke="white"
-                    strokeWidth={hoveredPoint === i ? 3 : 2}
-                    className="transition-all duration-150"
-                    style={{ filter: hoveredPoint === i ? 'drop-shadow(0 0 4px rgba(130,78,242,0.4))' : 'none' }}
-                  />
-                </g>
-              ))}
-
-              {/* Hover tooltip */}
-              {hoveredPoint !== null && (() => {
-                const d = chartData[hoveredPoint];
-                if (!d) return null;
-                const tx = toX(hoveredPoint);
-                const ty = toY(d.value);
-                const tooltipW = 100;
-                const tooltipH = 42;
-                const tooltipX = Math.max(padL, Math.min(tx - tooltipW / 2, chartW - padR - tooltipW));
-                const tooltipY = Math.max(2, ty - tooltipH - 12);
-
-                return (
-                  <g>
-                    <line x1={tx} y1={ty + 6} x2={tx} y2={padT + innerH} stroke="#824ef2" strokeWidth="1" strokeDasharray="4,3" opacity="0.3" />
-                    <rect x={tooltipX} y={tooltipY} width={tooltipW} height={tooltipH} rx="8" fill="#1e293b" opacity="0.95" />
-                    <polygon points={`${tx - 5},${tooltipY + tooltipH} ${tx + 5},${tooltipY + tooltipH} ${tx},${tooltipY + tooltipH + 6}`} fill="#1e293b" opacity="0.95" />
-                    <text x={tooltipX + tooltipW / 2} y={tooltipY + 16} textAnchor="middle" fill="#94a3b8" style={{ fontSize: '10px', fontFamily: 'Inter, sans-serif' }}>
-                      {d.month} {selectedYear}
-                    </text>
-                    <text x={tooltipX + tooltipW / 2} y={tooltipY + 33} textAnchor="middle" fill="white" style={{ fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>
-                      ${(d.value / 1000).toFixed(0)}K
-                    </text>
-                  </g>
-                );
-              })()}
-            </svg>
+              <div className="flex justify-between mt-2" style={{ marginLeft: '40px' }}>
+                {chartData.map((d) => (
+                  <span key={d.month} className="text-[11px] text-slate-400 text-center">
+                    {d.month}
+                  </span>
+                ))}
+              </div>
             </div>
         </div>
       </div>

@@ -718,72 +718,67 @@ export default function FeesPage() {
           </div>
 
           {/* Class-wise Fee Overview */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-slate-100">
-              <h3 className="text-base font-semibold text-slate-900">Class-wise Fee Overview</h3>
+          <h3 className="text-lg font-semibold text-slate-900">Class-wise Fee Overview</h3>
+          <p className="text-sm text-slate-500">Select a class to view section-level fee details.</p>
+
+          {filteredClassFeeSummary.length === 0 ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <Receipt className="mx-auto w-14 h-14 text-slate-300" />
+              <h3 className="mt-4 text-lg font-medium text-slate-900">No fee data available</h3>
+              <p className="mt-2 text-sm text-slate-500">Create invoices to see class-wise fee overview.</p>
             </div>
-            {filteredClassFeeSummary.length === 0 ? (
-              <div className="p-12 text-center">
-                <Receipt className="mx-auto w-14 h-14 text-slate-300" />
-                <h3 className="mt-4 text-lg font-medium text-slate-900">No fee data available</h3>
-                <p className="mt-2 text-sm text-slate-500">Create invoices to see class-wise fee overview.</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {filteredClassFeeSummary.map(({ cls, total, collected, pending, studentCount, progress, index }) => (
-                  <div
-                    key={cls._id}
-                    className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors cursor-pointer group"
-                    onClick={() => handleClassRowClick(cls._id)}
-                  >
-                    {/* Number badge */}
-                    <div className="w-9 h-9 rounded-lg bg-[#824ef2] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                      {index + 1}
-                    </div>
-
-                    {/* Class info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <h4 className="font-semibold text-slate-900">{cls.name}</h4>
-                        <span className="text-xs text-slate-400">
-                          {cls.sections.length} Sections &middot; {studentCount} Students
-                        </span>
-                      </div>
-                      {/* Progress bar */}
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden flex-1 max-w-[200px]">
-                          <div
-                            className="h-full bg-[#824ef2] rounded-full transition-all duration-500"
-                            style={{ width: `${progress}%` }}
-                          />
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Class</th>
+                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Sections</th>
+                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Students</th>
+                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Total</th>
+                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Collected</th>
+                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Pending</th>
+                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Progress</th>
+                    <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredClassFeeSummary.map(({ cls, total, collected, pending, studentCount, progress, index }) => (
+                    <tr
+                      key={cls._id}
+                      onClick={() => handleClassRowClick(cls._id)}
+                      className="hover:bg-slate-50 cursor-pointer transition-colors"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-[#824ef2] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                            {index + 1}
+                          </div>
+                          <span className="text-sm font-semibold text-slate-900">{cls.name}</span>
                         </div>
-                        <span className="text-xs font-semibold text-[#824ef2]">{progress}%</span>
-                      </div>
-                    </div>
-
-                    {/* Amounts */}
-                    <div className="hidden md:flex items-center gap-6 text-sm flex-shrink-0">
-                      <div className="text-right">
-                        <p className="text-xs text-slate-400">Total</p>
-                        <p className="font-semibold text-slate-900">${total.toLocaleString()}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-slate-400">Collected</p>
-                        <p className="font-semibold text-emerald-600">${collected.toLocaleString()}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-slate-400">Pending</p>
-                        <p className="font-semibold text-orange-600">${pending.toLocaleString()}</p>
-                      </div>
-                    </div>
-
-                    {/* Chevron */}
-                    <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-[#824ef2] transition-colors flex-shrink-0" />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-slate-600">{cls.sections.length}</td>
+                      <td className="px-5 py-4 text-sm text-slate-600">{studentCount}</td>
+                      <td className="px-5 py-4 text-sm font-medium text-slate-900">${total.toLocaleString()}</td>
+                      <td className="px-5 py-4 text-sm font-medium text-emerald-600">${collected.toLocaleString()}</td>
+                      <td className="px-5 py-4 text-sm font-medium text-orange-600">${pending.toLocaleString()}</td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden w-20">
+                            <div className="h-full bg-[#824ef2] rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+                          </div>
+                          <span className="text-xs font-semibold text-[#824ef2]">{progress}%</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <ChevronRight className="w-5 h-5 text-slate-300 inline-block" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </>
       )}
 
@@ -808,106 +803,103 @@ export default function FeesPage() {
           <h2 className="text-lg font-semibold text-slate-900">{selectedClassData.name} - Sections</h2>
           <p className="text-sm text-slate-500">Select a section to view student-level fee details.</p>
 
-          {/* All Sections card */}
-          <div
-            onClick={() => handleSectionClick(null)}
-            className="bg-white rounded-xl border border-slate-200 hover:border-[#824ef2] p-5 cursor-pointer transition-all hover:shadow-md"
-          >
-            <div className="flex items-center gap-4 mb-3">
-              <div className="w-12 h-12 rounded-full bg-[#824ef2]/10 flex items-center justify-center">
-                <Users className="w-6 h-6 text-[#824ef2]" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-slate-900">All Sections</h4>
-                <p className="text-xs text-slate-500">{selectedClassInvoices.length} students total</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div>
-                <p className="text-xs text-slate-400">Total</p>
-                <p className="font-semibold text-slate-900">${selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0).toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Collected</p>
-                <p className="font-semibold text-emerald-600">${selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0).toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Pending</p>
-                <p className="font-semibold text-orange-600">
-                  ${(selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0) - selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0)).toLocaleString()}
-                </p>
-              </div>
-            </div>
-            {(() => {
-              const total = selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0);
-              const collected = selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0);
-              const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
-              return (
-                <div className="flex items-center gap-2 mt-3">
-                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden flex-1">
-                    <div className="h-full bg-[#824ef2] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="text-xs font-semibold text-[#824ef2]">{pct}%</span>
-                </div>
-              );
-            })()}
-          </div>
-
-          {/* Section cards grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {selectedClassData.sections.map((section, idx) => {
-              const color = sectionBadgeColors[idx % sectionBadgeColors.length]!;
-              return (
-                <div
-                  key={section}
-                  onClick={() => handleSectionClick(section)}
-                  className="bg-white rounded-xl border border-slate-200 hover:border-[#824ef2] p-5 cursor-pointer transition-all hover:shadow-md"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-10 h-10 rounded-full ${color.bg} flex items-center justify-center ring-2 ${color.ring}`}>
-                      <span className={`text-base font-bold ${color.text}`}>{section}</span>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-900">Section {section}</h4>
-                      <p className="text-xs text-slate-500">{selectedClassInvoices.length} students</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3 text-xs">
-                    <div>
-                      <p className="text-slate-400">Total</p>
-                      <p className="font-semibold text-slate-900">
-                        ${selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0).toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400">Collected</p>
-                      <p className="font-semibold text-emerald-600">
-                        ${selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0).toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400">Pending</p>
-                      <p className="font-semibold text-orange-600">
-                        ${(selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0) - selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0)).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  {(() => {
-                    const total = selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0);
-                    const collected = selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0);
-                    const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
-                    return (
-                      <div className="flex items-center gap-2 mt-3">
-                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden flex-1">
-                          <div className="h-full bg-[#824ef2] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+          {/* Sections Table */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Section</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Students</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Total</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Collected</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Pending</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Progress</th>
+                  <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {/* All Sections row */}
+                {(() => {
+                  const total = selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0);
+                  const collected = selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0);
+                  const pending = total - collected;
+                  const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
+                  return (
+                    <tr
+                      onClick={() => handleSectionClick(null)}
+                      className="hover:bg-slate-50 cursor-pointer transition-colors"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-[#824ef2]/10 flex items-center justify-center">
+                            <Users className="w-4 h-4 text-[#824ef2]" />
+                          </div>
+                          <span className="text-sm font-semibold text-slate-900">All Sections</span>
                         </div>
-                        <span className="text-xs font-semibold text-[#824ef2]">{pct}%</span>
-                      </div>
-                    );
-                  })()}
-                </div>
-              );
-            })}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-slate-600">{selectedClassInvoices.length}</td>
+                      <td className="px-5 py-4 text-sm font-medium text-slate-900">${total.toLocaleString()}</td>
+                      <td className="px-5 py-4 text-sm font-medium text-emerald-600">${collected.toLocaleString()}</td>
+                      <td className="px-5 py-4 text-sm font-medium text-orange-600">${pending.toLocaleString()}</td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden w-20">
+                            <div className="h-full bg-[#824ef2] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-xs font-semibold text-[#824ef2]">{pct}%</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <span className="text-sm text-[#824ef2] font-medium flex items-center justify-end gap-1">
+                          <Eye className="w-3.5 h-3.5" /> View
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })()}
+                {/* Individual Section rows */}
+                {selectedClassData.sections.map((section, idx) => {
+                  const color = sectionBadgeColors[idx % sectionBadgeColors.length]!;
+                  const total = selectedClassInvoices.reduce((s, i) => s + i.totalAmount, 0);
+                  const collected = selectedClassInvoices.reduce((s, i) => s + i.paidAmount, 0);
+                  const pending = total - collected;
+                  const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
+                  return (
+                    <tr
+                      key={section}
+                      onClick={() => handleSectionClick(section)}
+                      className="hover:bg-slate-50 cursor-pointer transition-colors"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-full ${color.bg} flex items-center justify-center`}>
+                            <span className={`text-sm font-bold ${color.text}`}>{section}</span>
+                          </div>
+                          <span className="text-sm font-medium text-slate-900">Section {section}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-slate-600">{selectedClassInvoices.length}</td>
+                      <td className="px-5 py-4 text-sm font-medium text-slate-900">${total.toLocaleString()}</td>
+                      <td className="px-5 py-4 text-sm font-medium text-emerald-600">${collected.toLocaleString()}</td>
+                      <td className="px-5 py-4 text-sm font-medium text-orange-600">${pending.toLocaleString()}</td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden w-20">
+                            <div className="h-full bg-[#824ef2] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-xs font-semibold text-[#824ef2]">{pct}%</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <span className="text-sm text-[#824ef2] font-medium flex items-center justify-end gap-1">
+                          <Eye className="w-3.5 h-3.5" /> View
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

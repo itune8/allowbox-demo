@@ -21,7 +21,6 @@ import {
   AlertCircle,
   Calendar,
   Search,
-  ChevronDown,
   Download,
   Thermometer,
   Clock,
@@ -41,7 +40,7 @@ import {
 } from '../../../../lib/services/health-records.service';
 import { userService, User as UserType } from '../../../../lib/services/user.service';
 import { classService, Class } from '../../../../lib/services/class.service';
-import { SchoolStatCard, SchoolStatusBadge, FormModal, ConfirmModal, useToast, Pagination } from '../../../../components/school';
+import { SchoolStatCard, SchoolStatusBadge, FormModal, ConfirmModal, useToast, Pagination, CustomSelect } from '../../../../components/school';
 
 // ---------------------------------------------------------------------------
 // Types & helpers
@@ -737,35 +736,33 @@ export default function SchoolHealthPage() {
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
-        <select
-          className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-700 transition-colors"
+        <CustomSelect
           value={filterGrade}
-          onChange={e => setFilterGrade(e.target.value)}
-        >
-          <option value="">Grade Level</option>
-          {uniqueGrades.map(g => (
-            <option key={g} value={g}>{g}</option>
-          ))}
-        </select>
-        <select
-          className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-700 transition-colors"
+          onChange={setFilterGrade}
+          options={[{ value: '', label: 'Grade Level' }, ...uniqueGrades.map(g => ({ value: g, label: g }))]}
+          size="sm"
+        />
+        <CustomSelect
           value={filterStatus}
-          onChange={e => setFilterStatus(e.target.value)}
-        >
-          <option value="">Status</option>
-          <option value="Active">Active</option>
-          <option value="Pending Review">Pending Review</option>
-        </select>
-        <select
-          className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] text-slate-700 transition-colors"
+          onChange={setFilterStatus}
+          options={[
+            { value: '', label: 'Status' },
+            { value: 'Active', label: 'Active' },
+            { value: 'Pending Review', label: 'Pending Review' },
+          ]}
+          size="sm"
+        />
+        <CustomSelect
           value={filterCondition}
-          onChange={e => setFilterCondition(e.target.value)}
-        >
-          <option value="">Condition Type</option>
-          <option value="allergy">Allergy</option>
-          <option value="medical">Medical Condition</option>
-          <option value="none">None</option>
-        </select>
+          onChange={setFilterCondition}
+          options={[
+            { value: '', label: 'Condition Type' },
+            { value: 'allergy', label: 'Allergy' },
+            { value: 'medical', label: 'Medical Condition' },
+            { value: 'none', label: 'None' },
+          ]}
+          size="sm"
+        />
       </div>
 
       {/* ============= CHARTS ============= */}

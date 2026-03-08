@@ -9,7 +9,7 @@ import {
 import { classService, Class } from '../../../../lib/services/class.service';
 import { subjectService, Subject } from '../../../../lib/services/subject.service';
 import { userService } from '../../../../lib/services/user.service';
-import { FormModal, useToast } from '../../../../components/school';
+import { FormModal, useToast, CustomSelect } from '../../../../components/school';
 import {
   GraduationCap,
   BookOpen,
@@ -630,19 +630,18 @@ export default function SchoolGradesPage() {
             <p className="text-sm text-slate-500 mt-1">Select exam to view results</p>
           </div>
           <div className="flex items-center gap-3">
-            <select
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
+            <CustomSelect
               value={selectedExam.assessmentName}
-              onChange={(e) => {
+              onChange={(val) => {
                 const exams = getExamsForClass(selectedClass._id);
-                const found = exams.find(ex => ex.assessmentName === e.target.value);
+                const found = exams.find(ex => ex.assessmentName === val);
                 if (found) setSelectedExam(found);
               }}
-            >
-              {getExamsForClass(selectedClass._id).map((ex) => (
-                <option key={ex.assessmentName} value={ex.assessmentName}>{ex.assessmentName}</option>
-              ))}
-            </select>
+              options={getExamsForClass(selectedClass._id).map((ex) => ({
+                value: ex.assessmentName,
+                label: ex.assessmentName,
+              }))}
+            />
           </div>
         </div>
 
@@ -754,12 +753,11 @@ export default function SchoolGradesPage() {
           {/* Exam name + selector */}
           <div className="flex items-center justify-between">
             <h4 className="text-lg font-bold text-slate-900">{selectedExam.assessmentName} Results</h4>
-            <select
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
+            <CustomSelect
               value={selectedExam.assessmentName}
-              onChange={(e) => {
+              onChange={(val) => {
                 const exams = selectedClass ? getExamsForClass(selectedClass._id) : [];
-                const found = exams.find(ex => ex.assessmentName === e.target.value);
+                const found = exams.find(ex => ex.assessmentName === val);
                 if (found) {
                   setSelectedExam(found);
                   const newResults = getExamResults(found);
@@ -767,11 +765,11 @@ export default function SchoolGradesPage() {
                   if (newStudentResult) setViewingStudent(newStudentResult);
                 }
               }}
-            >
-              {(selectedClass ? getExamsForClass(selectedClass._id) : []).map(ex => (
-                <option key={ex.assessmentName} value={ex.assessmentName}>{ex.assessmentName}</option>
-              ))}
-            </select>
+              options={(selectedClass ? getExamsForClass(selectedClass._id) : []).map(ex => ({
+                value: ex.assessmentName,
+                label: ex.assessmentName,
+              }))}
+            />
           </div>
 
           {/* Summary Cards */}

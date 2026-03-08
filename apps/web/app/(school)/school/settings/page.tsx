@@ -163,7 +163,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <section className="space-y-6 max-w-4xl mx-auto">
+    <section className="space-y-6">
       {/* ─── Section 1: School Profile ─── */}
       <div className="bg-white rounded-xl border border-slate-200 p-6">
         <div className="flex items-start justify-between mb-6">

@@ -21,9 +21,8 @@ import {
   BookOpenCheck,
   ArrowRight,
   ArrowUpRight,
-  ChevronDown,
 } from 'lucide-react';
-import { SchoolStatCard, SchoolStatusBadge, FormModal, useToast } from '../../../../components/school';
+import { SchoolStatCard, SchoolStatusBadge, FormModal, useToast, CustomSelect } from '../../../../components/school';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -187,6 +186,20 @@ export default function ReportsPage() {
   const [activeCategory, setActiveCategory] = useState<CategoryKey | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState('This Month');
   const [detailModal, setDetailModal] = useState<{ open: boolean; title: string; rows: { label: string; value: string }[] }>({ open: false, title: '', rows: [] });
+  const [classFilter, setClassFilter] = useState('all');
+  const [monthFilter, setMonthFilter] = useState('feb-2026');
+
+  const classFilterOptions = [
+    { value: 'all', label: 'All Classes' },
+    { value: 'class-10', label: 'Class 10' },
+    { value: 'class-9', label: 'Class 9' },
+    { value: 'class-8', label: 'Class 8' },
+  ];
+  const monthFilterOptions = [
+    { value: 'feb-2026', label: 'February 2026' },
+    { value: 'jan-2026', label: 'January 2026' },
+    { value: 'dec-2025', label: 'December 2025' },
+  ];
 
   const handleExport = () => {
     showToast('success', 'Report exported successfully! Check your downloads folder.');
@@ -277,15 +290,10 @@ export default function ReportsPage() {
             onClick={() => setActiveCategory(isSelected ? null : card.key)}
             className={`relative overflow-hidden bg-white rounded-xl p-5 text-left transition-all duration-200 hover:shadow-md ${
               isSelected
-                ? 'border-2 border-dashed border-[#824ef2] shadow-sm'
+                ? 'border-2 border-[#824ef2] shadow-sm'
                 : 'border border-slate-200 hover:border-slate-300'
             }`}
           >
-            {/* Decorative large icon top-right */}
-            <div className="absolute top-2 right-2 pointer-events-none">
-              <Icon className={`w-20 h-20 ${card.decorativeBg} opacity-60`} />
-            </div>
-
             {/* Small colored icon */}
             <div className={`inline-flex p-2.5 rounded-xl ${card.iconBg} mb-3`}>
               <Icon className={`w-5 h-5 ${card.iconText}`} />
@@ -435,23 +443,8 @@ export default function ReportsPage() {
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="relative">
-              <select className="appearance-none border border-slate-200 rounded-lg text-sm px-3 py-2 pr-8 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] bg-white text-slate-700">
-                <option>All Classes</option>
-                <option>Class 10</option>
-                <option>Class 9</option>
-                <option>Class 8</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-            <div className="relative">
-              <select className="appearance-none border border-slate-200 rounded-lg text-sm px-3 py-2 pr-8 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] bg-white text-slate-700">
-                <option>February 2026</option>
-                <option>January 2026</option>
-                <option>December 2025</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+            <CustomSelect value={classFilter} onChange={setClassFilter} options={classFilterOptions} size="sm" />
+            <CustomSelect value={monthFilter} onChange={setMonthFilter} options={monthFilterOptions} size="sm" />
             <button className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 transition-colors">
               <Calendar className="w-4 h-4" />
             </button>
@@ -591,23 +584,8 @@ export default function ReportsPage() {
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <div className="relative">
-                <select className="appearance-none border border-slate-200 rounded-lg text-sm px-3 py-2 pr-8 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] bg-white text-slate-700">
-                  <option>All Classes</option>
-                  <option>Class 10</option>
-                  <option>Class 9</option>
-                  <option>Class 8</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-              <div className="relative">
-                <select className="appearance-none border border-slate-200 rounded-lg text-sm px-3 py-2 pr-8 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] bg-white text-slate-700">
-                  <option>February 2026</option>
-                  <option>January 2026</option>
-                  <option>December 2025</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+              <CustomSelect value={classFilter} onChange={setClassFilter} options={classFilterOptions} size="sm" />
+              <CustomSelect value={monthFilter} onChange={setMonthFilter} options={monthFilterOptions} size="sm" />
               <button
                 onClick={handleExport}
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
@@ -616,106 +594,6 @@ export default function ReportsPage() {
                 Export
               </button>
             </div>
-          </div>
-        </div>
-
-        {/* SVG Stacked Bar Chart */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-base font-semibold text-slate-900 mb-4">Attendance Overview by Class</h3>
-          <div className="flex justify-center overflow-x-auto">
-            <svg
-              viewBox={`0 0 ${startX + classes.length * (barWidth + gap)} ${chartHeight + 60}`}
-              className="w-full max-w-[600px]"
-              preserveAspectRatio="xMidYMid meet"
-            >
-              {/* Y-axis lines and labels */}
-              {[0, 50, 100].map((val) => {
-                const y = chartHeight - (val / maxValue) * chartHeight + 10;
-                return (
-                  <g key={val}>
-                    <line
-                      x1={startX - 5}
-                      y1={y}
-                      x2={startX + classes.length * (barWidth + gap) - gap + barWidth}
-                      y2={y}
-                      stroke="#e2e8f0"
-                      strokeWidth="1"
-                    />
-                    <text x={startX - 10} y={y + 4} textAnchor="end" fontSize="11" fill="#94a3b8">
-                      {val}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Bars */}
-              {attendanceData.map((row, i) => {
-                const x = startX + i * (barWidth + gap);
-                const presentHeight = (row.present / maxValue) * chartHeight;
-                const absentHeight = (row.absent / maxValue) * chartHeight;
-                const barBase = chartHeight + 10;
-
-                return (
-                  <g key={row.className}>
-                    {/* Present (green) - bottom */}
-                    <rect
-                      x={x}
-                      y={barBase - presentHeight - absentHeight}
-                      width={barWidth}
-                      height={presentHeight}
-                      rx="3"
-                      fill="#10b981"
-                    />
-                    {/* Absent (red) - top */}
-                    <rect
-                      x={x}
-                      y={barBase - presentHeight - absentHeight}
-                      width={barWidth}
-                      height={absentHeight}
-                      rx="3"
-                      fill="#ef4444"
-                    />
-                    {/* Present rect sits below absent */}
-                    <rect
-                      x={x}
-                      y={barBase - presentHeight}
-                      width={barWidth}
-                      height={presentHeight}
-                      fill="#10b981"
-                      rx="0"
-                    />
-                    {/* Absent rect sits above present */}
-                    <rect
-                      x={x}
-                      y={barBase - presentHeight - absentHeight}
-                      width={barWidth}
-                      height={absentHeight}
-                      fill="#ef4444"
-                      rx="3"
-                    />
-
-                    {/* X-axis label */}
-                    <text
-                      x={x + barWidth / 2}
-                      y={barBase + 18}
-                      textAnchor="middle"
-                      fontSize="10"
-                      fill="#64748b"
-                    >
-                      {classes[i]}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Legend */}
-              <g transform={`translate(${startX}, ${chartHeight + 40})`}>
-                <rect x="0" y="0" width="12" height="12" rx="2" fill="#ef4444" />
-                <text x="16" y="10" fontSize="11" fill="#64748b">Absent</text>
-                <rect x="70" y="0" width="12" height="12" rx="2" fill="#10b981" />
-                <text x="86" y="10" fontSize="11" fill="#64748b">Present</text>
-              </g>
-            </svg>
           </div>
         </div>
 
@@ -791,23 +669,8 @@ export default function ReportsPage() {
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <div className="relative">
-                <select className="appearance-none border border-slate-200 rounded-lg text-sm px-3 py-2 pr-8 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] bg-white text-slate-700">
-                  <option>All Classes</option>
-                  <option>Class 10</option>
-                  <option>Class 9</option>
-                  <option>Class 8</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-              <div className="relative">
-                <select className="appearance-none border border-slate-200 rounded-lg text-sm px-3 py-2 pr-8 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] bg-white text-slate-700">
-                  <option>February 2026</option>
-                  <option>January 2026</option>
-                  <option>December 2025</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+              <CustomSelect value={classFilter} onChange={setClassFilter} options={classFilterOptions} size="sm" />
+              <CustomSelect value={monthFilter} onChange={setMonthFilter} options={monthFilterOptions} size="sm" />
               <button
                 onClick={handleExport}
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"

@@ -7,7 +7,7 @@ import {
   LeaveType,
   LeaveStatus,
 } from '../../../../lib/services/leave-request.service';
-import { SchoolStatCard, SchoolStatusBadge, FormModal, useToast } from '../../../../components/school';
+import { SchoolStatCard, SchoolStatusBadge, FormModal, useToast, CustomSelect } from '../../../../components/school';
 import {
   CalendarCheck,
   Clock,
@@ -631,16 +631,15 @@ export default function LeaveManagementPage() {
                     className={`${inputClass} w-full pl-9`}
                   />
                 </div>
-                <select
+                <CustomSelect
                   value={filterLeaveType}
-                  onChange={(e) => setFilterLeaveType(e.target.value as LeaveType | '')}
-                  className={`${inputClass} cursor-pointer`}
-                >
-                  <option value="">All Types</option>
-                  {Object.entries(leaveTypeLabels).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setFilterLeaveType(val as LeaveType | '')}
+                  options={[
+                    { value: '', label: 'All Types' },
+                    ...Object.entries(leaveTypeLabels).map(([value, label]) => ({ value, label })),
+                  ]}
+                  size="sm"
+                />
                 <input
                   type="date"
                   value={filterFromDate}

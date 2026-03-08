@@ -511,24 +511,36 @@ export default function AssignmentsOverviewPage() {
       )}
 
       {viewLevel === 'students' && selectedClass && selectedSection && (
-        <div className="space-y-6">
-          <div className="flex items-center gap-3 text-sm text-slate-500">
-            <span>Classes</span>
-            <ChevronRight className="w-4 h-4" />
-            <span>{selectedClass.name}</span>
-            <ChevronRight className="w-4 h-4" />
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <button
+              onClick={() => { setViewLevel('classes'); setSelectedClass(null); setSelectedSection(null); setSearchQuery(''); }}
+              className="hover:text-[#824ef2] transition-colors"
+            >
+              Classes
+            </button>
+            <ChevronRight className="w-3.5 h-3.5" />
+            <button
+              onClick={() => { setViewLevel('sections'); setSelectedSection(null); }}
+              className="hover:text-[#824ef2] transition-colors"
+            >
+              {selectedClass.name}
+            </button>
+            <ChevronRight className="w-3.5 h-3.5" />
             <span className="text-slate-900 font-medium">Section {selectedSection}</span>
           </div>
           <button
             onClick={() => { setViewLevel('sections'); setSelectedSection(null); }}
-            className="text-sm text-[#824ef2] hover:underline flex items-center gap-1"
+            className="inline-flex items-center gap-1.5 text-sm text-[#824ef2] hover:text-[#6b3fd4] font-medium transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Sections
           </button>
 
-          <h2 className="text-lg font-semibold text-slate-900">Section {selectedSection} - Students</h2>
-          <p className="text-sm text-slate-500">Individual student assignment status</p>
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Section {selectedSection} - Students</h2>
+            <p className="text-sm text-slate-500 mt-0.5">Individual student assignment status</p>
+          </div>
 
           {sectionStudents.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-xl border border-slate-200">
@@ -689,10 +701,13 @@ function ClassesView({
   classes: Class[];
 }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6">
+    <div className="space-y-4">
       {/* Title + Search */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <h2 className="text-lg font-bold text-slate-900">All Classes</h2>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">All Classes</h2>
+          <p className="text-sm text-slate-500 mt-0.5">Class-wise assignment overview</p>
+        </div>
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -711,68 +726,77 @@ function ClassesView({
         </div>
       </div>
 
-      {/* Cards Grid */}
+      {/* Table */}
       {classCards.length === 0 ? (
-        <div className="text-center py-16">
+        <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
           <BookOpen className="w-12 h-12 mx-auto text-slate-300 mb-3" />
           <p className="text-slate-600 font-medium">No classes match your search</p>
           <p className="text-sm text-slate-500 mt-1">Try adjusting your search term.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {classCards.map((card) => {
-            const cls = classes.find((c) => c._id === card.classId);
-            return (
-              <div
-                key={card.classId}
-                onClick={() => cls && onClassClick(cls)}
-                className="bg-white rounded-xl border border-slate-200 p-5 cursor-pointer hover:shadow-md hover:border-[#824ef2]/30 transition-all group"
-              >
-                {/* Class name + sections badge */}
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-slate-900 text-base group-hover:text-[#824ef2] transition-colors">
-                    {card.className}
-                  </h3>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                    {card.sections.length} Sections
-                  </span>
-                </div>
-
-                {/* Stats rows */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500">Total Assignments</span>
-                    <span className="text-sm font-semibold text-slate-900">{card.totalAssignments}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500">Completed</span>
-                    <span className="text-sm font-semibold text-emerald-600">{card.completed}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500">Pending</span>
-                    <span className="text-sm font-semibold text-orange-600">{card.pending}</span>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="border-t border-slate-100 my-4" />
-
-                {/* Completion Rate + Progress Bar */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-slate-500">Completion Rate</span>
-                    <span className="text-sm font-bold text-slate-900">{card.completionRate}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#824ef2] rounded-full transition-all duration-500"
-                      style={{ width: `${card.completionRate}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left border-b border-slate-200 bg-slate-50">
+                  <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Class</th>
+                  <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Sections</th>
+                  <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Total</th>
+                  <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Completed</th>
+                  <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Pending</th>
+                  <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Progress</th>
+                  <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {classCards.map((card) => {
+                  const cls = classes.find((c) => c._id === card.classId);
+                  return (
+                    <tr
+                      key={card.classId}
+                      onClick={() => cls && onClassClick(cls)}
+                      className="hover:bg-slate-50 transition-colors cursor-pointer"
+                    >
+                      <td className="py-3.5 px-4 font-medium text-slate-900">{card.className}</td>
+                      <td className="py-3.5 px-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                          {card.sections.length}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-900 font-medium">{card.totalAssignments}</td>
+                      <td className="py-3.5 px-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                          {card.completed}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                          {card.pending}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-[#824ef2] rounded-full transition-all duration-500"
+                              style={{ width: `${card.completionRate}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-semibold text-slate-700">{card.completionRate}%</span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <button className="text-[#824ef2] hover:text-[#6b3fd4] text-sm font-medium flex items-center gap-1 transition-colors">
+                          <Eye className="w-3.5 h-3.5" />
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -793,9 +817,9 @@ function SectionsView({
   onSectionClick: (section: string) => void;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6">
+    <div className="space-y-4">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-slate-500 mb-1">
+      <div className="flex items-center gap-2 text-sm text-slate-500">
         <button onClick={onBack} className="hover:text-[#824ef2] transition-colors">
           Classes
         </button>
@@ -806,76 +830,86 @@ function SectionsView({
       {/* Back link */}
       <button
         onClick={onBack}
-        className="inline-flex items-center gap-1.5 text-sm text-[#824ef2] hover:text-[#6b3fd4] font-medium mb-5 transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-[#824ef2] hover:text-[#6b3fd4] font-medium transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Classes
       </button>
 
       {/* Title */}
-      <h2 className="text-lg font-bold text-slate-900 mb-6">
-        {selectedClass.name} - Sections
-      </h2>
+      <div>
+        <h2 className="text-lg font-bold text-slate-900">{selectedClass.name} - Sections</h2>
+        <p className="text-sm text-slate-500 mt-0.5">Section-wise assignment breakdown</p>
+      </div>
 
-      {/* Section cards grid */}
+      {/* Section table */}
       {sectionCards.length === 0 ? (
-        <div className="text-center py-16">
+        <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
           <Users className="w-12 h-12 mx-auto text-slate-300 mb-3" />
           <p className="text-slate-600 font-medium">No sections found</p>
           <p className="text-sm text-slate-500 mt-1">This class has no sections configured.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {sectionCards.map((section) => (
-            <div
-              key={section.section}
-              onClick={() => onSectionClick(section.section)}
-              className="bg-white rounded-xl border border-slate-200 p-5 cursor-pointer hover:shadow-md hover:border-[#824ef2]/30 transition-all group"
-            >
-              {/* Section name + student count */}
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-slate-900 text-base group-hover:text-[#824ef2] transition-colors">
-                  Section {section.section}
-                </h3>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                  {section.studentCount} Students
-                </span>
-              </div>
-
-              {/* Stats rows */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">Total Assignments</span>
-                  <span className="text-sm font-semibold text-slate-900">{section.totalAssignments}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">Completed</span>
-                  <span className="text-sm font-semibold text-emerald-600">{section.completed}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">Pending</span>
-                  <span className="text-sm font-semibold text-orange-600">{section.pending}</span>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="border-t border-slate-100 my-4" />
-
-              {/* Completion Rate + Progress Bar */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-500">Completion Rate</span>
-                  <span className="text-sm font-bold text-slate-900">{section.completionRate}%</span>
-                </div>
-                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#824ef2] rounded-full transition-all duration-500"
-                    style={{ width: `${section.completionRate}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left border-b border-slate-200 bg-slate-50">
+                  <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Section</th>
+                  <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Students</th>
+                  <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Total</th>
+                  <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Completed</th>
+                  <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Pending</th>
+                  <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Progress</th>
+                  <th className="py-3.5 px-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {sectionCards.map((section) => (
+                  <tr
+                    key={section.section}
+                    onClick={() => onSectionClick(section.section)}
+                    className="hover:bg-slate-50 transition-colors cursor-pointer"
+                  >
+                    <td className="py-3.5 px-4 font-medium text-slate-900">Section {section.section}</td>
+                    <td className="py-3.5 px-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                        {section.studentCount}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-900 font-medium">{section.totalAssignments}</td>
+                    <td className="py-3.5 px-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                        {section.completed}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                        {section.pending}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-[#824ef2] rounded-full transition-all duration-500"
+                            style={{ width: `${section.completionRate}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-semibold text-slate-700">{section.completionRate}%</span>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <button className="text-[#824ef2] hover:text-[#6b3fd4] text-sm font-medium flex items-center gap-1 transition-colors">
+                        <Eye className="w-3.5 h-3.5" />
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -900,30 +934,29 @@ function StudentDetailView({
   const notSubmittedCount = student.assignments.filter((a) => a.status === 'Not Submitted').length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Breadcrumb & Back */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
-        <div className="flex items-center gap-2 text-sm text-slate-500 mb-1">
-          <span className="hover:text-[#824ef2] cursor-default">Classes</span>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <span>{selectedClass.name}</span>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <span>Section {selectedSection}</span>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-slate-900 font-medium">{student.name}</span>
-        </div>
+      <div className="flex items-center gap-2 text-sm text-slate-500">
+        <span className="hover:text-[#824ef2] cursor-default">Classes</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span>{selectedClass.name}</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span>Section {selectedSection}</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span className="text-slate-900 font-medium">{student.name}</span>
+      </div>
 
-        <button
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-sm text-[#824ef2] hover:text-[#6b3fd4] font-medium mb-4 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Students
-        </button>
+      <button
+        onClick={onBack}
+        className="inline-flex items-center gap-1.5 text-sm text-[#824ef2] hover:text-[#6b3fd4] font-medium transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to Students
+      </button>
 
-        <h2 className="text-lg font-bold text-slate-900">
-          {student.name} - Assignment Details
-        </h2>
+      <div>
+        <h2 className="text-lg font-bold text-slate-900">{student.name} - Assignment Details</h2>
+        <p className="text-sm text-slate-500 mt-0.5">Detailed assignment breakdown</p>
       </div>
 
       {/* Student Stat Cards */}

@@ -11,7 +11,7 @@ import {
   BarChart3,
   Loader2,
 } from 'lucide-react';
-import { SchoolStatCard, SchoolStatusBadge, FormModal, ConfirmModal, useToast, Pagination } from '../../../../components/school';
+import { SchoolStatCard, SchoolStatusBadge, FormModal, ConfirmModal, useToast, Pagination, CustomSelect } from '../../../../components/school';
 
 export default function AttendancePage() {
   const { showToast } = useToast();
@@ -86,18 +86,11 @@ export default function AttendancePage() {
             <label className="text-sm text-slate-700 font-medium" htmlFor="att-class">
               Class
             </label>
-            <select
-              id="att-class"
-              className="border border-slate-300 bg-white text-slate-900 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none hover:border-slate-400 transition-colors"
+            <CustomSelect
               value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-            >
-              {classesForTeacher.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedClass}
+              options={classesForTeacher.map((c) => ({ value: c.id, label: c.name }))}
+            />
           </div>
         </div>
 

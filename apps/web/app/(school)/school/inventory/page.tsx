@@ -45,7 +45,7 @@ import {
   Building,
   Loader2,
 } from 'lucide-react';
-import { SchoolStatCard, SchoolStatusBadge, FormModal, ConfirmModal, useToast, Pagination } from '../../../../components/school';
+import { SchoolStatCard, SchoolStatusBadge, FormModal, ConfirmModal, useToast, Pagination, CustomSelect } from '../../../../components/school';
 
 interface ItemFormData {
   name: string;
@@ -490,16 +490,15 @@ export default function SchoolInventoryPage() {
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="flex items-center gap-3">
             <Filter className="w-4 h-4 text-slate-500" />
-            <select
+            <CustomSelect
               value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value as ItemCategory | '')}
-              className="border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] focus:outline-none transition-colors"
-            >
-              <option value="">All Categories</option>
-              {Object.values(ItemCategory).map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+              onChange={(val) => setCategoryFilter(val as ItemCategory | '')}
+              options={[
+                { value: '', label: 'All Categories' },
+                ...Object.values(ItemCategory).map((cat) => ({ value: cat, label: cat })),
+              ]}
+              size="sm"
+            />
           </div>
         </div>
       )}
