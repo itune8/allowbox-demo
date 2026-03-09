@@ -277,14 +277,36 @@ export default function TeacherMaterialsPage() {
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
             <textarea className={`${inputClass} resize-none`} rows={2} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Brief description..." />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">File</label>
-            <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center hover:border-[#824ef2]/30 transition-colors cursor-pointer">
-              <Upload className="w-8 h-8 mx-auto text-slate-400 mb-2" />
-              <p className="text-sm text-slate-500">Click to upload or drag and drop</p>
-              <p className="text-xs text-slate-400 mt-1">PDF, Video, Image up to 100MB</p>
+          {formData.type === 'link' ? (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">URL <span className="text-red-500">*</span></label>
+              <input type="url" className={inputClass} placeholder="https://example.com/resource" required />
             </div>
-          </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                File {formData.type === 'pdf' ? '(PDF)' : formData.type === 'video' ? '(Video)' : '(Image)'}
+              </label>
+              <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center hover:border-[#824ef2]/30 transition-colors cursor-pointer relative">
+                <input
+                  type="file"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  accept={
+                    formData.type === 'pdf' ? '.pdf,application/pdf'
+                    : formData.type === 'video' ? 'video/*'
+                    : 'image/*'
+                  }
+                />
+                <Upload className="w-8 h-8 mx-auto text-slate-400 mb-2" />
+                <p className="text-sm text-slate-500">Click to upload or drag and drop</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  {formData.type === 'pdf' && 'PDF files up to 100MB'}
+                  {formData.type === 'video' && 'MP4, MOV, AVI up to 500MB'}
+                  {formData.type === 'image' && 'JPG, PNG, SVG up to 50MB'}
+                </p>
+              </div>
+            </div>
+          )}
         </form>
       </FormModal>
 

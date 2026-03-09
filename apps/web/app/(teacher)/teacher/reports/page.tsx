@@ -84,11 +84,10 @@ export default function TeacherReportsPage() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <SchoolStatCard icon={<BarChart3 className="w-5 h-5" />} color="blue" label="Reports Generated" value={15} />
         <SchoolStatCard icon={<Users className="w-5 h-5" />} color="green" label="Students Covered" value={142} />
         <SchoolStatCard icon={<TrendingUp className="w-5 h-5" />} color="purple" label="Class Avg" value="76%" />
-        <SchoolStatCard icon={<FileText className="w-5 h-5" />} color="amber" label="Pending Reports" value={3} />
       </div>
 
       {/* Report Type Selector */}

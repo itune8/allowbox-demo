@@ -62,6 +62,7 @@ export default function TeacherLessonPlansPage() {
   const [loading, setLoading] = useState(true);
   const [plans, setPlans] = useState<MockPlan[]>(MOCK_PLANS);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterClass, setFilterClass] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<MockPlan | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -94,10 +95,16 @@ export default function TeacherLessonPlansPage() {
     thisWeek: plans.filter((p) => p.status === 'scheduled').length,
   }), [plans]);
 
+  const planClasses = useMemo(() => {
+    return Array.from(new Set(plans.map((p) => p.class))).sort();
+  }, [plans]);
+
   const filtered = useMemo(() => {
-    if (filterStatus === 'all') return plans;
-    return plans.filter((p) => p.status === filterStatus);
-  }, [plans, filterStatus]);
+    let result = plans;
+    if (filterStatus !== 'all') result = result.filter((p) => p.status === filterStatus);
+    if (filterClass !== 'all') result = result.filter((p) => p.class === filterClass);
+    return result;
+  }, [plans, filterStatus, filterClass]);
 
   function handleDelete(id: string) {
     setPlans((prev) => prev.filter((p) => p.id !== id));
@@ -154,6 +161,29 @@ export default function TeacherLessonPlansPage() {
         <SchoolStatCard icon={<CheckCircle className="w-5 h-5" />} color="green" label="Completed" value={stats.completed} />
         <SchoolStatCard icon={<Clock className="w-5 h-5" />} color="amber" label="In Progress" value={stats.inProgress} />
         <SchoolStatCard icon={<Calendar className="w-5 h-5" />} color="purple" label="This Week" value={stats.thisWeek} />
+      </div>
+
+      {/* Class filter pills */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setFilterClass('all')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            filterClass === 'all' ? 'bg-[#824ef2] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          All Classes
+        </button>
+        {planClasses.map((cls) => (
+          <button
+            key={cls}
+            onClick={() => setFilterClass(cls)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              filterClass === cls ? 'bg-[#824ef2] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            {cls}
+          </button>
+        ))}
       </div>
 
       {/* Filter + List */}
