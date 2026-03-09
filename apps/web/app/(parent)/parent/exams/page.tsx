@@ -656,7 +656,7 @@ export default function ParentExamsPage() {
                 return (
                   <div
                     key={group.id}
-                    className={`bg-white rounded-xl border border-slate-200 border-l-4 ${config.border} p-4 sm:p-5 hover:shadow-md transition-shadow`}
+                    className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 transition-colors"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       {/* Left: Icon + Info */}
@@ -737,7 +737,7 @@ export default function ParentExamsPage() {
               {childResults.map((result, index) => (
                 <div
                   key={result.id}
-                  className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 hover:shadow-md transition-shadow"
+                  className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 transition-colors"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     {/* Left: Icon + Info */}
@@ -860,7 +860,7 @@ export default function ParentExamsPage() {
                       </div>
 
                       {/* Card */}
-                      <div className="flex-1 bg-white rounded-xl border border-slate-200 p-4 sm:p-5 hover:shadow-md transition-shadow">
+                      <div className="flex-1 bg-white rounded-xl border border-slate-200 p-4 sm:p-5 transition-colors">
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <span className={`inline-block text-xs px-2.5 py-0.5 rounded-full font-medium ${typeConf.badgeBg} ${typeConf.badge} mb-2`}>

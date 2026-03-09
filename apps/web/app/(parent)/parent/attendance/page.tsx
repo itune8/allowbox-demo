@@ -59,11 +59,11 @@ function generateCalendarDays(year: number, month: number) {
   return days;
 }
 
-const calendarDotColors: Record<string, string> = {
-  present: 'bg-green-500',
-  absent: 'bg-red-500',
-  late: 'bg-amber-500',
-  holiday: 'bg-slate-300',
+const calendarCellColors: Record<string, string> = {
+  present: 'bg-green-100 text-green-700 border-green-200',
+  absent: 'bg-red-100 text-red-700 border-red-200',
+  late: 'bg-amber-100 text-amber-700 border-amber-200',
+  holiday: 'bg-slate-100 text-slate-400 border-slate-200',
 };
 
 export default function ParentAttendancePage() {
@@ -212,28 +212,32 @@ export default function ParentAttendancePage() {
               <div key={d} className="text-center text-xs font-medium text-slate-500 py-2">{d}</div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-1.5">
             {calendarDays.map((d, i) => (
-              <div key={i} className={`aspect-square flex flex-col items-center justify-center rounded-lg text-sm ${d.day === 0 ? '' : 'hover:bg-slate-50'}`}>
-                {d.day > 0 && (
-                  <>
-                    <span className="text-slate-700 font-medium">{d.day}</span>
-                    {d.status && <div className={`w-2 h-2 rounded-full mt-1 ${calendarDotColors[d.status]}`} />}
-                  </>
-                )}
+              <div
+                key={i}
+                className={`aspect-square flex items-center justify-center rounded-lg text-sm font-semibold border ${
+                  d.day === 0
+                    ? 'border-transparent'
+                    : d.status
+                      ? calendarCellColors[d.status]
+                      : 'border-slate-100 text-slate-700'
+                }`}
+              >
+                {d.day > 0 && d.day}
               </div>
             ))}
           </div>
 
           <div className="flex items-center gap-6 mt-6 pt-4 border-t border-slate-200">
             {[
-              { label: 'Present', color: 'bg-green-500' },
-              { label: 'Absent', color: 'bg-red-500' },
-              { label: 'Late', color: 'bg-amber-500' },
-              { label: 'Holiday', color: 'bg-slate-300' },
+              { label: 'Present', color: 'bg-green-100 border-green-200', textColor: 'text-green-700' },
+              { label: 'Absent', color: 'bg-red-100 border-red-200', textColor: 'text-red-700' },
+              { label: 'Late', color: 'bg-amber-100 border-amber-200', textColor: 'text-amber-700' },
+              { label: 'Holiday', color: 'bg-slate-100 border-slate-200', textColor: 'text-slate-400' },
             ].map((l) => (
               <div key={l.label} className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${l.color}`} />
+                <div className={`w-6 h-6 rounded border flex items-center justify-center text-[10px] font-bold ${l.color} ${l.textColor}`}>1</div>
                 <span className="text-xs text-slate-600">{l.label}</span>
               </div>
             ))}

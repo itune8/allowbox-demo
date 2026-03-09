@@ -17,7 +17,7 @@ const MOCK_CHILDREN = [
   { id: 'child2', name: 'Priya Sharma', class: 'Class 7-B', photo: 'PS' },
 ];
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const TIMES = ['08:00', '08:50', '09:40', '10:30', '11:20', '12:10', '13:00', '13:50'];
 
 interface TimetableSlot {
@@ -79,6 +79,16 @@ const MOCK_TIMETABLE: Record<string, Record<string, TimetableSlot>> = {
     '13:00': { subject: 'Art', teacher: 'Mrs. Das', room: 'Art Room', color: 'bg-rose-100 text-rose-700 border-rose-200' },
     '13:50': { subject: 'Social Studies', teacher: 'Mrs. Reddy', room: 'R-108', color: 'bg-pink-100 text-pink-700 border-pink-200' },
   },
+  Saturday: {
+    '08:00': { subject: 'Physical Ed.', teacher: 'Mr. Rao', room: 'Ground', color: 'bg-orange-100 text-orange-700 border-orange-200' },
+    '08:50': { subject: 'Mathematics', teacher: 'Mrs. Gupta', room: 'R-201', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+    '09:40': { subject: 'Break', teacher: '', room: '', color: 'bg-slate-50 text-slate-500 border-slate-200', isBreak: true },
+    '10:30': { subject: 'Science', teacher: 'Mrs. Patel', room: 'Lab 1', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+    '11:20': { subject: 'English', teacher: 'Mr. Singh', room: 'R-203', color: 'bg-green-100 text-green-700 border-green-200' },
+    '12:10': { subject: 'Lunch', teacher: '', room: '', color: 'bg-slate-50 text-slate-500 border-slate-200', isBreak: true },
+    '13:00': { subject: 'Art', teacher: 'Mrs. Das', room: 'Art Room', color: 'bg-rose-100 text-rose-700 border-rose-200' },
+    '13:50': { subject: 'Music', teacher: 'Mr. Bhatt', room: 'Music Room', color: 'bg-violet-100 text-violet-700 border-violet-200' },
+  },
 };
 
 export default function ParentTimetablePage() {
@@ -88,7 +98,7 @@ export default function ParentTimetablePage() {
   const [view, setView] = useState<'weekly' | 'daily'>('weekly');
   const [selectedDay, setSelectedDay] = useState(() => {
     const d = new Date().getDay();
-    return d >= 1 && d <= 5 ? DAYS[d - 1]! : 'Monday';
+    return d >= 1 && d <= 6 ? DAYS[d - 1]! : 'Monday';
   });
 
   useEffect(() => {
@@ -164,7 +174,7 @@ export default function ParentTimetablePage() {
       {/* Weekly View */}
       {view === 'weekly' && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
-          <table className="w-full text-sm min-w-[700px]">
+          <table className="w-full text-sm min-w-[850px]">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">
                 <th className="text-left py-3 px-4 font-medium text-slate-500 w-20">Time</th>

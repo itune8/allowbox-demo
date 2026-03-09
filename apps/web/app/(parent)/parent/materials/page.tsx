@@ -173,11 +173,37 @@ export default function ParentMaterialsPage() {
         <SchoolStatCard icon={<Link className="w-5 h-5" />} color="amber" label="Links" value={stats.links} />
       </div>
 
-      {/* Subject Cards */}
-      {Object.keys(subjectCounts).length > 0 && (
+      {/* Subject Filter - Dropdown when many subjects, pills when few */}
+      {Object.keys(subjectCounts).length > 0 && Object.keys(subjectCounts).length > 5 ? (
         <div>
           <h2 className="text-sm font-semibold text-slate-700 mb-3">Browse by Subject</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <select
+            className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] cursor-pointer"
+            value={selectedSubjectCard || 'all'}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSelectedSubjectCard(val === 'all' ? null : val);
+              setFilterSubject('all');
+            }}
+          >
+            <option value="all">All Subjects ({childMaterials.length})</option>
+            {Object.entries(subjectCounts).map(([subject, count]) => (
+              <option key={subject} value={subject}>{subject} ({count})</option>
+            ))}
+          </select>
+        </div>
+      ) : Object.keys(subjectCounts).length > 0 ? (
+        <div>
+          <h2 className="text-sm font-semibold text-slate-700 mb-3">Browse by Subject</h2>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => { setSelectedSubjectCard(null); setFilterSubject('all'); }}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                !selectedSubjectCard ? 'bg-[#824ef2] text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              All ({childMaterials.length})
+            </button>
             {Object.entries(subjectCounts).map(([subject, count]) => (
               <button
                 key={subject}
@@ -185,19 +211,18 @@ export default function ParentMaterialsPage() {
                   setSelectedSubjectCard(selectedSubjectCard === subject ? null : subject);
                   setFilterSubject('all');
                 }}
-                className={`p-3 rounded-xl border text-left transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   selectedSubjectCard === subject
-                    ? 'ring-2 ring-[#824ef2] border-[#824ef2] bg-[#824ef2]/5'
-                    : `${subjectColors[subject] || 'bg-slate-50 border-slate-200 text-slate-700'} hover:shadow-sm`
+                    ? 'bg-[#824ef2] text-white'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
-                <p className="text-sm font-semibold">{subject}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{count} material{count !== 1 ? 's' : ''}</p>
+                {subject} ({count})
               </button>
             ))}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">

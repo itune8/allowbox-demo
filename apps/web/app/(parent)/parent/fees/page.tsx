@@ -12,6 +12,7 @@ import {
   CreditCard,
   Download,
   TrendingUp,
+  Award,
 } from 'lucide-react';
 
 // ── Mock data ──
@@ -23,6 +24,7 @@ const MOCK_CHILDREN = [
 interface FeeBreakdownItem {
   id: string;
   type: string;
+  category: 'Academic' | 'Transport' | 'Extra-Curricular';
   dueDate: string;
   amount: number;
   paid: number;
@@ -39,15 +41,24 @@ interface PaymentHistoryItem {
   receiptNo: string;
 }
 
+interface ConcessionItem {
+  id: string;
+  type: string;
+  description: string;
+  amount: string;
+  appliedTo: string;
+  status: 'active' | 'pending' | 'expired';
+}
+
 const MOCK_FEE_BREAKDOWN: FeeBreakdownItem[] = [
-  { id: 'f1', type: 'Tuition Fee', dueDate: '2026-04-01', amount: 25000, paid: 25000, balance: 0, status: 'paid' },
-  { id: 'f2', type: 'Transport Fee', dueDate: '2026-04-01', amount: 5000, paid: 5000, balance: 0, status: 'paid' },
-  { id: 'f3', type: 'Lab Fee', dueDate: '2026-04-01', amount: 3000, paid: 3000, balance: 0, status: 'paid' },
-  { id: 'f4', type: 'Tuition Fee', dueDate: '2026-07-01', amount: 25000, paid: 0, balance: 25000, status: 'pending' },
-  { id: 'f5', type: 'Transport Fee', dueDate: '2026-07-01', amount: 5000, paid: 0, balance: 5000, status: 'pending' },
-  { id: 'f6', type: 'Activity Fee', dueDate: '2026-03-15', amount: 4000, paid: 0, balance: 4000, status: 'overdue' },
-  { id: 'f7', type: 'Exam Fee', dueDate: '2026-05-01', amount: 2000, paid: 0, balance: 2000, status: 'pending' },
-  { id: 'f8', type: 'Library Fee', dueDate: '2026-04-01', amount: 1500, paid: 1500, balance: 0, status: 'paid' },
+  { id: 'f1', type: 'Tuition Fee', category: 'Academic', dueDate: '2026-04-01', amount: 25000, paid: 25000, balance: 0, status: 'paid' },
+  { id: 'f2', type: 'Transport Fee', category: 'Transport', dueDate: '2026-04-01', amount: 5000, paid: 5000, balance: 0, status: 'paid' },
+  { id: 'f3', type: 'Lab Fee', category: 'Academic', dueDate: '2026-04-01', amount: 3000, paid: 3000, balance: 0, status: 'paid' },
+  { id: 'f4', type: 'Tuition Fee', category: 'Academic', dueDate: '2026-07-01', amount: 25000, paid: 0, balance: 25000, status: 'pending' },
+  { id: 'f5', type: 'Transport Fee', category: 'Transport', dueDate: '2026-07-01', amount: 5000, paid: 0, balance: 5000, status: 'pending' },
+  { id: 'f6', type: 'Activity Fee', category: 'Extra-Curricular', dueDate: '2026-03-15', amount: 4000, paid: 0, balance: 4000, status: 'overdue' },
+  { id: 'f7', type: 'Exam Fee', category: 'Academic', dueDate: '2026-05-01', amount: 2000, paid: 0, balance: 2000, status: 'pending' },
+  { id: 'f8', type: 'Library Fee', category: 'Academic', dueDate: '2026-04-01', amount: 1500, paid: 1500, balance: 0, status: 'paid' },
 ];
 
 const MOCK_PAYMENT_HISTORY: PaymentHistoryItem[] = [
@@ -61,18 +72,29 @@ const MOCK_PAYMENT_HISTORY: PaymentHistoryItem[] = [
   { id: 'p8', date: '2025-08-05', description: 'Transport Fee - Q1', amount: 5000, method: 'Credit Card', receiptNo: 'RCP-20250805-002' },
 ];
 
+const MOCK_CONCESSIONS: ConcessionItem[] = [
+  { id: 'c1', type: 'Merit Scholarship', description: '10% discount on tuition fee for academic excellence', amount: 'Rs. 5,000', appliedTo: 'Tuition Fee', status: 'active' },
+  { id: 'c2', type: 'Sibling Discount', description: '5% discount on tuition fee for second child enrollment', amount: 'Rs. 2,500', appliedTo: 'Tuition Fee', status: 'active' },
+  { id: 'c3', type: 'Sports Scholarship', description: 'Scholarship for outstanding performance in inter-school sports', amount: 'Rs. 3,000', appliedTo: 'Activity Fee', status: 'pending' },
+  { id: 'c4', type: 'Early Payment Discount', description: '2% discount for paying fees before the due date', amount: 'Rs. 1,400', appliedTo: 'All Fees', status: 'active' },
+];
+
 const statusBadge: Record<string, string> = {
   paid: 'bg-green-100 text-green-700',
   pending: 'bg-amber-100 text-amber-700',
   overdue: 'bg-red-100 text-red-700',
+  active: 'bg-green-100 text-green-700',
+  expired: 'bg-slate-100 text-slate-500',
 };
+
+const CATEGORY_ORDER: FeeBreakdownItem['category'][] = ['Academic', 'Transport', 'Extra-Curricular'];
 
 export default function ParentFeesPage() {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [selectedChild, setSelectedChild] = useState(MOCK_CHILDREN[0]!.id);
   const [showChildDropdown, setShowChildDropdown] = useState(false);
-  const [tab, setTab] = useState<'breakdown' | 'history' | 'quickpay'>('breakdown');
+  const [tab, setTab] = useState<'breakdown' | 'history' | 'concessions'>('breakdown');
 
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 400);
@@ -95,8 +117,32 @@ export default function ParentFeesPage() {
     .filter((f) => f.status !== 'paid')
     .reduce((sum, f) => sum + f.balance, 0);
 
+  const groupedFees = useMemo(() => {
+    const groups: Record<string, FeeBreakdownItem[]> = {};
+    for (const category of CATEGORY_ORDER) {
+      const items = MOCK_FEE_BREAKDOWN.filter((f) => f.category === category);
+      if (items.length > 0) {
+        groups[category] = items;
+      }
+    }
+    return groups;
+  }, []);
+
+  const totalConcessionSavings = useMemo(() => {
+    return MOCK_CONCESSIONS
+      .filter((c) => c.status === 'active')
+      .reduce((sum, c) => {
+        const numericAmount = parseInt(c.amount.replace(/[^0-9]/g, ''), 10);
+        return sum + (isNaN(numericAmount) ? 0 : numericAmount);
+      }, 0);
+  }, []);
+
   function handlePayNow() {
     showToast('success', `Payment of Rs. ${totalPayable.toLocaleString()} initiated. You will be redirected to the payment gateway shortly.`);
+  }
+
+  function handlePayFee(fee: FeeBreakdownItem) {
+    showToast('success', `Payment of Rs. ${fee.balance.toLocaleString()} for ${fee.type} initiated. Redirecting to payment gateway...`);
   }
 
   function handleDownloadReceipt(receiptNo: string) {
@@ -125,28 +171,36 @@ export default function ParentFeesPage() {
             <p className="text-sm text-slate-500">Track fee payments and outstanding balances for your children</p>
           </div>
         </div>
-        {MOCK_CHILDREN.length > 1 && (
-          <div className="relative">
-            <button onClick={() => setShowChildDropdown(!showChildDropdown)} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-              <div className="w-7 h-7 rounded-full bg-[#824ef2]/10 flex items-center justify-center text-xs font-bold text-[#824ef2]">{currentChild.photo}</div>
-              <span className="text-sm font-medium text-slate-700">{currentChild.name}</span>
-              <ChevronDown className="w-4 h-4 text-slate-400" />
-            </button>
-            {showChildDropdown && (
-              <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[200px]">
-                {MOCK_CHILDREN.map((child) => (
-                  <button key={child.id} onClick={() => { setSelectedChild(child.id); setShowChildDropdown(false); }} className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors first:rounded-t-lg last:rounded-b-lg ${selectedChild === child.id ? 'bg-[#824ef2]/5 text-[#824ef2]' : 'text-slate-700'}`}>
-                    <div className="w-7 h-7 rounded-full bg-[#824ef2]/10 flex items-center justify-center text-xs font-bold text-[#824ef2]">{child.photo}</div>
-                    <div className="text-left">
-                      <p className="font-medium">{child.name}</p>
-                      <p className="text-xs text-slate-400">{child.class}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {MOCK_CHILDREN.length > 1 && (
+            <div className="relative">
+              <button onClick={() => setShowChildDropdown(!showChildDropdown)} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                <div className="w-7 h-7 rounded-full bg-[#824ef2]/10 flex items-center justify-center text-xs font-bold text-[#824ef2]">{currentChild.photo}</div>
+                <span className="text-sm font-medium text-slate-700">{currentChild.name}</span>
+                <ChevronDown className="w-4 h-4 text-slate-400" />
+              </button>
+              {showChildDropdown && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[200px]">
+                  {MOCK_CHILDREN.map((child) => (
+                    <button key={child.id} onClick={() => { setSelectedChild(child.id); setShowChildDropdown(false); }} className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors first:rounded-t-lg last:rounded-b-lg ${selectedChild === child.id ? 'bg-[#824ef2]/5 text-[#824ef2]' : 'text-slate-700'}`}>
+                      <div className="w-7 h-7 rounded-full bg-[#824ef2]/10 flex items-center justify-center text-xs font-bold text-[#824ef2]">{child.photo}</div>
+                      <div className="text-left">
+                        <p className="font-medium">{child.name}</p>
+                        <p className="text-xs text-slate-400">{child.class}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <button
+            onClick={handlePayNow}
+            className="px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
+          >
+            Pay
+          </button>
+        </div>
       </div>
 
       {/* Stat Cards */}
@@ -162,7 +216,7 @@ export default function ParentFeesPage() {
         {([
           { key: 'breakdown' as const, label: 'Fee Breakdown' },
           { key: 'history' as const, label: 'Payment History' },
-          { key: 'quickpay' as const, label: 'Quick Pay' },
+          { key: 'concessions' as const, label: 'Concessions & Scholarships' },
         ]).map((t) => (
           <button
             key={t.key}
@@ -189,22 +243,42 @@ export default function ParentFeesPage() {
                   <th className="text-left py-3 px-5 font-medium text-slate-500">Paid</th>
                   <th className="text-left py-3 px-5 font-medium text-slate-500">Balance</th>
                   <th className="text-left py-3 px-5 font-medium text-slate-500">Status</th>
+                  <th className="py-3 px-5"></th>
                 </tr>
               </thead>
               <tbody>
-                {MOCK_FEE_BREAKDOWN.map((fee) => (
-                  <tr key={fee.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-5 font-medium text-slate-900">{fee.type}</td>
-                    <td className="py-3 px-5 text-slate-600">{new Date(fee.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                    <td className="py-3 px-5 text-slate-700 font-medium">Rs. {fee.amount.toLocaleString()}</td>
-                    <td className="py-3 px-5 text-green-600 font-medium">Rs. {fee.paid.toLocaleString()}</td>
-                    <td className="py-3 px-5 font-semibold text-slate-900">Rs. {fee.balance.toLocaleString()}</td>
-                    <td className="py-3 px-5">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${statusBadge[fee.status]}`}>
-                        {fee.status}
-                      </span>
-                    </td>
-                  </tr>
+                {Object.entries(groupedFees).map(([category, fees]) => (
+                  <>
+                    <tr key={`cat-${category}`} className="bg-slate-100/70">
+                      <td colSpan={7} className="py-2.5 px-5 font-semibold text-slate-700 text-xs uppercase tracking-wider">
+                        {category}
+                      </td>
+                    </tr>
+                    {fees.map((fee) => (
+                      <tr key={fee.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-5 font-medium text-slate-900">{fee.type}</td>
+                        <td className="py-3 px-5 text-slate-600">{new Date(fee.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                        <td className="py-3 px-5 text-slate-700 font-medium">Rs. {fee.amount.toLocaleString()}</td>
+                        <td className="py-3 px-5 text-green-600 font-medium">Rs. {fee.paid.toLocaleString()}</td>
+                        <td className="py-3 px-5 font-semibold text-slate-900">Rs. {fee.balance.toLocaleString()}</td>
+                        <td className="py-3 px-5">
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${statusBadge[fee.status]}`}>
+                            {fee.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-5">
+                          {fee.status !== 'paid' && (
+                            <button
+                              onClick={() => handlePayFee(fee)}
+                              className="text-xs px-3 py-1 rounded-lg font-medium text-white bg-[#824ef2] hover:bg-[#6b3fd4] transition-colors"
+                            >
+                              Pay Now
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </>
                 ))}
               </tbody>
             </table>
@@ -255,51 +329,57 @@ export default function ParentFeesPage() {
         </div>
       )}
 
-      {/* Quick Pay Tab */}
-      {tab === 'quickpay' && (
+      {/* Concessions & Scholarships Tab */}
+      {tab === 'concessions' && (
         <div className="space-y-4">
-          {/* Outstanding Items */}
           <div className="bg-white rounded-xl border border-slate-200">
             <div className="p-5 border-b border-slate-200">
-              <h2 className="text-lg font-semibold text-slate-900">Outstanding Fees</h2>
+              <div className="flex items-center gap-3">
+                <Award className="w-5 h-5 text-[#824ef2]" />
+                <h2 className="text-lg font-semibold text-slate-900">Concessions & Scholarships</h2>
+              </div>
             </div>
-            <div className="divide-y divide-slate-100">
-              {MOCK_FEE_BREAKDOWN.filter((f) => f.status !== 'paid').map((fee) => (
-                <div key={fee.id} className="flex items-center justify-between px-5 py-3">
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">{fee.type}</p>
-                    <p className="text-xs text-slate-500">Due: {new Date(fee.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${statusBadge[fee.status]}`}>
-                      {fee.status}
-                    </span>
-                    <span className="text-sm font-semibold text-slate-900">Rs. {fee.balance.toLocaleString()}</span>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <th className="text-left py-3 px-5 font-medium text-slate-500">Type</th>
+                    <th className="text-left py-3 px-5 font-medium text-slate-500">Description</th>
+                    <th className="text-left py-3 px-5 font-medium text-slate-500">Amount</th>
+                    <th className="text-left py-3 px-5 font-medium text-slate-500">Applied To</th>
+                    <th className="text-left py-3 px-5 font-medium text-slate-500">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {MOCK_CONCESSIONS.map((concession) => (
+                    <tr key={concession.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
+                      <td className="py-3 px-5 font-medium text-slate-900">{concession.type}</td>
+                      <td className="py-3 px-5 text-slate-600">{concession.description}</td>
+                      <td className="py-3 px-5 text-green-600 font-semibold">{concession.amount}</td>
+                      <td className="py-3 px-5 text-slate-600">{concession.appliedTo}</td>
+                      <td className="py-3 px-5">
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${statusBadge[concession.status]}`}>
+                          {concession.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* Total Payable Card */}
+          {/* Total Savings Card */}
           <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-[#824ef2]/10 flex items-center justify-center">
-                  <CreditCard className="w-7 h-7 text-[#824ef2]" />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-500">Total Payable Amount</p>
-                  <p className="text-3xl font-bold text-slate-900">Rs. {totalPayable.toLocaleString()}</p>
-                </div>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-green-100 flex items-center justify-center">
+                <TrendingUp className="w-7 h-7 text-green-600" />
               </div>
-              <button
-                onClick={handlePayNow}
-                className="px-8 py-3 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors flex items-center gap-2"
-              >
-                <TrendingUp className="w-4 h-4" />
-                Pay Now
-              </button>
+              <div>
+                <p className="text-sm text-slate-500">Total Active Savings</p>
+                <p className="text-3xl font-bold text-green-600">Rs. {totalConcessionSavings.toLocaleString()}</p>
+                <p className="text-xs text-slate-400 mt-0.5">From {MOCK_CONCESSIONS.filter((c) => c.status === 'active').length} active concessions & scholarships</p>
+              </div>
             </div>
           </div>
         </div>

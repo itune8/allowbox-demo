@@ -44,6 +44,7 @@ const MOCK_ATTENDANCE_WEEK = [
   { day: 'Wed', status: 'absent' },
   { day: 'Thu', status: 'present' },
   { day: 'Fri', status: 'late' },
+  { day: 'Sat', status: 'holiday' },
 ];
 
 const MOCK_EVENTS = [
@@ -56,6 +57,7 @@ const statusDotColors: Record<string, string> = {
   present: 'bg-green-500',
   absent: 'bg-red-500',
   late: 'bg-amber-500',
+  holiday: 'bg-slate-300',
 };
 
 export default function ParentDashboardPage() {
@@ -207,10 +209,11 @@ export default function ParentDashboardPage() {
               {MOCK_ATTENDANCE_WEEK.map((d) => (
                 <div key={d.day} className="flex flex-col items-center gap-2">
                   <span className="text-xs font-medium text-slate-500">{d.day}</span>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${statusDotColors[d.status]}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${statusDotColors[d.status]} ${d.status === 'holiday' ? 'opacity-50' : ''}`}>
                     {d.status === 'present' && <CheckCircle className="w-4 h-4 text-white" />}
                     {d.status === 'absent' && <span className="text-white text-xs font-bold">A</span>}
                     {d.status === 'late' && <Clock className="w-4 h-4 text-white" />}
+                    {d.status === 'holiday' && <span className="text-white text-xs font-bold">H</span>}
                   </div>
                   <span className="text-[10px] text-slate-400 capitalize">{d.status}</span>
                 </div>

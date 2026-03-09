@@ -69,7 +69,7 @@ export default function ParentHomeworkPage() {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [selectedChildId, setSelectedChildId] = useState(MOCK_CHILDREN[0]!.id);
-  const [tab, setTab] = useState<'pending' | 'completed' | 'not_submitted'>('pending');
+  const [tab, setTab] = useState<'all' | 'pending' | 'completed' | 'not_submitted'>('all');
   const [assignments, setAssignments] = useState<MockAssignment[]>(MOCK_ASSIGNMENTS);
   const [selectedAssignment, setSelectedAssignment] = useState<MockAssignment | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -105,6 +105,7 @@ export default function ParentHomeworkPage() {
   }), [childAssignments]);
 
   const filteredAssignments = useMemo(() => {
+    if (tab === 'all') return childAssignments;
     if (tab === 'pending') return childAssignments.filter((a) => a.status === 'pending' || a.status === 'overdue');
     if (tab === 'completed') return childAssignments.filter((a) => a.status === 'completed');
     return childAssignments.filter((a) => a.status === 'not_submitted');
@@ -158,6 +159,7 @@ export default function ParentHomeworkPage() {
       {/* Tabs */}
       <div className="flex gap-2 border-b border-slate-200">
         {([
+          { key: 'all' as const, label: 'All' },
           { key: 'pending' as const, label: 'Pending' },
           { key: 'completed' as const, label: 'Completed' },
           { key: 'not_submitted' as const, label: 'Not Submitted' },
