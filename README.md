@@ -8,7 +8,7 @@ This is the frontend-only Turborepo scaffold for Allowbox, a comprehensive schoo
 
 ## Tech Stack
 dfgf
-- **Framework**: Next.js 15 (App Routerr)
+- **Framework**: Next.js 15 (App Routerr)nmn
 - **Language**: TypeScript ccc
 - **Styling**: Tailwind CSS
 - **UI Components**: shadcn/ui pattern + Radix UI
