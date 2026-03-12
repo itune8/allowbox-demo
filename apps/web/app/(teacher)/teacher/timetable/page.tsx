@@ -243,11 +243,6 @@ export default function TeacherTimetablePage() {
                       </p>
                     )}
                   </div>
-                  {!isFree && (
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${subjectColors[period.subject] || 'bg-slate-100 text-slate-600'}`}>
-                      {period.subject}
-                    </span>
-                  )}
                 </div>
               );
             })}

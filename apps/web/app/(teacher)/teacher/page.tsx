@@ -145,12 +145,7 @@ export default function TeacherDashboardPage() {
               <tbody>
                 {MOCK_SCHEDULE.map((s) => (
                   <tr key={s.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-1.5 text-slate-600">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        {s.time}
-                      </div>
-                    </td>
+                    <td className="py-3 px-3 text-slate-600 whitespace-nowrap">{s.time}</td>
                     <td className="py-3 px-3 font-medium text-slate-900">{s.class}</td>
                     <td className="py-3 px-3 text-slate-700">{s.subject}</td>
                     <td className="py-3 px-3 text-slate-500">{s.room}</td>

@@ -48,7 +48,6 @@ const sidebarSections: SidebarSection[] = [
   {
     title: 'Resources',
     items: [
-      { key: 'lesson-plans', label: 'Lesson Plans', icon: <ClipboardList className="w-5 h-5" /> },
       { key: 'materials', label: 'Learning Materials', icon: <FolderOpen className="w-5 h-5" /> },
     ],
   },

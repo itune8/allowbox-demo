@@ -13,6 +13,8 @@ import {
   Eye,
   Trash2,
   ChevronRight,
+  ChevronLeft,
+  ArrowLeft,
   Users,
   UserCheck,
   UserX,
@@ -291,7 +293,7 @@ export default function TeacherHomeworkPage() {
                   <th className="text-left py-3 px-5 font-medium text-slate-500">Due Date</th>
                   <th className="text-left py-3 px-5 font-medium text-slate-500">Submissions</th>
                   <th className="text-left py-3 px-5 font-medium text-slate-500">Status</th>
-                  <th className="text-left py-3 px-5 font-medium text-slate-500 w-12"></th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -308,23 +310,21 @@ export default function TeacherHomeworkPage() {
                       </span>
                     </td>
                     <td className="py-3 px-5">
-                      <div className="relative">
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={() => setOpenMenuId(openMenuId === hw.id ? null : hw.id)}
-                          className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                          onClick={() => { setSelectedHomework(hw); setShowDetailModal(true); }}
+                          className="p-1.5 text-slate-400 hover:text-[#824ef2] hover:bg-[#824ef2]/10 rounded-lg transition-colors"
+                          title="View"
                         >
-                          <MoreVertical className="w-4 h-4" />
+                          <Eye className="w-4 h-4" />
                         </button>
-                        {openMenuId === hw.id && (
-                          <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 w-36 z-20">
-                            <button onClick={() => { setSelectedHomework(hw); setShowDetailModal(true); setOpenMenuId(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                              <Eye className="w-4 h-4" /> View
-                            </button>
-                            <button onClick={() => { setConfirmModal({ open: true, id: hw.id }); setOpenMenuId(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
-                              <Trash2 className="w-4 h-4" /> Delete
-                            </button>
-                          </div>
-                        )}
+                        <button
+                          onClick={() => setConfirmModal({ open: true, id: hw.id })}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -419,16 +419,18 @@ export default function TeacherHomeworkPage() {
       {/* Submissions - Student Detail View */}
       {tab === 'submissions' && selectedSubHw && activeSubHw && (
         <div className="space-y-4">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm">
+          {/* Back arrow + Title */}
+          <div className="flex items-center gap-3">
             <button
               onClick={() => { setSelectedSubHw(null); setSubStatusFilter('all'); }}
-              className="text-[#824ef2] hover:text-[#6b3fd4] font-medium transition-colors"
+              className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
             >
-              Submissions
+              <ArrowLeft className="w-5 h-5" />
             </button>
-            <ChevronRight className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-600">{activeSubHw.title} — {activeSubHw.class}</span>
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">{activeSubHw.title} — {activeSubHw.class}</h2>
+              <p className="text-sm text-slate-500">{activeSubHw.subject} &bull; Due: {new Date(activeSubHw.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} &bull; Max Marks: {activeSubHw.maxMarks}</p>
+            </div>
           </div>
 
           {/* Mini stat cards */}
@@ -479,20 +481,6 @@ export default function TeacherHomeworkPage() {
 
           {/* Student submissions table */}
           <div className="bg-white rounded-xl border border-slate-200">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">{activeSubHw.title}</h2>
-                <p className="text-sm text-slate-500 mt-0.5">
-                  {activeSubHw.class} &bull; {activeSubHw.subject} &bull; Due: {new Date(activeSubHw.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} &bull; Max Marks: {activeSubHw.maxMarks}
-                </p>
-              </div>
-              <button
-                onClick={() => { setSelectedSubHw(null); setSubStatusFilter('all'); }}
-                className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
-              >
-                Back
-              </button>
-            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

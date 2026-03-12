@@ -17,6 +17,10 @@ import {
   CheckCircle,
   Clock,
   Calendar,
+  Search,
+  Filter,
+  ListFilter,
+  ChevronLeft,
 } from 'lucide-react';
 
 // ── Mock data ──
@@ -92,6 +96,58 @@ const MOCK_PLANS: MockPlan[] = [
   { id: 'lp8', title: 'Integers and Number Line', subject: 'Mathematics', class: 'Class 7-C', date: '2025-03-13', status: 'draft', duration: '45 min', objectives: ['Represent integers on number line', 'Addition of integers'], activities: 'Number line activity', resources: 'Number line charts', assessment: 'Worksheet', notes: '' },
 ];
 
+interface MockSubject {
+  id: string;
+  name: string;
+  code: string;
+  assignedClass: string;
+  scheduleDays: string;
+  scheduleTime: string;
+  completedLessons: number;
+  totalLessons: number;
+  color: string;
+}
+
+const MOCK_SUBJECTS: MockSubject[] = [
+  { id: 'sub1', name: 'Advanced Mathematics', code: 'MTH-101', assignedClass: 'Grade 10-A', scheduleDays: 'Mon, Wed, Fri', scheduleTime: '09:00 AM - 10:30 AM', completedLessons: 12, totalLessons: 24, color: 'bg-blue-500' },
+  { id: 'sub2', name: 'Physics Lab', code: 'PHY-202', assignedClass: 'Grade 11-B', scheduleDays: 'Tue, Thu', scheduleTime: '11:00 AM - 12:30 PM', completedLessons: 8, totalLessons: 16, color: 'bg-green-500' },
+  { id: 'sub3', name: 'World History', code: 'HIS-105', assignedClass: 'Grade 9-C', scheduleDays: 'Mon, Wed', scheduleTime: '01:00 PM - 02:00 PM', completedLessons: 18, totalLessons: 20, color: 'bg-red-500' },
+  { id: 'sub4', name: 'English Literature', code: 'ENG-301', assignedClass: 'Grade 10-A', scheduleDays: 'Tue, Thu, Fri', scheduleTime: '10:30 AM - 11:30 AM', completedLessons: 5, totalLessons: 25, color: 'bg-indigo-500' },
+  { id: 'sub5', name: 'Chemistry', code: 'CHM-201', assignedClass: 'Grade 11-A', scheduleDays: 'Mon, Wed, Fri', scheduleTime: '02:00 PM - 03:00 PM', completedLessons: 10, totalLessons: 22, color: 'bg-amber-500' },
+];
+
+interface TopicData {
+  chapter: string;
+  subtopics: { name: string; completed: boolean }[];
+}
+
+const INITIAL_TOPICS: Record<string, TopicData[]> = {
+  sub1: [
+    { chapter: 'Chapter 1: Number Systems', subtopics: [{ name: 'Real Numbers', completed: true }, { name: 'Irrational Numbers', completed: true }, { name: 'Decimal Expansions', completed: false }] },
+    { chapter: 'Chapter 2: Polynomials', subtopics: [{ name: 'Degree of Polynomial', completed: true }, { name: 'Zeroes of Polynomial', completed: false }, { name: 'Factorization', completed: false }] },
+    { chapter: 'Chapter 3: Algebra', subtopics: [{ name: 'Linear Equations', completed: false }, { name: 'Quadratic Equations', completed: false }] },
+  ],
+  sub2: [
+    { chapter: 'Chapter 1: Motion', subtopics: [{ name: 'Speed & Velocity', completed: true }, { name: 'Acceleration', completed: true }, { name: 'Equations of Motion', completed: true }] },
+    { chapter: 'Chapter 2: Force & Laws', subtopics: [{ name: "Newton's First Law", completed: true }, { name: "Newton's Second Law", completed: false }, { name: "Newton's Third Law", completed: false }] },
+  ],
+  sub3: [
+    { chapter: 'Chapter 1: French Revolution', subtopics: [{ name: 'Causes', completed: true }, { name: 'Key Events', completed: true }, { name: 'Aftermath', completed: true }] },
+    { chapter: 'Chapter 2: Russian Revolution', subtopics: [{ name: 'February Revolution', completed: true }, { name: 'October Revolution', completed: true }] },
+    { chapter: 'Chapter 3: Nazism', subtopics: [{ name: 'Rise of Hitler', completed: true }, { name: 'World War II Impact', completed: true }] },
+  ],
+  sub4: [
+    { chapter: 'Chapter 1: The Fun They Had', subtopics: [{ name: 'Summary', completed: true }, { name: 'Character Analysis', completed: false }] },
+    { chapter: 'Chapter 2: The Sound of Music', subtopics: [{ name: 'Evelyn Glennie', completed: false }, { name: 'Bismillah Khan', completed: false }] },
+  ],
+  sub5: [
+    { chapter: 'Chapter 1: Matter', subtopics: [{ name: 'States of Matter', completed: true }, { name: 'Change of State', completed: true }, { name: 'Evaporation', completed: false }] },
+    { chapter: 'Chapter 2: Atoms & Molecules', subtopics: [{ name: 'Laws of Chemical Combination', completed: false }, { name: 'Atomic Mass', completed: false }] },
+  ],
+};
+
+const ITEMS_PER_PAGE = 4;
+
 const subjectColors: Record<string, string> = {
   Mathematics: 'bg-blue-100 text-blue-700',
   Physics: 'bg-purple-100 text-purple-700',
@@ -130,9 +186,15 @@ export default function TeacherClassesPage() {
   const [confirmModal, setConfirmModal] = useState({ open: false, id: '' });
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Subjects state
+  const [subjectSearch, setSubjectSearch] = useState('');
+  const [subjectPage, setSubjectPage] = useState(1);
+  const [viewTopicsSubject, setViewTopicsSubject] = useState<MockSubject | null>(null);
+  const [topics, setTopics] = useState<Record<string, TopicData[]>>(INITIAL_TOPICS);
+
   const [planForm, setPlanForm] = useState({
-    title: '', subject: 'Mathematics', class: 'Class 10-A', date: '', duration: '45 min',
-    objectives: '', activities: '', resources: '', assessment: '', notes: '',
+    title: '', subject: 'Mathematics', class: 'Class 10-A', date: '',
+    chapterName: '', subtopics: [''] as string[],
   });
 
   useEffect(() => {
@@ -173,6 +235,48 @@ export default function TeacherClassesPage() {
     return result;
   }, [plans, planFilter, planClassFilter]);
 
+  const filteredSubjects = useMemo(() => {
+    if (!subjectSearch.trim()) return MOCK_SUBJECTS;
+    const q = subjectSearch.toLowerCase();
+    return MOCK_SUBJECTS.filter((s) => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q));
+  }, [subjectSearch]);
+
+  const totalSubjectPages = Math.ceil(filteredSubjects.length / ITEMS_PER_PAGE);
+  const paginatedSubjects = filteredSubjects.slice((subjectPage - 1) * ITEMS_PER_PAGE, subjectPage * ITEMS_PER_PAGE);
+
+  function getSubjectProgress(subjectId: string) {
+    const subjectTopics = topics[subjectId] || [];
+    let total = 0;
+    let completed = 0;
+    subjectTopics.forEach((t) => {
+      t.subtopics.forEach((st) => {
+        total++;
+        if (st.completed) completed++;
+      });
+    });
+    return { completed, total };
+  }
+
+  function toggleSubtopic(subjectId: string, chapterIdx: number, subtopicIdx: number) {
+    setTopics((prev) => {
+      const updated = { ...prev };
+      const chapters = [...(updated[subjectId] || [])];
+      const chapter = { ...chapters[chapterIdx] };
+      const subtopics = [...chapter.subtopics];
+      subtopics[subtopicIdx] = { ...subtopics[subtopicIdx], completed: !subtopics[subtopicIdx].completed };
+      chapter.subtopics = subtopics;
+      chapters[chapterIdx] = chapter;
+      updated[subjectId] = chapters;
+      return updated;
+    });
+  }
+
+  function progressColor(pct: number) {
+    if (pct >= 90) return 'bg-red-500 text-red-600';
+    if (pct >= 50) return 'bg-green-500 text-green-600';
+    return 'bg-blue-500 text-blue-600';
+  }
+
   function perfColor(val: number) {
     if (val >= 90) return 'text-green-600';
     if (val >= 75) return 'text-blue-600';
@@ -188,14 +292,23 @@ export default function TeacherClassesPage() {
 
   function handleCreatePlan(e: React.FormEvent) {
     e.preventDefault();
-    if (!planForm.title.trim() || !planForm.date) return;
+    if (!planForm.chapterName.trim() || !planForm.date) return;
     const newPlan: MockPlan = {
-      id: `lp${Date.now()}`, ...planForm,
-      objectives: planForm.objectives.split('\n').filter(Boolean),
+      id: `lp${Date.now()}`,
+      title: planForm.chapterName,
+      subject: planForm.subject,
+      class: planForm.class,
+      date: planForm.date,
+      duration: '45 min',
+      objectives: planForm.subtopics.filter(Boolean),
+      activities: '',
+      resources: '',
+      assessment: '',
+      notes: planForm.chapterName,
       status: 'draft',
     };
     setPlans((prev) => [newPlan, ...prev]);
-    setPlanForm({ title: '', subject: 'Mathematics', class: 'Class 10-A', date: '', duration: '45 min', objectives: '', activities: '', resources: '', assessment: '', notes: '' });
+    setPlanForm({ title: '', subject: 'Mathematics', class: 'Class 10-A', date: '', chapterName: '', subtopics: [''] });
     setShowPlanForm(false);
     showToast('success', 'Lesson plan created');
   }
@@ -212,25 +325,20 @@ export default function TeacherClassesPage() {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-6 overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-          <BookOpen className="w-6 h-6 text-blue-600" />
+      <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-wrap">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+          <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
         </div>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">My Classes</h1>
-          <p className="text-sm text-slate-500">Classes and students you teach</p>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Classes &amp; Subjects</h1>
+          <p className="text-xs sm:text-sm text-slate-500">Manage your assigned classes, subjects, and lesson plans.</p>
         </div>
-        {tab === 'lesson_plans' && (
-          <button onClick={() => setShowPlanForm(true)} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors">
-            <Plus className="w-4 h-4" /> Create Plan
-          </button>
-        )}
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <SchoolStatCard icon={<BookOpen className="w-5 h-5" />} color="blue" label="My Classes" value={MOCK_CLASSES.length} />
         <SchoolStatCard icon={<Users className="w-5 h-5" />} color="green" label="Total Students" value={totalStudents} />
         <SchoolStatCard icon={<ClipboardList className="w-5 h-5" />} color="purple" label="Subjects Teaching" value={uniqueSubjects} />
@@ -241,7 +349,7 @@ export default function TeacherClassesPage() {
       <div className="flex gap-2 border-b border-slate-200">
         {([
           { key: 'classes' as const, label: 'My Classes' },
-          { key: 'lesson_plans' as const, label: 'Lesson Plans' },
+          { key: 'lesson_plans' as const, label: 'Subjects Management' },
         ]).map((t) => (
           <button
             key={t.key}
@@ -307,27 +415,27 @@ export default function TeacherClassesPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-px">
+            <table className="w-full text-sm min-w-[500px]">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50">
-                  <th className="text-left py-3 px-5 font-medium text-slate-500">Roll No</th>
-                  <th className="text-left py-3 px-5 font-medium text-slate-500">Name</th>
-                  <th className="text-left py-3 px-5 font-medium text-slate-500">Gender</th>
-                  <th className="text-left py-3 px-5 font-medium text-slate-500">Performance</th>
-                  <th className="text-left py-3 px-5 font-medium text-slate-500">Attendance</th>
+                  <th className="text-left py-3 px-3 sm:px-5 font-medium text-slate-500 text-xs sm:text-sm">Roll No</th>
+                  <th className="text-left py-3 px-3 sm:px-5 font-medium text-slate-500 text-xs sm:text-sm">Name</th>
+                  <th className="text-left py-3 px-3 sm:px-5 font-medium text-slate-500 text-xs sm:text-sm">Gender</th>
+                  <th className="text-left py-3 px-3 sm:px-5 font-medium text-slate-500 text-xs sm:text-sm">Performance</th>
+                  <th className="text-left py-3 px-3 sm:px-5 font-medium text-slate-500 text-xs sm:text-sm">Attendance</th>
                 </tr>
               </thead>
               <tbody>
                 {students.map((s) => (
                   <tr key={s.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-5 text-slate-600">{s.rollNo}</td>
-                    <td className="py-3 px-5 font-medium text-slate-900">{s.name}</td>
-                    <td className="py-3 px-5 text-slate-600">{s.gender}</td>
-                    <td className="py-3 px-5">
+                    <td className="py-3 px-3 sm:px-5 text-slate-600">{s.rollNo}</td>
+                    <td className="py-3 px-3 sm:px-5 font-medium text-slate-900 whitespace-nowrap">{s.name}</td>
+                    <td className="py-3 px-3 sm:px-5 text-slate-600">{s.gender}</td>
+                    <td className="py-3 px-3 sm:px-5">
                       <span className={`font-semibold ${perfColor(s.performance)}`}>{s.performance}%</span>
                     </td>
-                    <td className="py-3 px-5">
+                    <td className="py-3 px-3 sm:px-5">
                       <span className={`font-semibold ${perfColor(s.attendance)}`}>{s.attendance}%</span>
                     </td>
                   </tr>
@@ -346,107 +454,256 @@ export default function TeacherClassesPage() {
         </div>
       )}
 
-      {/* Lesson Plans Tab */}
+      {/* Subjects Management Tab */}
       {tab === 'lesson_plans' && (
         <div className="space-y-4">
-          {/* Mini stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-white rounded-xl border border-slate-200 p-3 text-center">
-              <ClipboardList className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-              <p className="text-xs text-slate-500">Total Plans</p>
-              <p className="text-lg font-bold text-slate-900">{planStats.total}</p>
-            </div>
-            <div className="bg-white rounded-xl border border-slate-200 p-3 text-center">
-              <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-1" />
-              <p className="text-xs text-slate-500">Completed</p>
-              <p className="text-lg font-bold text-green-600">{planStats.completed}</p>
-            </div>
-            <div className="bg-white rounded-xl border border-slate-200 p-3 text-center">
-              <Clock className="w-5 h-5 text-amber-600 mx-auto mb-1" />
-              <p className="text-xs text-slate-500">In Progress</p>
-              <p className="text-lg font-bold text-amber-600">{planStats.inProgress}</p>
-            </div>
-            <div className="bg-white rounded-xl border border-slate-200 p-3 text-center">
-              <Calendar className="w-5 h-5 text-[#824ef2] mx-auto mb-1" />
-              <p className="text-xs text-slate-500">Scheduled</p>
-              <p className="text-lg font-bold text-[#824ef2]">{planStats.scheduled}</p>
-            </div>
-          </div>
-
-          {/* Class filter pills */}
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setPlanClassFilter('all')}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                planClassFilter === 'all' ? 'bg-[#824ef2] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              All Classes
-            </button>
-            {planClasses.map((cls) => (
-              <button
-                key={cls}
-                onClick={() => setPlanClassFilter(cls)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  planClassFilter === cls ? 'bg-[#824ef2] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {cls}
-              </button>
-            ))}
-          </div>
-
-          {/* Plans list */}
-          <div className="bg-white rounded-xl border border-slate-200" ref={menuRef}>
-            <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-slate-900">Lesson Plans</h2>
-              <div className="flex gap-2">
-                {[{ key: 'all', label: 'All' }, { key: 'draft', label: 'Draft' }, { key: 'scheduled', label: 'Scheduled' }, { key: 'in_progress', label: 'In Progress' }, { key: 'completed', label: 'Completed' }].map((f) => (
-                  <button key={f.key} onClick={() => setPlanFilter(f.key)} className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${planFilter === f.key ? 'bg-[#824ef2] text-white border-[#824ef2]' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
-                    {f.label}
-                  </button>
-                ))}
+          {/* Search & Filter bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="relative flex-1 sm:flex-none">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search subjects..."
+                  value={subjectSearch}
+                  onChange={(e) => { setSubjectSearch(e.target.value); setSubjectPage(1); }}
+                  className="w-full sm:w-64 pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] hover:border-slate-300 transition-all"
+                />
               </div>
+              <button className="inline-flex items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex-shrink-0">
+                <Filter className="w-4 h-4" /> <span className="hidden sm:inline">Filter</span>
+              </button>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-500">Showing {filteredSubjects.length} subjects</p>
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden md:block bg-white rounded-xl border border-slate-200">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-3.5 px-5 font-semibold text-xs uppercase tracking-wider text-slate-500">Subject Name</th>
+                    <th className="text-left py-3.5 px-5 font-semibold text-xs uppercase tracking-wider text-slate-500">Assigned Class</th>
+                    <th className="text-left py-3.5 px-5 font-semibold text-xs uppercase tracking-wider text-slate-500">Schedule</th>
+                    <th className="text-left py-3.5 px-5 font-semibold text-xs uppercase tracking-wider text-slate-500">Progress</th>
+                    <th className="text-left py-3.5 px-5 font-semibold text-xs uppercase tracking-wider text-slate-500">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedSubjects.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-16 text-center text-slate-500">
+                        <ClipboardList className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                        No subjects found
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedSubjects.map((subject) => {
+                      const prog = getSubjectProgress(subject.id);
+                      const pct = prog.total > 0 ? Math.round((prog.completed / prog.total) * 100) : 0;
+                      const colors = progressColor(pct);
+                      const barColor = colors.split(' ')[0];
+                      const textColor = colors.split(' ')[1];
+                      return (
+                        <tr key={subject.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
+                          <td className="py-4 px-5">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-9 h-9 rounded-lg ${subject.color} flex items-center justify-center text-white text-xs font-bold`}>
+                                {subject.name.charAt(0)}
+                              </div>
+                              <div>
+                                <p className="font-semibold text-slate-900">{subject.name}</p>
+                                <p className="text-xs text-slate-400">Code: {subject.code}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-5 text-slate-600">{subject.assignedClass}</td>
+                          <td className="py-4 px-5">
+                            <div className="flex items-center gap-1.5 text-slate-700">
+                              <Clock className="w-3.5 h-3.5 text-slate-400" />
+                              <div>
+                                <p className="text-sm">{subject.scheduleDays}</p>
+                                <p className="text-xs text-slate-400">{subject.scheduleTime}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-slate-700">{prog.completed}/{prog.total} Lessons</span>
+                              <span className={`text-xs font-semibold ${textColor}`}>{pct}%</span>
+                            </div>
+                            <div className="w-24 h-1.5 bg-slate-100 rounded-full mt-1.5">
+                              <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+                            </div>
+                          </td>
+                          <td className="py-4 px-5">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setViewTopicsSubject(subject)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                              >
+                                <ListFilter className="w-3.5 h-3.5" /> View Topics
+                              </button>
+                              <button
+                                onClick={() => setShowPlanForm(true)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
+                              >
+                                <Plus className="w-3.5 h-3.5" /> Add Plan
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
 
-            <div className="divide-y divide-slate-100">
-              {filteredPlans.length === 0 ? (
-                <div className="py-16 text-center">
-                  <ClipboardList className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                  <p className="text-slate-500">No lesson plans found</p>
+            {/* Desktop Pagination */}
+            {filteredSubjects.length > ITEMS_PER_PAGE && (
+              <div className="flex items-center justify-between px-5 py-4 border-t border-slate-200">
+                <p className="text-sm text-slate-500">
+                  Showing {(subjectPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(subjectPage * ITEMS_PER_PAGE, filteredSubjects.length)} of {filteredSubjects.length} results
+                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setSubjectPage((p) => Math.max(1, p - 1))}
+                    disabled={subjectPage === 1}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {Array.from({ length: totalSubjectPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setSubjectPage(page)}
+                      className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                        subjectPage === page ? 'bg-[#824ef2] text-white' : 'text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setSubjectPage((p) => Math.min(totalSubjectPages, p + 1))}
+                    disabled={subjectPage === totalSubjectPages}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
-              ) : (
-                filteredPlans.map((plan) => (
-                  <div key={plan.id} className="flex items-center gap-4 p-4 px-5 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { setSelectedPlan(plan); setShowPlanDetail(true); }}>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-slate-900 truncate">{plan.title}</h3>
-                      <p className="text-sm text-slate-500">{plan.subject} &bull; {plan.class} &bull; {plan.duration}</p>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${planStatusColors[plan.status]}`}>
-                          {planStatusLabels[plan.status]}
-                        </span>
-                        <span className="text-xs text-slate-400">{new Date(plan.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Card Layout */}
+          <div className="md:hidden space-y-3">
+            {paginatedSubjects.length === 0 ? (
+              <div className="bg-white rounded-xl border border-slate-200 py-12 text-center text-slate-500">
+                <ClipboardList className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                No subjects found
+              </div>
+            ) : (
+              paginatedSubjects.map((subject) => {
+                const prog = getSubjectProgress(subject.id);
+                const pct = prog.total > 0 ? Math.round((prog.completed / prog.total) * 100) : 0;
+                const colors = progressColor(pct);
+                const barColor = colors.split(' ')[0];
+                const textColor = colors.split(' ')[1];
+                return (
+                  <div key={subject.id} className="bg-white rounded-xl border border-slate-200 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-9 h-9 rounded-lg ${subject.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                          {subject.name.charAt(0)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-900 text-sm truncate">{subject.name}</p>
+                          <p className="text-xs text-slate-400">{subject.code}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                          onClick={() => setViewTopicsSubject(subject)}
+                          className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                          title="View Topics"
+                        >
+                          <ListFilter className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setShowPlanForm(true)}
+                          className="p-2 text-white bg-[#824ef2] hover:bg-[#6b3fd4] rounded-lg transition-colors"
+                          title="Add Plan"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                    <div className="relative flex-shrink-0">
-                      <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === plan.id ? null : plan.id); }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-                        <MoreVertical className="w-5 h-5" />
-                      </button>
-                      {openMenuId === plan.id && (
-                        <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 w-36 z-20">
-                          <button onClick={(e) => { e.stopPropagation(); setSelectedPlan(plan); setShowPlanDetail(true); setOpenMenuId(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                            <Eye className="w-4 h-4" /> View
-                          </button>
-                          <button onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, id: plan.id }); setOpenMenuId(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                            <Trash2 className="w-4 h-4" /> Delete
-                          </button>
-                        </div>
-                      )}
+                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                      <div>
+                        <p className="text-slate-400">Class</p>
+                        <p className="text-slate-700 font-medium">{subject.assignedClass}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400">Schedule</p>
+                        <p className="text-slate-700 font-medium">{subject.scheduleDays}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-slate-400">Time</p>
+                        <p className="text-slate-700 font-medium">{subject.scheduleTime}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <span className="text-slate-600">{prog.completed}/{prog.total} Lessons</span>
+                        <span className={`font-semibold ${textColor}`}>{pct}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-100 rounded-full">
+                        <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+                      </div>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                );
+              })
+            )}
+
+            {/* Mobile Pagination */}
+            {filteredSubjects.length > ITEMS_PER_PAGE && (
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-xs text-slate-500">
+                  {(subjectPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(subjectPage * ITEMS_PER_PAGE, filteredSubjects.length)} of {filteredSubjects.length}
+                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setSubjectPage((p) => Math.max(1, p - 1))}
+                    disabled={subjectPage === 1}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {Array.from({ length: totalSubjectPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setSubjectPage(page)}
+                      className={`w-7 h-7 rounded-lg text-xs font-medium transition-colors ${
+                        subjectPage === page ? 'bg-[#824ef2] text-white' : 'text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setSubjectPage((p) => Math.min(totalSubjectPages, p + 1))}
+                    disabled={subjectPage === totalSubjectPages}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -454,50 +711,85 @@ export default function TeacherClassesPage() {
       {/* Create Lesson Plan Modal */}
       <FormModal open={showPlanForm} onClose={() => setShowPlanForm(false)} title="Create Lesson Plan" size="lg" footer={
         <>
-          <button onClick={() => setShowPlanForm(false)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
-          <button type="submit" form="lp-form" className="px-6 py-2 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors">Create</button>
+          <button onClick={() => setShowPlanForm(false)} className="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+          <button type="submit" form="lp-form" className="px-6 py-2.5 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors shadow-sm">Save Topic</button>
         </>
       }>
-        <form id="lp-form" onSubmit={handleCreatePlan} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Title <span className="text-red-500">*</span></label>
-            <input type="text" className={inputClass} value={planForm.title} onChange={(e) => setPlanForm({ ...planForm, title: e.target.value })} required placeholder="Lesson title..." />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Subject</label>
-              <select className={`${inputClass} cursor-pointer`} value={planForm.subject} onChange={(e) => setPlanForm({ ...planForm, subject: e.target.value })}>
-                {['Mathematics', 'Physics'].map((s) => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Class</label>
-              <select className={`${inputClass} cursor-pointer`} value={planForm.class} onChange={(e) => setPlanForm({ ...planForm, class: e.target.value })}>
-                {['Class 10-A', 'Class 10-B', 'Class 9-A', 'Class 9-B', 'Class 8-A', 'Class 7-C'].map((c) => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Date <span className="text-red-500">*</span></label>
-              <input type="date" className={inputClass} value={planForm.date} onChange={(e) => setPlanForm({ ...planForm, date: e.target.value })} required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Duration</label>
-              <input type="text" className={inputClass} value={planForm.duration} onChange={(e) => setPlanForm({ ...planForm, duration: e.target.value })} placeholder="e.g., 45 min" />
+        <form id="lp-form" onSubmit={handleCreatePlan} className="space-y-6">
+          {/* Class Details Section */}
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Class Details</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Subject</label>
+                <select className={`${inputClass} cursor-pointer bg-white`} value={planForm.subject} onChange={(e) => setPlanForm({ ...planForm, subject: e.target.value })}>
+                  {['Mathematics', 'Physics'].map((s) => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Class</label>
+                <select className={`${inputClass} cursor-pointer bg-white`} value={planForm.class} onChange={(e) => setPlanForm({ ...planForm, class: e.target.value })}>
+                  {['Class 10-A', 'Class 10-B', 'Class 9-A', 'Class 9-B', 'Class 8-A', 'Class 7-C'].map((c) => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Date <span className="text-red-500">*</span></label>
+                <input type="date" className={`${inputClass} bg-white`} value={planForm.date} onChange={(e) => setPlanForm({ ...planForm, date: e.target.value })} required />
+              </div>
             </div>
           </div>
+
+          {/* Topic Section */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Objectives (one per line)</label>
-            <textarea className={`${inputClass} resize-none`} rows={3} value={planForm.objectives} onChange={(e) => setPlanForm({ ...planForm, objectives: e.target.value })} placeholder="Learning objectives..." />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Activities</label>
-            <textarea className={`${inputClass} resize-none`} rows={2} value={planForm.activities} onChange={(e) => setPlanForm({ ...planForm, activities: e.target.value })} placeholder="Planned activities..." />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Resources</label>
-            <input type="text" className={inputClass} value={planForm.resources} onChange={(e) => setPlanForm({ ...planForm, resources: e.target.value })} placeholder="Required resources..." />
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Add New Topic</p>
+            <div className="border border-slate-200 rounded-xl p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Chapter Name <span className="text-red-500">*</span></label>
+                <input type="text" className={inputClass} value={planForm.chapterName} onChange={(e) => setPlanForm({ ...planForm, chapterName: e.target.value })} required placeholder="e.g., Chapter 3: Algebra" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Sub-topics</label>
+                <div className="space-y-2.5">
+                  {planForm.subtopics.map((st, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-[#824ef2]/10 text-[#824ef2] flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                        {i + 1}
+                      </div>
+                      <input
+                        type="text"
+                        className={inputClass}
+                        value={st}
+                        onChange={(e) => {
+                          const updated = [...planForm.subtopics];
+                          updated[i] = e.target.value;
+                          setPlanForm({ ...planForm, subtopics: updated });
+                        }}
+                        placeholder={`Sub-topic ${i + 1}`}
+                      />
+                      {planForm.subtopics.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = planForm.subtopics.filter((_, idx) => idx !== i);
+                            setPlanForm({ ...planForm, subtopics: updated });
+                          }}
+                          className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPlanForm({ ...planForm, subtopics: [...planForm.subtopics, ''] })}
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm text-[#824ef2] hover:text-[#6b3fd4] font-medium transition-colors"
+                >
+                  <Plus className="w-4 h-4" /> Add Sub-topic
+                </button>
+              </div>
+            </div>
           </div>
         </form>
       </FormModal>
@@ -554,6 +846,81 @@ export default function TeacherClassesPage() {
                 <p className="text-sm text-slate-600 italic">{selectedPlan.notes}</p>
               </div>
             )}
+          </div>
+        )}
+      </FormModal>
+
+      {/* View Topics Modal */}
+      <FormModal
+        open={!!viewTopicsSubject}
+        onClose={() => setViewTopicsSubject(null)}
+        title={viewTopicsSubject ? `${viewTopicsSubject.name} — Topics` : ''}
+        size="lg"
+        footer={
+          <button onClick={() => setViewTopicsSubject(null)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">Close</button>
+        }
+      >
+        {viewTopicsSubject && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <span>{viewTopicsSubject.assignedClass}</span>
+              <span>&bull;</span>
+              <span>{viewTopicsSubject.scheduleDays}</span>
+            </div>
+            {(() => {
+              const subjectTopics = topics[viewTopicsSubject.id] || [];
+              const prog = getSubjectProgress(viewTopicsSubject.id);
+              return subjectTopics.length === 0 ? (
+                <div className="py-10 text-center text-slate-400">
+                  <BookOpen className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                  No topics added yet
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-3 border border-slate-200">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="text-slate-600 font-medium">{prog.completed}/{prog.total} completed</span>
+                        <span className="font-semibold text-slate-900">{prog.total > 0 ? Math.round((prog.completed / prog.total) * 100) : 0}%</span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-200 rounded-full">
+                        <div className="h-full rounded-full bg-[#824ef2] transition-all" style={{ width: `${prog.total > 0 ? (prog.completed / prog.total) * 100 : 0}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    {subjectTopics.map((topic, i) => (
+                      <div key={i} className="border border-slate-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-slate-900 text-sm mb-2">{topic.chapter}</h4>
+                        {topic.subtopics.length > 0 && (
+                          <ul className="space-y-2">
+                            {topic.subtopics.map((st, j) => (
+                              <li key={j} className="flex items-center gap-3">
+                                <button
+                                  onClick={() => toggleSubtopic(viewTopicsSubject.id, i, j)}
+                                  className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                                    st.completed
+                                      ? 'bg-[#824ef2] border-[#824ef2] text-white'
+                                      : 'border-slate-300 hover:border-[#824ef2]'
+                                  }`}
+                                >
+                                  {st.completed && (
+                                    <CheckCircle className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                                <span className={`text-sm ${st.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                                  {st.name}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
       </FormModal>

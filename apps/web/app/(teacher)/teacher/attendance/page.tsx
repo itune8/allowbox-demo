@@ -220,6 +220,7 @@ export default function TeacherAttendancePage() {
   }
 
   const inputClass = 'border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] hover:border-slate-300 transition-all';
+  const dateInputClass = 'border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] hover:border-slate-300 transition-all appearance-none bg-white [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer relative';
 
   if (loading) {
     return (
@@ -275,7 +276,10 @@ export default function TeacherAttendancePage() {
                 <option key={c._id} value={c._id}>{c.name}</option>
               ))}
             </select>
-            <input type="date" className={inputClass} value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+            <div className="relative">
+              <Calendar className="w-4 h-4 text-[#824ef2] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input type="date" className={`${dateInputClass} pr-10`} value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+            </div>
             <button onClick={markAllPresent} className="px-4 py-2 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
               Mark All Present
             </button>
@@ -323,9 +327,9 @@ export default function TeacherAttendancePage() {
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setHistoryClassFilter('all')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                   historyClassFilter === 'all'
-                    ? 'text-white bg-[#824ef2]'
+                    ? 'text-white bg-[#824ef2] shadow-sm'
                     : 'text-slate-600 bg-slate-100 hover:bg-slate-200'
                 }`}
               >
@@ -335,29 +339,32 @@ export default function TeacherAttendancePage() {
                 <button
                   key={c._id}
                   onClick={() => setHistoryClassFilter(c._id)}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                     historyClassFilter === c._id
-                      ? 'text-white bg-[#824ef2]'
+                      ? 'text-white bg-[#824ef2] shadow-sm'
                       : 'text-slate-600 bg-slate-100 hover:bg-slate-200'
                   }`}
                 >
-                  {c.name}
+                  Grade {c.grade}
                 </button>
               ))}
             </div>
 
             {/* Date picker */}
             <div className="flex items-center gap-2 ml-auto">
-              <input
-                type="date"
-                className={inputClass}
-                value={historyDateFilter}
-                onChange={(e) => setHistoryDateFilter(e.target.value)}
-              />
+              <div className="relative">
+                <Calendar className="w-4 h-4 text-[#824ef2] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="date"
+                  className={`${dateInputClass} pr-10`}
+                  value={historyDateFilter}
+                  onChange={(e) => setHistoryDateFilter(e.target.value)}
+                />
+              </div>
               {historyDateFilter && (
                 <button
                   onClick={() => setHistoryDateFilter('')}
-                  className="text-xs text-slate-500 hover:text-slate-700 underline"
+                  className="px-3 py-1.5 text-xs font-medium text-[#824ef2] bg-[#824ef2]/10 rounded-lg hover:bg-[#824ef2]/20 transition-colors"
                 >
                   Clear
                 </button>
