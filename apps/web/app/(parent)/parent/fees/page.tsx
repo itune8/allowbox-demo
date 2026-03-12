@@ -13,6 +13,7 @@ import {
   Download,
   TrendingUp,
   Award,
+  X,
 } from 'lucide-react';
 
 // ── Mock data ──
@@ -95,6 +96,8 @@ export default function ParentFeesPage() {
   const [selectedChild, setSelectedChild] = useState(MOCK_CHILDREN[0]!.id);
   const [showChildDropdown, setShowChildDropdown] = useState(false);
   const [tab, setTab] = useState<'breakdown' | 'history' | 'concessions'>('breakdown');
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [selectedFees, setSelectedFees] = useState<string[]>([]);
 
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 400);
@@ -113,8 +116,12 @@ export default function ParentFeesPage() {
     return { totalAnnual, totalPaid, outstanding, nextDue };
   }, []);
 
-  const totalPayable = MOCK_FEE_BREAKDOWN
-    .filter((f) => f.status !== 'paid')
+  const pendingFees = MOCK_FEE_BREAKDOWN.filter((f) => f.status !== 'paid');
+
+  const totalPayable = pendingFees.reduce((sum, f) => sum + f.balance, 0);
+
+  const selectedTotal = pendingFees
+    .filter((f) => selectedFees.includes(f.id))
     .reduce((sum, f) => sum + f.balance, 0);
 
   const groupedFees = useMemo(() => {
@@ -138,7 +145,21 @@ export default function ParentFeesPage() {
   }, []);
 
   function handlePayNow() {
-    showToast('success', `Payment of Rs. ${totalPayable.toLocaleString()} initiated. You will be redirected to the payment gateway shortly.`);
+    setSelectedFees(pendingFees.map((f) => f.id));
+    setShowPayModal(true);
+  }
+
+  function toggleFeeSelection(id: string) {
+    setSelectedFees((prev) =>
+      prev.includes(id) ? prev.filter((fid) => fid !== id) : [...prev, id]
+    );
+  }
+
+  function handleProcessPayment() {
+    if (selectedFees.length === 0) return;
+    setShowPayModal(false);
+    showToast('success', `Payment of Rs. ${selectedTotal.toLocaleString()} initiated. Redirecting to payment gateway...`);
+    setSelectedFees([]);
   }
 
   function handlePayFee(fee: FeeBreakdownItem) {
@@ -243,7 +264,7 @@ export default function ParentFeesPage() {
                   <th className="text-left py-3 px-5 font-medium text-slate-500">Paid</th>
                   <th className="text-left py-3 px-5 font-medium text-slate-500">Balance</th>
                   <th className="text-left py-3 px-5 font-medium text-slate-500">Status</th>
-                  <th className="py-3 px-5"></th>
+                  <th className="text-left py-3 px-5 font-medium text-slate-500">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -380,6 +401,84 @@ export default function ParentFeesPage() {
                 <p className="text-3xl font-bold text-green-600">Rs. {totalConcessionSavings.toLocaleString()}</p>
                 <p className="text-xs text-slate-400 mt-0.5">From {MOCK_CONCESSIONS.filter((c) => c.status === 'active').length} active concessions & scholarships</p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Payment Modal */}
+      {showPayModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-[#824ef2]" />
+                <h2 className="text-lg font-semibold text-slate-900">Select Fees to Pay</h2>
+              </div>
+              <button onClick={() => setShowPayModal(false)} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+
+            {/* Fee List */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-2">
+              {/* Select All */}
+              <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors border border-slate-200">
+                <input
+                  type="checkbox"
+                  checked={selectedFees.length === pendingFees.length}
+                  onChange={() => {
+                    if (selectedFees.length === pendingFees.length) {
+                      setSelectedFees([]);
+                    } else {
+                      setSelectedFees(pendingFees.map((f) => f.id));
+                    }
+                  }}
+                  className="w-4 h-4 rounded border-slate-300 text-[#824ef2] focus:ring-[#824ef2]"
+                />
+                <span className="text-sm font-medium text-slate-700">Select All</span>
+                <span className="ml-auto text-sm font-semibold text-slate-900">Rs. {totalPayable.toLocaleString()}</span>
+              </label>
+
+              {/* Individual Fees */}
+              {pendingFees.map((fee) => (
+                <label
+                  key={fee.id}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors border border-slate-200"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedFees.includes(fee.id)}
+                    onChange={() => toggleFeeSelection(fee.id)}
+                    className="w-4 h-4 rounded border-slate-300 text-[#824ef2] focus:ring-[#824ef2]"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-900">{fee.type}</p>
+                    <p className="text-xs text-slate-500">
+                      Due: {new Date(fee.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {fee.status === 'overdue' && (
+                        <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Overdue</span>
+                      )}
+                    </p>
+                  </div>
+                  <span className="text-sm font-semibold text-slate-900">Rs. {fee.balance.toLocaleString()}</span>
+                </label>
+              ))}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-5 border-t border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-500">{selectedFees.length} fee{selectedFees.length !== 1 ? 's' : ''} selected</span>
+                <span className="text-lg font-bold text-slate-900">Rs. {selectedTotal.toLocaleString()}</span>
+              </div>
+              <button
+                onClick={handleProcessPayment}
+                disabled={selectedFees.length === 0}
+                className="w-full py-2.5 text-sm font-medium text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Process Payment
+              </button>
             </div>
           </div>
         </div>

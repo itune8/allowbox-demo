@@ -524,12 +524,6 @@ export default function ParentPerformancePage() {
                         {subject.trend === 'stable' && 'Stable'}
                       </span>
                     </div>
-                    <div className="mt-3 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${subject.barColor} rounded-full transition-all duration-500`}
-                        style={{ width: `${(subject.score / subject.maxScore) * 100}%` }}
-                      />
-                    </div>
                   </button>
                 );
               })()}
@@ -560,13 +554,6 @@ export default function ParentPerformancePage() {
                       {subject.trend === 'down' && 'Declining'}
                       {subject.trend === 'stable' && 'Stable'}
                     </span>
-                  </div>
-                  {/* Score bar */}
-                  <div className="mt-3 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${subject.barColor} rounded-full transition-all duration-500`}
-                      style={{ width: `${(subject.score / subject.maxScore) * 100}%` }}
-                    />
                   </div>
                 </button>
               ))}

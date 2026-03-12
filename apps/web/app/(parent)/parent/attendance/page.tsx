@@ -60,10 +60,10 @@ function generateCalendarDays(year: number, month: number) {
 }
 
 const calendarCellColors: Record<string, string> = {
-  present: 'bg-green-100 text-green-700 border-green-200',
-  absent: 'bg-red-100 text-red-700 border-red-200',
-  late: 'bg-amber-100 text-amber-700 border-amber-200',
-  holiday: 'bg-slate-100 text-slate-400 border-slate-200',
+  present: 'bg-green-100 text-green-700',
+  absent: 'bg-red-100 text-red-700',
+  late: 'bg-amber-100 text-amber-700',
+  holiday: 'bg-slate-50 text-slate-400',
 };
 
 export default function ParentAttendancePage() {
@@ -194,51 +194,61 @@ export default function ParentAttendancePage() {
 
       {/* Calendar Tab */}
       {tab === 'calendar' && (
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <button onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); } else setCalMonth(calMonth - 1); }} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
-              <ChevronLeft className="w-5 h-5 text-slate-600" />
-            </button>
-            <h3 className="text-lg font-semibold text-slate-900">
-              {new Date(calYear, calMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </h3>
-            <button onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); } else setCalMonth(calMonth + 1); }} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
-              <ChevronRight className="w-5 h-5 text-slate-600" />
-            </button>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          {/* Month nav + legend */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-semibold text-slate-900">
+                {new Date(calYear, calMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </h3>
+              <span className="text-sm text-slate-400">Attendance visual overview</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); } else setCalMonth(calMonth - 1); }} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                <ChevronLeft className="w-4 h-4 text-slate-600" />
+              </button>
+              <button onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); } else setCalMonth(calMonth + 1); }} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                <ChevronRight className="w-4 h-4 text-slate-600" />
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-              <div key={d} className="text-center text-xs font-medium text-slate-500 py-2">{d}</div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1.5">
-            {calendarDays.map((d, i) => (
-              <div
-                key={i}
-                className={`aspect-square flex items-center justify-center rounded-lg text-sm font-semibold border ${
-                  d.day === 0
-                    ? 'border-transparent'
-                    : d.status
-                      ? calendarCellColors[d.status]
-                      : 'border-slate-100 text-slate-700'
-                }`}
-              >
-                {d.day > 0 && d.day}
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-4 mb-4">
+            {[
+              { label: 'Present', dot: 'bg-green-500' },
+              { label: 'Absent', dot: 'bg-red-500' },
+              { label: 'Late/Delay', dot: 'bg-amber-500' },
+              { label: 'Holiday/Weekend', dot: 'bg-slate-300' },
+            ].map((l) => (
+              <div key={l.label} className="flex items-center gap-1.5">
+                <span className={`w-2.5 h-2.5 rounded-full ${l.dot}`} />
+                <span className="text-xs text-slate-500">{l.label}</span>
               </div>
             ))}
           </div>
 
-          <div className="flex items-center gap-6 mt-6 pt-4 border-t border-slate-200">
-            {[
-              { label: 'Present', color: 'bg-green-100 border-green-200', textColor: 'text-green-700' },
-              { label: 'Absent', color: 'bg-red-100 border-red-200', textColor: 'text-red-700' },
-              { label: 'Late', color: 'bg-amber-100 border-amber-200', textColor: 'text-amber-700' },
-              { label: 'Holiday', color: 'bg-slate-100 border-slate-200', textColor: 'text-slate-400' },
-            ].map((l) => (
-              <div key={l.label} className="flex items-center gap-2">
-                <div className={`w-6 h-6 rounded border flex items-center justify-center text-[10px] font-bold ${l.color} ${l.textColor}`}>1</div>
-                <span className="text-xs text-slate-600">{l.label}</span>
+          {/* Day headers */}
+          <div className="grid grid-cols-7">
+            {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((d) => (
+              <div key={d} className="text-center text-[11px] font-semibold text-slate-400 py-2 border border-slate-100 bg-slate-50">{d}</div>
+            ))}
+          </div>
+
+          {/* Calendar grid */}
+          <div className="grid grid-cols-7">
+            {calendarDays.map((d, i) => (
+              <div
+                key={i}
+                className={`aspect-square flex items-center justify-center text-sm font-semibold border border-slate-100 ${
+                  d.day === 0
+                    ? 'bg-white'
+                    : d.status
+                      ? calendarCellColors[d.status]
+                      : 'bg-white text-slate-700'
+                }`}
+              >
+                {d.day > 0 && d.day}
               </div>
             ))}
           </div>

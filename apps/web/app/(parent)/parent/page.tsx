@@ -39,12 +39,12 @@ const MOCK_HOMEWORK = [
 ];
 
 const MOCK_ATTENDANCE_WEEK = [
-  { day: 'Mon', status: 'present' },
-  { day: 'Tue', status: 'present' },
-  { day: 'Wed', status: 'absent' },
-  { day: 'Thu', status: 'present' },
-  { day: 'Fri', status: 'late' },
-  { day: 'Sat', status: 'holiday' },
+  { day: 'Mon', date: 9, status: 'present' },
+  { day: 'Tue', date: 10, status: 'present' },
+  { day: 'Wed', date: 11, status: 'absent' },
+  { day: 'Thu', date: 12, status: 'present' },
+  { day: 'Fri', date: 13, status: 'late' },
+  { day: 'Sat', date: 14, status: 'holiday' },
 ];
 
 const MOCK_EVENTS = [
@@ -54,10 +54,17 @@ const MOCK_EVENTS = [
 ];
 
 const statusDotColors: Record<string, string> = {
-  present: 'bg-green-500',
-  absent: 'bg-red-500',
-  late: 'bg-amber-500',
-  holiday: 'bg-slate-300',
+  present: 'bg-green-50 border border-green-200',
+  absent: 'bg-red-50 border border-red-200',
+  late: 'bg-amber-50 border border-amber-200',
+  holiday: 'bg-slate-50 border border-slate-200',
+};
+
+const statusIconColors: Record<string, string> = {
+  present: 'text-green-600',
+  absent: 'text-red-600',
+  late: 'text-amber-600',
+  holiday: 'text-slate-400',
 };
 
 export default function ParentDashboardPage() {
@@ -160,7 +167,7 @@ export default function ParentDashboardPage() {
               <tbody>
                 {MOCK_SCHEDULE.map((s) => (
                   <tr key={s.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-3"><div className="flex items-center gap-1.5 text-slate-600"><Clock className="w-3.5 h-3.5 text-slate-400" />{s.time}</div></td>
+                    <td className="py-3 px-3 text-slate-600">{s.time}</td>
                     <td className="py-3 px-3 font-medium text-slate-900">{s.subject}</td>
                     <td className="py-3 px-3 text-slate-700">{s.teacher}</td>
                     <td className="py-3 px-3 text-slate-500">{s.room}</td>
@@ -209,11 +216,8 @@ export default function ParentDashboardPage() {
               {MOCK_ATTENDANCE_WEEK.map((d) => (
                 <div key={d.day} className="flex flex-col items-center gap-2">
                   <span className="text-xs font-medium text-slate-500">{d.day}</span>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${statusDotColors[d.status]} ${d.status === 'holiday' ? 'opacity-50' : ''}`}>
-                    {d.status === 'present' && <CheckCircle className="w-4 h-4 text-white" />}
-                    {d.status === 'absent' && <span className="text-white text-xs font-bold">A</span>}
-                    {d.status === 'late' && <Clock className="w-4 h-4 text-white" />}
-                    {d.status === 'holiday' && <span className="text-white text-xs font-bold">H</span>}
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${statusDotColors[d.status]}`}>
+                    <span className={`text-sm font-semibold ${statusIconColors[d.status]}`}>{d.date}</span>
                   </div>
                   <span className="text-[10px] text-slate-400 capitalize">{d.status}</span>
                 </div>
