@@ -6,7 +6,7 @@ ccbcvbcfgh# Allowbox Frontend - Turborepo
 
 This is the frontend-only Turborepo scaffold for Allowbox, a comprehensive school management system. The backend is hosted separately and exposes standard REST endpoints for authentication, tenant management, student management, invoices, and payment processing.
 
-## Tech Stack
+## Tech Stacksfd
 dfgf
 - **Framework**: Next.js 15 (App Routerr)nmn
 - **Language**: TypeScript ccc
