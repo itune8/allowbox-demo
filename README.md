@@ -13,7 +13,7 @@ dfgf
 - **Styling**: Tailwind CSS
 - **UI Components**: shadcn/ui pattern + Radix UI
 - **Data Fetching**: TanStack Query (React Query)
-- **Forms**: react-hook-form + zod
+- **Forms**: react-hook-form + zoddd
 - **HTTP Client**: axios
 - **Monorepo**: Turborepo
 - **Package Manager**: npm
