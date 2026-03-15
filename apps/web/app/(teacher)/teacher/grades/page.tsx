@@ -146,8 +146,10 @@ function calcGrade(marks: number, maxMarks: number): string {
   return 'F';
 }
 
+const defaultStatus = { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500', label: 'Upcoming' } as const;
+
 const statusConfig: Record<string, { bg: string; text: string; dot: string; label: string }> = {
-  upcoming: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500', label: 'Upcoming' },
+  upcoming: defaultStatus,
   completed: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500', label: 'Grading' },
   graded: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500', label: 'Completed' },
 };
@@ -567,7 +569,7 @@ export default function TeacherGradesPage() {
                 </tr>
               ) : (
                 currentExams.map((exam) => {
-                  const sc = statusConfig[exam.status] || statusConfig.upcoming;
+                  const sc = statusConfig[exam.status] ?? defaultStatus;
                   return (
                     <tr key={exam.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
                       <td className="py-3 px-5">
@@ -648,7 +650,7 @@ export default function TeacherGradesPage() {
             </div>
           ) : (
             currentExams.map((exam) => {
-              const sc = statusConfig[exam.status] || statusConfig.upcoming;
+              const sc = statusConfig[exam.status] ?? defaultStatus;
               return (
                 <div key={exam.id} className="p-4 hover:bg-slate-50 transition-colors">
                   <div className="flex items-start justify-between mb-2">

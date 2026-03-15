@@ -261,11 +261,13 @@ export default function TeacherClassesPage() {
     setTopics((prev) => {
       const updated = { ...prev };
       const chapters = [...(updated[subjectId] || [])];
-      const chapter = { ...chapters[chapterIdx] };
-      const subtopics = [...chapter.subtopics];
-      subtopics[subtopicIdx] = { ...subtopics[subtopicIdx], completed: !subtopics[subtopicIdx].completed };
-      chapter.subtopics = subtopics;
-      chapters[chapterIdx] = chapter;
+      const chapter = chapters[chapterIdx];
+      if (!chapter) return prev;
+      const subtopic = chapter.subtopics[subtopicIdx];
+      if (!subtopic) return prev;
+      const newSubtopics = [...chapter.subtopics];
+      newSubtopics[subtopicIdx] = { ...subtopic, completed: !subtopic.completed };
+      chapters[chapterIdx] = { ...chapter, subtopics: newSubtopics };
       updated[subjectId] = chapters;
       return updated;
     });
