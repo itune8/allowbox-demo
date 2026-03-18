@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import { Portal } from '../portal';
 import { X, Search, ChevronDown, Building2, Check } from 'lucide-react';
+import { CustomSelect, CustomDateInput } from './custom-select';
 import type { School } from '../../lib/services/superadmin/school.service';
 
 interface CreateInvoiceModalProps {
@@ -235,16 +236,16 @@ export function CreateInvoiceModal({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Plan</label>
-                <select
+                <CustomSelect
                   value={plan}
-                  onChange={(e) => setPlan(e.target.value)}
-                  className="w-full h-11 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
-                >
-                  <option value="basic">Basic Plan</option>
-                  <option value="premium">Premium Plan</option>
-                  <option value="enterprise">Enterprise Plan</option>
-                  <option value="professional">Professional Plan</option>
-                </select>
+                  onChange={setPlan}
+                  options={[
+                    { value: 'basic', label: 'Basic Plan' },
+                    { value: 'premium', label: 'Premium Plan' },
+                    { value: 'enterprise', label: 'Enterprise Plan' },
+                    { value: 'professional', label: 'Professional Plan' },
+                  ]}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Users</label>
@@ -272,41 +273,39 @@ export function CreateInvoiceModal({
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Billing Cycle</label>
-                <select
+                <CustomSelect
                   value={billingCycle}
-                  onChange={(e) => setBillingCycle(e.target.value)}
-                  className="w-full h-11 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
-                >
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                  <option value="annual">Annual</option>
-                </select>
+                  onChange={setBillingCycle}
+                  options={[
+                    { value: 'monthly', label: 'Monthly' },
+                    { value: 'quarterly', label: 'Quarterly' },
+                    { value: 'annual', label: 'Annual' },
+                  ]}
+                />
               </div>
             </div>
 
             {/* Payment Method */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Payment Method</label>
-              <select
+              <CustomSelect
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full h-11 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
-              >
-                <option value="online">Online Payment</option>
-                <option value="cash">Cash</option>
-                <option value="bank_transfer">Bank Transfer</option>
-                <option value="credit_card">Credit Card</option>
-              </select>
+                onChange={setPaymentMethod}
+                options={[
+                  { value: 'online', label: 'Online Payment' },
+                  { value: 'cash', label: 'Cash' },
+                  { value: 'bank_transfer', label: 'Bank Transfer' },
+                  { value: 'credit_card', label: 'Credit Card' },
+                ]}
+              />
             </div>
 
             {/* Due Date */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Due Date</label>
-              <input
-                type="date"
+              <CustomDateInput
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full h-11 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
+                onChange={setDueDate}
               />
             </div>
           </div>

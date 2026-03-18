@@ -155,7 +155,8 @@ export function SchoolViewModal({
       records.push({
         invoiceDate: invoiceDate.toISOString(),
         paymentDate: paymentDate.toISOString(),
-        plan: `${planLabel} / Annual`,
+        plan: planLabel,
+        duration: 'Annual',
         users: userCount > 0 ? userCount : totalUsers + totalStudents,
         amount: Math.round(amount * 12),
       });
@@ -334,15 +335,14 @@ export function SchoolViewModal({
                         <tr key={i} className="hover:bg-slate-50/50">
                           <td className="px-4 py-3 text-slate-700">{shortDate(p.invoiceDate)}</td>
                           <td className="px-4 py-3 text-slate-700">{shortDate(p.paymentDate)}</td>
-                          <td className="px-4 py-3 text-slate-700">{p.plan}</td>
+                          <td className="px-4 py-3"><div className="font-semibold text-slate-900">{p.plan}</div><div className="text-xs text-slate-500">{p.duration}</div></td>
                           <td className="px-4 py-3 text-slate-700">{p.users}</td>
                           <td className="px-4 py-3 font-semibold text-slate-900">
                             {formatCurrency(p.amount)}
                           </td>
                           <td className="px-4 py-3">
-                            <button className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-                              <Download className="w-3.5 h-3.5" />
-                              Download
+                            <button title="Download" className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
+                              <Download className="w-4 h-4" />
                             </button>
                           </td>
                         </tr>

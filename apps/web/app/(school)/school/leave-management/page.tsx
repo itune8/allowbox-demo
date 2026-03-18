@@ -540,8 +540,16 @@ export default function LeaveManagementPage() {
                       <div
                         key={day}
                         onClick={() => setSelectedCalendarDay(isSelected ? null : day)}
-                        className={`bg-white p-2 min-h-[80px] cursor-pointer transition-colors hover:bg-slate-50 ${
+                        className={`p-2 min-h-[80px] cursor-pointer transition-colors ${
                           isSelected ? 'ring-2 ring-[#824ef2] ring-inset' : ''
+                        } ${
+                          approved.length > 0 && pending.length === 0 && rejected.length === 0
+                            ? 'bg-emerald-50 hover:bg-emerald-100/70'
+                            : pending.length > 0
+                            ? 'bg-amber-50 hover:bg-amber-100/70'
+                            : rejected.length > 0
+                            ? 'bg-red-50 hover:bg-red-100/70'
+                            : 'bg-white hover:bg-slate-50'
                         }`}
                       >
                         <span className={`text-sm font-medium ${
@@ -578,7 +586,7 @@ export default function LeaveManagementPage() {
 
                 {/* Selected day leaves */}
                 {selectedCalendarDay !== null && (
-                  <div className="mt-5 pt-5 border-t border-slate-200">
+                  <div className="mt-5 pt-5">
                     <h4 className="text-sm font-semibold text-slate-900 mb-3">
                       Leaves on {monthNames[calendarMonth]} {selectedCalendarDay}, {calendarYear}
                     </h4>

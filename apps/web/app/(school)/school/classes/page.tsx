@@ -32,7 +32,11 @@ export interface ClassFormData {
   capacity?: number;
 }
 
-const headerColors = ['bg-[#824ef2]', 'bg-blue-600', 'bg-emerald-600'];
+const headerColors = [
+  { badge: 'bg-[#824ef2]/10 text-[#824ef2]' },
+  { badge: 'bg-blue-50 text-blue-600' },
+  { badge: 'bg-emerald-50 text-emerald-600' },
+];
 
 export default function ClassesPage() {
   const router = useRouter();
@@ -299,14 +303,14 @@ export default function ClassesPage() {
                 key={cls._id}
                 className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-slate-300 hover:shadow-sm transition-all"
               >
-                {/* Colored header band */}
-                <div className={`${headerColors[colorIndex]} px-5 py-4`}>
+                {/* Header */}
+                <div className="px-5 py-4 border-b border-slate-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-white font-semibold text-lg">{cls.name}</h3>
-                      <span className="text-white/80 text-sm">Academic Year {new Date().getFullYear()}</span>
+                      <h3 className="text-slate-900 font-semibold text-lg">{cls.name}</h3>
+                      <span className="text-slate-500 text-sm">Academic Year {new Date().getFullYear()}</span>
                     </div>
-                    <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center text-white font-bold text-lg">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg ${headerColors[colorIndex]!.badge}`}>
                       {cls.grade}
                     </div>
                   </div>

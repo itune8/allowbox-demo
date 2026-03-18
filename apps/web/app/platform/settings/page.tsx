@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Portal } from '../../../components/portal';
+import { CustomSelect, CustomDateInput } from '../../../components/platform';
 import {
   Globe,
   Calendar,
@@ -430,7 +431,11 @@ export default function SettingsPage() {
   const scrollToSection = (key: SidebarSection) => {
     setActiveSection(key);
     const el = document.getElementById(`section-${key}`);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (el) {
+      const offset = 80; // sticky header (64px) + gap
+      const top = el.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
   };
 
   const savePlans = (updated: PlanData[]) => {
@@ -609,32 +614,31 @@ export default function SettingsPage() {
             <div className="flex flex-wrap items-end gap-4">
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1.5">Current Academic Session</label>
-                <select
+                <CustomSelect
                   value={settings.currentSession}
-                  onChange={(e) => update('currentSession', e.target.value)}
-                  className="h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
-                >
-                  <option value="2024-2025">2024 - 2025</option>
-                  <option value="2023-2024">2023 - 2024</option>
-                  <option value="2025-2026">2025 - 2026</option>
-                </select>
+                  onChange={(v) => update('currentSession', v)}
+                  options={[
+                    { value: '2024-2025', label: '2024 - 2025' },
+                    { value: '2023-2024', label: '2023 - 2024' },
+                    { value: '2025-2026', label: '2025 - 2026' },
+                  ]}
+                  className="min-w-[160px]"
+                />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1.5">Start Date</label>
-                <input
-                  type="date"
+                <CustomDateInput
                   value={settings.sessionStartDate}
-                  onChange={(e) => update('sessionStartDate', e.target.value)}
-                  className="h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
+                  onChange={(v) => update('sessionStartDate', v)}
+                  className="min-w-[160px]"
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1.5">End Date</label>
-                <input
-                  type="date"
+                <CustomDateInput
                   value={settings.sessionEndDate}
-                  onChange={(e) => update('sessionEndDate', e.target.value)}
-                  className="h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
+                  onChange={(v) => update('sessionEndDate', v)}
+                  className="min-w-[160px]"
                 />
               </div>
               <button className="inline-flex items-center gap-1.5 h-10 px-4 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">

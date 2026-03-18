@@ -12,6 +12,7 @@ import {
   TrendingUp,
   TrendingDown,
 } from 'lucide-react';
+import { CustomSelect } from '../../../../components/platform';
 
 interface MetricConfig {
   title: string;
@@ -518,16 +519,18 @@ export default function MetricDetailPage() {
         {/* Date Range */}
         <div className="flex items-center gap-3">
           <span className="text-sm text-slate-600 font-medium">Date Range:</span>
-          <select
+          <CustomSelect
             value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="h-9 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
-          >
-            <option value="7d">Last 7 Days</option>
-            <option value="30d">Last 30 Days</option>
-            <option value="90d">Last 90 Days</option>
-            <option value="1y">Last Year</option>
-          </select>
+            onChange={setDateRange}
+            options={[
+              { value: '7d', label: 'Last 7 Days' },
+              { value: '30d', label: 'Last 30 Days' },
+              { value: '90d', label: 'Last 90 Days' },
+              { value: '1y', label: 'Last Year' },
+            ]}
+            compact
+            className="min-w-[150px]"
+          />
         </div>
 
         {/* Divider */}

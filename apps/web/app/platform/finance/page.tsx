@@ -12,9 +12,18 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  Eye,
+  Receipt,
+  FileText,
+  Check,
+  X,
+  Bell,
+  ClipboardList,
+  Mail,
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/auth-context';
 import { hasPermission } from '../../../lib/permissions';
+import { CustomSelect } from '../../../components/platform';
 import { schoolService, type School } from '../../../lib/services/superadmin/school.service';
 import {
   PlatformStatCard,
@@ -289,23 +298,26 @@ export default function FinancePage() {
         <button
           key="details"
           onClick={() => handleView(payment)}
-          className="px-2.5 py-1.5 text-xs font-medium text-[#824ef2] bg-[#824ef2]/5 border border-[#824ef2]/20 rounded-md hover:bg-[#824ef2]/10 transition-colors whitespace-nowrap"
+          title="View Details"
+          className="p-1.5 text-[#824ef2] bg-[#824ef2]/5 border border-[#824ef2]/20 rounded-md hover:bg-[#824ef2]/10 transition-colors"
         >
-          View Details
+          <Eye className="w-3.5 h-3.5" />
         </button>,
         <button
           key="receipt"
           onClick={() => handleViewReceipt(payment)}
-          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100 transition-colors whitespace-nowrap"
+          title="View Receipt"
+          className="p-1.5 text-slate-600 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100 transition-colors"
         >
-          View Receipt
+          <Receipt className="w-3.5 h-3.5" />
         </button>,
         <button
           key="invoice"
           onClick={() => handleViewInvoice(payment)}
-          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100 transition-colors whitespace-nowrap"
+          title="View Invoice"
+          className="p-1.5 text-slate-600 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100 transition-colors"
         >
-          View Invoice
+          <FileText className="w-3.5 h-3.5" />
         </button>
       );
     } else if (payment.status === 'pending') {
@@ -314,23 +326,26 @@ export default function FinancePage() {
         <button
           key="details"
           onClick={() => handleView(payment)}
-          className="px-2.5 py-1.5 text-xs font-medium text-[#824ef2] bg-[#824ef2]/5 border border-[#824ef2]/20 rounded-md hover:bg-[#824ef2]/10 transition-colors whitespace-nowrap"
+          title="View Details"
+          className="p-1.5 text-[#824ef2] bg-[#824ef2]/5 border border-[#824ef2]/20 rounded-md hover:bg-[#824ef2]/10 transition-colors"
         >
-          View Details
+          <Eye className="w-3.5 h-3.5" />
         </button>,
         <button
           key="accept"
           onClick={() => handleAcceptPayment(payment.school)}
-          className="px-2.5 py-1.5 text-xs font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-colors whitespace-nowrap"
+          title="Accept"
+          className="p-1.5 text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-colors"
         >
-          Accept
+          <Check className="w-3.5 h-3.5" />
         </button>,
         <button
           key="reject"
           onClick={() => handleRejectPayment(payment.school)}
-          className="px-2.5 py-1.5 text-xs font-medium text-white bg-red-500 rounded-md hover:bg-red-600 transition-colors whitespace-nowrap"
+          title="Reject"
+          className="p-1.5 text-white bg-red-500 rounded-md hover:bg-red-600 transition-colors"
         >
-          Reject
+          <X className="w-3.5 h-3.5" />
         </button>
       );
     } else if (payment.status === 'overdue') {
@@ -339,23 +354,26 @@ export default function FinancePage() {
         <button
           key="details"
           onClick={() => handleView(payment)}
-          className="px-2.5 py-1.5 text-xs font-medium text-[#824ef2] bg-[#824ef2]/5 border border-[#824ef2]/20 rounded-md hover:bg-[#824ef2]/10 transition-colors whitespace-nowrap"
+          title="View Details"
+          className="p-1.5 text-[#824ef2] bg-[#824ef2]/5 border border-[#824ef2]/20 rounded-md hover:bg-[#824ef2]/10 transition-colors"
         >
-          View Details
+          <Eye className="w-3.5 h-3.5" />
         </button>,
         <button
           key="invoice"
           onClick={() => handleViewInvoice(payment)}
-          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100 transition-colors whitespace-nowrap"
+          title="View Invoice"
+          className="p-1.5 text-slate-600 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100 transition-colors"
         >
-          View Invoice
+          <FileText className="w-3.5 h-3.5" />
         </button>,
         <button
           key="remind"
           onClick={() => handleSendReminder(payment)}
-          className="px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors whitespace-nowrap"
+          title="Send Reminder"
+          className="p-1.5 text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors"
         >
-          Send Reminder
+          <Bell className="w-3.5 h-3.5" />
         </button>
       );
     } else if (payment.status === 'failed') {
@@ -364,23 +382,26 @@ export default function FinancePage() {
         <button
           key="details"
           onClick={() => handleView(payment)}
-          className="px-2.5 py-1.5 text-xs font-medium text-[#824ef2] bg-[#824ef2]/5 border border-[#824ef2]/20 rounded-md hover:bg-[#824ef2]/10 transition-colors whitespace-nowrap"
+          title="View Details"
+          className="p-1.5 text-[#824ef2] bg-[#824ef2]/5 border border-[#824ef2]/20 rounded-md hover:bg-[#824ef2]/10 transition-colors"
         >
-          View Details
+          <Eye className="w-3.5 h-3.5" />
         </button>,
         <button
           key="review"
           onClick={() => handleReview(payment)}
-          className="px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors whitespace-nowrap"
+          title="Review"
+          className="p-1.5 text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors"
         >
-          Review
+          <ClipboardList className="w-3.5 h-3.5" />
         </button>,
         <button
           key="contact"
           onClick={() => handleSendReminder(payment)}
-          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100 transition-colors whitespace-nowrap"
+          title="Contact School"
+          className="p-1.5 text-slate-600 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100 transition-colors"
         >
-          Contact School
+          <Mail className="w-3.5 h-3.5" />
         </button>
       );
     }
@@ -504,27 +525,27 @@ export default function FinancePage() {
             className="w-full h-10 pl-9 pr-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
           />
         </div>
-        <select
+        <CustomSelect
           value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-          className="h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
-        >
-          <option value="all">All Status</option>
-          <option value="paid">Paid</option>
-          <option value="pending">Pending</option>
-          <option value="overdue">Overdue</option>
-          <option value="failed">Failed</option>
-        </select>
-        <select
+          onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
+          options={[
+            { value: 'all', label: 'All Status' },
+            { value: 'paid', label: 'Paid' },
+            { value: 'pending', label: 'Pending' },
+            { value: 'overdue', label: 'Overdue' },
+            { value: 'failed', label: 'Failed' },
+          ]}
+        />
+        <CustomSelect
           value={planFilter}
-          onChange={(e) => { setPlanFilter(e.target.value); setCurrentPage(1); }}
-          className="h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
-        >
-          <option value="all">All Plans</option>
-          <option value="basic">Basic</option>
-          <option value="premium">Premium</option>
-          <option value="enterprise">Enterprise</option>
-        </select>
+          onChange={(v) => { setPlanFilter(v); setCurrentPage(1); }}
+          options={[
+            { value: 'all', label: 'All Plans' },
+            { value: 'basic', label: 'Basic' },
+            { value: 'premium', label: 'Premium' },
+            { value: 'enterprise', label: 'Enterprise' },
+          ]}
+        />
         {(statusFilter !== 'all' || planFilter !== 'all' || searchQuery) && (
           <button
             onClick={() => { setStatusFilter('all'); setPlanFilter('all'); setSearchQuery(''); setCurrentPage(1); }}

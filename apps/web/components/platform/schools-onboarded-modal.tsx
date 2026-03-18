@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useState, useMemo } from 'react';
 import { Portal } from '../portal';
 import { X, Search, Download, ChevronLeft, ChevronRight, Building2 } from 'lucide-react';
+import { CustomSelect } from './custom-select';
 
 interface OnboardedSchool {
   name: string;
@@ -140,16 +141,18 @@ export function SchoolsOnboardedModal({ isOpen, onClose, userName }: SchoolsOnbo
                 className="w-full h-9 pl-9 pr-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
               />
             </div>
-            <select
+            <CustomSelect
               value={planFilter}
-              onChange={(e) => { setPlanFilter(e.target.value); setCurrentPage(1); }}
-              className="h-9 px-3 border border-slate-200 rounded-lg text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
-            >
-              <option value="all">All Plans</option>
-              <option value="enterprise">Enterprise</option>
-              <option value="professional">Professional</option>
-              <option value="basic">Basic</option>
-            </select>
+              onChange={(v) => { setPlanFilter(v); setCurrentPage(1); }}
+              options={[
+                { value: 'all', label: 'All Plans' },
+                { value: 'enterprise', label: 'Enterprise' },
+                { value: 'professional', label: 'Professional' },
+                { value: 'basic', label: 'Basic' },
+              ]}
+              compact
+              className="min-w-[140px]"
+            />
             <button className="inline-flex items-center gap-1.5 h-9 px-3 text-sm font-medium text-[#824ef2] border border-[#824ef2]/20 rounded-lg hover:bg-[#824ef2]/5 transition-colors ml-auto">
               <Download className="w-3.5 h-3.5" />
               Export Data

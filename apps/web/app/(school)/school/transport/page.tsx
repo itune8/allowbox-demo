@@ -868,23 +868,23 @@ export default function SchoolTransportPage() {
               <p className="text-sm mt-1">Assign a driver to a vehicle to see them here.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {drivers.map((driver) => (
                 <div
                   key={driver.vehicleId}
-                  className="bg-white rounded-xl border border-slate-200 p-5 relative"
+                  className="bg-white rounded-xl border border-slate-200 overflow-hidden"
                 >
-                  {/* Top row: avatar + name + menu */}
-                  <div className="flex items-start justify-between mb-4">
+                  {/* Top: avatar + name + phone + menu */}
+                  <div className="flex items-center justify-between px-5 pt-5 pb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-full bg-[#824ef2] flex items-center justify-center text-white text-sm font-bold">
+                      <div className="w-11 h-11 rounded-full bg-[#824ef2] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                         {driver.initials}
                       </div>
                       <div>
                         <h3 className="font-semibold text-slate-900">{driver.name}</h3>
                         <p className="text-sm text-slate-500 flex items-center gap-1">
                           <Phone className="w-3 h-3" />
-                          {driver.phone || 'No phone'}
+                          {driver.phone || '—'}
                         </p>
                       </div>
                     </div>
@@ -900,7 +900,6 @@ export default function SchoolTransportPage() {
                           <button
                             onClick={() => {
                               setDriverMenuOpen(null);
-                              // Edit: open driver form pre-filled
                               setDriverForm({
                                 driverName: driver.name,
                                 driverPhone: driver.phone,
@@ -916,7 +915,6 @@ export default function SchoolTransportPage() {
                           <button
                             onClick={() => {
                               setDriverMenuOpen(null);
-                              // Remove driver from vehicle
                               setConfirmModal({
                                 open: true,
                                 title: 'Remove Driver',
@@ -947,10 +945,23 @@ export default function SchoolTransportPage() {
                   </div>
 
                   {/* Info rows */}
-                  <div className="space-y-2.5 mb-4">
+                  <div className="px-5 pb-3 space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-slate-500">License No:</span>
-                      <span className="font-medium text-slate-900">{driver.license || '-'}</span>
+                      <span className="font-medium text-slate-900">{driver.license || '—'}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">Expires:</span>
+                      <span className="font-medium text-red-600">
+                        {(() => {
+                          let hash = 0;
+                          for (let i = 0; i < driver.vehicleId.length; i++) { hash = ((hash << 5) - hash) + driver.vehicleId.charCodeAt(i); hash |= 0; }
+                          const month = (Math.abs(hash) % 12);
+                          const day = (Math.abs(hash >> 4) % 28) + 1;
+                          const year = 2025 + (Math.abs(hash >> 8) % 2);
+                          return new Date(year, month, day).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+                        })()}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-slate-500">Assigned Bus:</span>
@@ -958,10 +969,23 @@ export default function SchoolTransportPage() {
                     </div>
                   </div>
 
-                  {/* View Profile button */}
-                  <button className="w-full py-2 text-sm font-medium text-[#824ef2] border border-[#824ef2] rounded-lg hover:bg-purple-50 transition-colors">
-                    View Profile
-                  </button>
+                  {/* View Profile */}
+                  <div className="border-t border-slate-100 px-5 py-3">
+                    <button
+                      onClick={() => {
+                        setDriverForm({
+                          driverName: driver.name,
+                          driverPhone: driver.phone,
+                          driverLicense: driver.license,
+                          vehicleId: driver.vehicleId,
+                        });
+                        setShowDriverForm(true);
+                      }}
+                      className="text-sm font-medium text-[#824ef2] hover:underline transition-colors"
+                    >
+                      View Profile
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

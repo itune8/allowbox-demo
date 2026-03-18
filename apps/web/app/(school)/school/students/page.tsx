@@ -51,6 +51,7 @@ interface StudentFormData {
   bloodGroup: string;
   address: string;
   phoneNumber: string;
+  parentName: string;
   parentEmail: string;
   parentPhone: string;
   studentId: string;
@@ -61,7 +62,7 @@ interface StudentFormData {
 
 const initialFormData: StudentFormData = {
   firstName: '', lastName: '', email: '', dateOfBirth: '', gender: '', bloodGroup: '',
-  address: '', phoneNumber: '', parentEmail: '', parentPhone: '', studentId: '', classId: '', section: '', rollNumber: '',
+  address: '', phoneNumber: '', parentName: '', parentEmail: '', parentPhone: '', studentId: '', classId: '', section: '', rollNumber: '',
 };
 
 export default function StudentsPage() {
@@ -194,7 +195,7 @@ export default function StudentsPage() {
         firstName: student.firstName || '', lastName: student.lastName || '', email: student.email || '',
         dateOfBirth: student.dateOfBirth ? (typeof student.dateOfBirth === 'string' ? student.dateOfBirth : new Date(student.dateOfBirth).toISOString().split('T')[0]) || '' : '',
         gender: student.gender || '', bloodGroup: student.bloodGroup || '', address: student.address || '',
-        phoneNumber: student.phoneNumber || '', parentEmail: student.parentEmail || '', parentPhone: student.parentPhone || '',
+        phoneNumber: student.phoneNumber || '', parentName: (student as any).parentName || '', parentEmail: student.parentEmail || '', parentPhone: student.parentPhone || '',
         studentId: student.studentId || '',
         classId: typeof student.classId === 'string' ? student.classId : (student.classId as any)?.id || (student.classId as any)?._id || '',
         section: student.section || '', rollNumber: (student as any).rollNumber || '',
@@ -227,6 +228,7 @@ export default function StudentsPage() {
         if (formData.bloodGroup) payload.bloodGroup = formData.bloodGroup;
         if (formData.address) payload.address = formData.address;
         if (formData.phoneNumber) payload.phoneNumber = formData.phoneNumber;
+        if (formData.parentName) payload.parentName = formData.parentName;
         if (formData.parentEmail) payload.parentEmail = formData.parentEmail;
         if (formData.parentPhone) payload.parentPhone = formData.parentPhone;
         if (formData.studentId) payload.studentId = formData.studentId;
@@ -244,6 +246,7 @@ export default function StudentsPage() {
         if (formData.bloodGroup) createPayload.bloodGroup = formData.bloodGroup;
         if (formData.address) createPayload.address = formData.address;
         if (formData.phoneNumber) createPayload.phoneNumber = formData.phoneNumber;
+        if (formData.parentName) createPayload.parentName = formData.parentName;
         if (formData.parentEmail) createPayload.parentEmail = formData.parentEmail;
         if (formData.parentPhone) createPayload.parentPhone = formData.parentPhone;
         if (formData.studentId) createPayload.studentId = formData.studentId;
@@ -503,13 +506,13 @@ export default function StudentsPage() {
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Student ID</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Student ID</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Class</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Roll No</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Parent</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Class</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Roll No</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Parent</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -528,7 +531,7 @@ export default function StudentsPage() {
                   ) : (
                     paginatedStudents.map((student) => (
                       <tr key={student.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-center">
                           <button onClick={() => setShowDetailsModal(student)} className="text-slate-900 font-medium hover:underline text-sm">
                             {student.studentId || '—'}
                           </button>
@@ -541,21 +544,21 @@ export default function StudentsPage() {
                             <span className="font-medium text-slate-900">{student.firstName} {student.lastName}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-slate-600">
+                        <td className="px-4 py-3 text-center text-slate-600">
                           {student.classId ? `${(student.classId as any)?.name || (student.classId as any)?.grade || '—'}${student.section ? ` - ${student.section}` : ''}` : '—'}
                         </td>
-                        <td className="px-4 py-3 text-slate-600">{(student as any).rollNumber || '—'}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-center text-slate-600">{(student as any).rollNumber || '—'}</td>
+                        <td className="px-4 py-3 text-center">
                           {student.parentEmail ? (
                             <span className="text-blue-600 text-sm">{student.parentEmail}</span>
                           ) : (
                             <span className="text-slate-400 text-sm">Not linked</span>
                           )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-center">
                           <SchoolStatusBadge value={student.isBlocked ? 'blocked' : 'active'} />
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 text-center">
                           <div className="inline-flex items-center gap-1">
                             <button title="View" onClick={() => setShowDetailsModal(student)} className="p-1.5 rounded-lg hover:bg-teal-50 text-teal-600 transition-colors">
                               <Eye className="w-4 h-4" />
@@ -661,6 +664,7 @@ export default function StudentsPage() {
                 <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 pb-2 border-b border-slate-200">Parent Information</h4>
                 <div className="space-y-4">
                   {[
+                    { label: 'Parent Name', value: (showDetailsModal as any).parentName || '—' },
                     { label: 'Parent Email', value: showDetailsModal.parentEmail || '—' },
                     { label: 'Parent Phone', value: showDetailsModal.parentPhone || '—' },
                   ].map(row => (
@@ -756,14 +760,20 @@ export default function StudentsPage() {
 
           <div>
             <h3 className="text-sm font-semibold text-[#824ef2] mb-4">Parent Information</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Parent Email</label>
-                <input type="email" value={formData.parentEmail} onChange={(e) => setFormData({ ...formData, parentEmail: e.target.value })} placeholder="parent@example.com" className={inputClass} />
+                <label className="block text-sm font-medium text-slate-700 mb-1">Parent Name</label>
+                <input type="text" value={formData.parentName} onChange={(e) => setFormData({ ...formData, parentName: e.target.value })} placeholder="Enter parent name" className={inputClass} />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Parent Phone</label>
-                <input type="tel" value={formData.parentPhone} onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })} placeholder="Phone number" className={inputClass} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Parent Email</label>
+                  <input type="email" value={formData.parentEmail} onChange={(e) => setFormData({ ...formData, parentEmail: e.target.value })} placeholder="parent@example.com" className={inputClass} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Parent Phone</label>
+                  <input type="tel" value={formData.parentPhone} onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })} placeholder="Phone number" className={inputClass} />
+                </div>
               </div>
             </div>
           </div>

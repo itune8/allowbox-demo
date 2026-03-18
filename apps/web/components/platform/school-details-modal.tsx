@@ -110,7 +110,7 @@ export function SchoolDetailsModal({
     payments.push({
       invoiceId: `INV-${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}${String(i + 1).padStart(2, '0')}`,
       date: date.toISOString(),
-      plan: `${planLabel} / Annual`,
+      plan: planLabel,
       duration: 'Annual',
       users: userCount,
       revenue: amount,
@@ -283,7 +283,7 @@ export function SchoolDetailsModal({
                           <tr key={payment.invoiceId} className="hover:bg-slate-50/50">
                             <td className="px-3 py-3 text-slate-600 whitespace-nowrap">{shortDate(payment.date)}</td>
                             <td className="px-3 py-3 text-slate-600 whitespace-nowrap">{shortDate(paymentDate.toISOString())}</td>
-                            <td className="px-3 py-3 text-slate-600 whitespace-nowrap">{payment.plan}</td>
+                            <td className="px-3 py-3 whitespace-nowrap"><span className="font-semibold text-slate-900">{payment.plan}</span>{' '}<span className="text-slate-500">{payment.duration}</span></td>
                             <td className="px-3 py-3 text-slate-600 whitespace-nowrap">{payment.users}</td>
                             <td className="px-3 py-3 font-semibold text-slate-900 whitespace-nowrap">{formatCurrency(payment.revenue)}</td>
                             <td className="px-3 py-3 whitespace-nowrap">

@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useState } from 'react';
 import { Portal } from '../portal';
-import { X, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, ChevronDown, Check } from 'lucide-react';
 
 type UserRole = 'super_admin' | 'sales' | 'support' | 'finance';
 
@@ -30,6 +30,7 @@ export function AddTeamMemberModal({ isOpen, onClose, onSubmit, submitting }: Ad
   const [role, setRole] = useState<UserRole | ''>('');
   const [permissions, setPermissions] = useState({ create: false, read: false, update: false, delete: false });
   const [error, setError] = useState<string | null>(null);
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
 
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
@@ -185,20 +186,43 @@ export function AddTeamMemberModal({ isOpen, onClose, onSubmit, submitting }: Ad
               </div>
 
               {/* Role */}
-              <div>
+              <div className="relative">
                 <label className={labelClass}>Role <span className="text-red-500">*</span></label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as UserRole)}
-                  className={`${inputClass} appearance-none`}
-                  required
+                <button
+                  type="button"
+                  onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+                  className={`${inputClass} flex items-center justify-between text-left ${!role ? 'text-slate-400' : 'text-slate-900'}`}
                 >
-                  <option value="">Select role</option>
-                  <option value="super_admin">Admin</option>
-                  <option value="sales">Sales</option>
-                  <option value="finance">Finance</option>
-                  <option value="support">Support</option>
-                </select>
+                  <span>{role ? { super_admin: 'Admin', sales: 'Sales', finance: 'Finance', support: 'Support' }[role] : 'Select role'}</span>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${roleDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {roleDropdownOpen && (
+                  <div className="absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg py-1">
+                    {([
+                      { value: 'super_admin' as UserRole, label: 'Admin' },
+                      { value: 'sales' as UserRole, label: 'Sales' },
+                      { value: 'finance' as UserRole, label: 'Finance' },
+                      { value: 'support' as UserRole, label: 'Support' },
+                    ]).map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setRole(option.value);
+                          setRoleDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2.5 text-sm text-left flex items-center justify-between transition-colors ${
+                          role === option.value
+                            ? 'bg-[#824ef2]/5 text-[#824ef2] font-medium'
+                            : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {option.label}
+                        {role === option.value && <Check className="w-4 h-4" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Permissions */}

@@ -444,13 +444,15 @@ export default function SchoolGradesPage() {
               Mark Approvals
             </button>
           </div>
-          <button
-            onClick={() => setShowCreateExamModal(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Create Exam
-          </button>
+          {examSubTab === 'all' && (
+            <button
+              onClick={() => setShowCreateExamModal(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#824ef2] rounded-lg hover:bg-[#6b3fd4] transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Create Exam
+            </button>
+          )}
         </div>
 
         {examSubTab === 'all' ? (

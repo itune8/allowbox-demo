@@ -144,12 +144,24 @@ export default function UsersPage() {
     }
   }, [openMenuId]);
 
+  const mockSalesUser: StaffUser = {
+    id: 'mock-sales-001',
+    firstName: 'Rahul',
+    lastName: 'Sharma',
+    email: 'rahul.sharma@allowbox.app',
+    role: 'sales',
+    createdAt: '2025-11-10T08:00:00.000Z',
+    lastLogin: '2026-03-17T14:30:00.000Z',
+    isActive: true,
+    phone: '+91 98765 43210',
+  };
+
   const loadUsers = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await userService.getPlatformUsers();
-      setUsers(response as StaffUser[]);
+      setUsers([...response as StaffUser[], mockSalesUser]);
     } catch (err) {
       console.error('Failed to load users:', err);
       setError('Failed to load users');

@@ -21,6 +21,7 @@ import {
   BookOpenCheck,
   ArrowRight,
   ArrowUpRight,
+  ArrowLeft,
 } from 'lucide-react';
 import { SchoolStatCard, SchoolStatusBadge, FormModal, useToast, CustomSelect } from '../../../../components/school';
 
@@ -784,7 +785,16 @@ export default function ReportsPage() {
   return (
     <section className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        {activeCategory ? (
+          <button
+            onClick={() => setActiveCategory(null)}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Reports
+          </button>
+        ) : <div />}
         {activeCategory && (
           <button
             onClick={handleExport}

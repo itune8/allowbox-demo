@@ -12,6 +12,7 @@ interface UserDetailsModalProps {
     lastName: string;
     role: string;
     email?: string;
+    phone?: string;
   } | null;
   onViewSchools?: () => void;
 }
@@ -61,7 +62,9 @@ export function UserDetailsModal({ isOpen, onClose, user, onViewSchools }: UserD
     user.role === 'finance' ? 'Finance Manager' :
     user.role === 'support' ? 'Support Lead' : user.role;
 
-  // Mock metrics
+  const isSales = user.role === 'sales';
+
+  // Mock metrics (only relevant for sales)
   const totalSchools = Math.floor(Math.random() * 20) + 8;
   const avgEngagement = Math.floor(Math.random() * 15) + 80;
   const activeUsers = Math.floor(Math.random() * 1000) + 800;
@@ -94,7 +97,7 @@ export function UserDetailsModal({ isOpen, onClose, user, onViewSchools }: UserD
           <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200">
             <div>
               <h2 className="text-lg font-bold text-slate-900">
-                {user.firstName} {user.lastName} - Performance Details
+                {user.firstName} {user.lastName}{isSales ? ' - Performance Details' : ''}
               </h2>
               <p className="text-sm text-slate-500 mt-0.5">{roleTitle}</p>
             </div>
@@ -106,30 +109,61 @@ export function UserDetailsModal({ isOpen, onClose, user, onViewSchools }: UserD
             </button>
           </div>
 
-          {/* Tabs */}
-          <div className="px-6 border-b border-slate-200">
-            <div className="flex gap-6">
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`pb-3 pt-3 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === tab.id
-                      ? 'border-[#824ef2] text-[#824ef2]'
-                      : 'border-transparent text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+          {/* Tabs - only for sales */}
+          {isSales && (
+            <div className="px-6 border-b border-slate-200">
+              <div className="flex gap-6">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`pb-3 pt-3 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === tab.id
+                        ? 'border-[#824ef2] text-[#824ef2]'
+                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto px-6 py-5">
 
-            {/* Performance Tab */}
-            {activeTab === 'performance' && (
+            {/* Non-sales: basic user info */}
+            {!isSales && (
+              <div>
+                <h3 className="text-base font-bold text-slate-900 mb-3">User Information</h3>
+                <div className="border border-slate-200 rounded-xl p-5">
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Name</p>
+                      <p className="text-sm font-medium text-slate-900">{user.firstName} {user.lastName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Role</p>
+                      <p className="text-sm font-medium text-slate-900">{roleTitle}</p>
+                    </div>
+                    {user.email && (
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">Email</p>
+                        <p className="text-sm font-medium text-slate-900">{user.email}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Phone</p>
+                      <p className="text-sm font-medium text-slate-900">{user.phone || '—'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Performance Tab (sales only) */}
+            {isSales && activeTab === 'performance' && (
               <div>
                 <h3 className="text-base font-bold text-slate-900 mb-3">Engagement Metrics</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -153,8 +187,8 @@ export function UserDetailsModal({ isOpen, onClose, user, onViewSchools }: UserD
               </div>
             )}
 
-            {/* Onboarded Schools Tab */}
-            {activeTab === 'schools' && (
+            {/* Onboarded Schools Tab (sales only) */}
+            {isSales && activeTab === 'schools' && (
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-base font-bold text-slate-900">Onboarded Schools</h3>

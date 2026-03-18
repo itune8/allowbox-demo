@@ -776,9 +776,8 @@ export default function StaffPage() {
                   setAssignTeacher(showStaffModal);
                   setShowStaffModal(null);
                 }}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors whitespace-nowrap"
               >
-                <Plus className="w-4 h-4" />
                 Assign Classes
               </button>
             )}

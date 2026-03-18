@@ -12,7 +12,7 @@ import {
   UserMinus,
   CheckCircle2,
 } from 'lucide-react';
-import { PlatformStatCard, StatusBadge, EngagementBar } from '../../../components/platform';
+import { PlatformStatCard, StatusBadge, EngagementBar, CustomSelect } from '../../../components/platform';
 
 interface ReportMetrics {
   totalSchools: number;
@@ -133,16 +133,17 @@ export default function ReportsPage() {
           <p className="text-slate-500 mt-1">Comprehensive overview of all schools and user engagement</p>
         </div>
         <div className="flex items-center gap-2">
-          <select
+          <CustomSelect
             value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value as any)}
-            className="h-10 px-4 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2]"
-          >
-            <option value="7d">Last 7 Days</option>
-            <option value="30d">Last 30 Days</option>
-            <option value="90d">Last 90 Days</option>
-            <option value="1y">Last Year</option>
-          </select>
+            onChange={(v) => setTimeRange(v as any)}
+            options={[
+              { value: '7d', label: 'Last 7 Days' },
+              { value: '30d', label: 'Last 30 Days' },
+              { value: '90d', label: 'Last 90 Days' },
+              { value: '1y', label: 'Last Year' },
+            ]}
+            className="min-w-[160px]"
+          />
           <button
             onClick={() => downloadReport('pdf')}
             className="inline-flex items-center gap-2 h-10 px-4 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"

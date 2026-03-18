@@ -14,3 +14,5 @@ export { SendReminderModal } from './send-reminder-modal';
 export { CreateInvoiceModal } from './create-invoice-modal';
 export { InvoiceDetailsModal } from './invoice-details-modal';
 export { PaymentReceiptModal } from './payment-receipt-modal';
+export { CustomSelect, CustomDateInput } from './custom-select';
+export type { SelectOption } from './custom-select';
