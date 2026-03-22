@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { env } from '@repo/config';
+import { getDemoResponse } from './demo-data';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -18,32 +19,12 @@ class ApiClient {
       (config) => {
         const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
-        // Demo mode: return empty data instead of hitting real API
+        // Demo mode: return realistic mock data instead of hitting real API
         if (token?.startsWith('demo-token-')) {
           const adapter = () => {
             const url = config.url || '';
-            // Return sensible empty responses for common endpoints
-            let data: any = [];
-            if (url.includes('/auth/me')) data = { user: JSON.parse(localStorage.getItem('user') || '{}') };
-            else if (url.includes('/tenants/me') || url.includes('/tenants')) data = { name: 'Demo School', id: 'demo-tenant-001', subscription: { plan: 'premium', status: 'active' } };
-            else if (url.includes('/classes')) data = [];
-            else if (url.includes('/users')) data = [];
-            else if (url.includes('/subjects')) data = [];
-            else if (url.includes('/attendance')) data = [];
-            else if (url.includes('/fees') || url.includes('/invoices')) data = [];
-            else if (url.includes('/health')) data = [];
-            else if (url.includes('/transport')) data = { vehicles: [], routes: [], assignments: [] };
-            else if (url.includes('/leave')) data = [];
-            else if (url.includes('/events')) data = [];
-            else if (url.includes('/announcements')) data = [];
-            else if (url.includes('/timetable')) data = [];
-            else if (url.includes('/homework') || url.includes('/assignments')) data = [];
-            else if (url.includes('/exams') || url.includes('/marks') || url.includes('/grades')) data = [];
-            else if (url.includes('/messages')) data = [];
-            else if (url.includes('/daily-diary')) data = [];
-            else if (url.includes('/lesson-plans')) data = [];
-            else if (url.includes('/activity-logs')) data = [];
-            else if (url.includes('/support-tickets')) data = [];
+            const method = config.method || 'get';
+            const data = getDemoResponse(url, method);
             return Promise.resolve({ data, status: 200, statusText: 'OK', headers: {}, config });
           };
           config.adapter = adapter as any;
