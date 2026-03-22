@@ -1,6 +1,6 @@
 {
-  "buildCommand": "NEXT_PUBLIC_API_URL=https://allowboxapiv23.hyperbrainlabs.com NEXT_PUBLIC_APP_URL=https://allowbox.app NEXT_PUBLIC_USE_API_MOCKS=false npx turbo build --filter=web",
+  "installCommand": "npm install --workspaces",
+  "buildCommand": "npx turbo build --filter=web",
   "outputDirectory": "apps/web/.next",
-  "installCommand": "npm install",
   "framework": "nextjs"
 }
