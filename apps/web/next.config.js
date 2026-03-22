@@ -12,6 +12,7 @@ const nextConfig = {
 	turbopack: {
 		root: path.join(__dirname, '../../'),
 	},
+	transpilePackages: ['@repo/config', '@repo/types', '@repo/ui', '@repo/hooks'],
 };
 
 export default nextConfig;
