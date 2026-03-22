@@ -145,6 +145,7 @@ export default function UsersPage() {
   }, [openMenuId]);
 
   const mockSalesUser: StaffUser = {
+    _id: 'mock-sales-001',
     id: 'mock-sales-001',
     firstName: 'Rahul',
     lastName: 'Sharma',
