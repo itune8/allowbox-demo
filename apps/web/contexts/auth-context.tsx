@@ -36,9 +36,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('🔄 Refreshing user...');
 
+      // Demo mode: load from localStorage without API
+      const token = authService.getAccessToken();
+      if (token?.startsWith('demo-token-')) {
+        const stored = localStorage.getItem('user');
+        if (stored) {
+          const u = JSON.parse(stored);
+          setUser({
+            id: u.id, email: u.email,
+            firstName: u.firstName, lastName: u.lastName,
+            tenantId: u.tenantId || '',
+            roles: [u.role], permissions: u.permissions || [],
+          });
+        }
+        setLoading(false);
+        return;
+      }
+
       // First, try to get stored user data for instant load
       const storedUser = authService.getStoredUser();
-      const token = authService.getAccessToken();
       console.log('🔑 Access token:', token ? 'Found' : 'Not found');
       console.log('💾 Stored user:', storedUser ? 'Found' : 'Not found');
 
@@ -127,34 +143,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const DEMO_USERS: Record<string, User> = {
+    'admin@allowbox.app': {
+      id: 'demo-super-admin', email: 'admin@allowbox.app',
+      firstName: 'Super', lastName: 'Admin', tenantId: '',
+      roles: ['super_admin'],
+      permissions: ['canManageSchools', 'canManageUsers', 'canViewAnalytics', 'canAccessUsers'],
+    },
+    'school@example.com': {
+      id: 'demo-school-admin', email: 'school@example.com',
+      firstName: 'Sahil', lastName: 'Admin', tenantId: 'demo-tenant-001',
+      roles: ['tenant_admin'],
+      permissions: ['canManageStudents', 'canManageTeachers', 'canManageClasses', 'canManageFees'],
+    },
+    'teacher@example.com': {
+      id: 'demo-teacher', email: 'teacher@example.com',
+      firstName: 'Teacher', lastName: 'Yes', tenantId: 'demo-tenant-001',
+      roles: ['teacher'],
+      permissions: ['canViewStudents', 'canManageAttendance', 'canManageHomework'],
+    },
+    'parent@example.com': {
+      id: 'demo-parent', email: 'parent@example.com',
+      firstName: 'Parent', lastName: 'User', tenantId: 'demo-tenant-001',
+      roles: ['parent'],
+      permissions: ['canViewChild', 'canViewFees', 'canViewAttendance'],
+    },
+  };
+
   const login = async (email: string, password: string, remember?: boolean) => {
     console.log('🔐 Login attempt:', { email });
+
+    // Demo mode: bypass API
+    const demoUser = DEMO_USERS[email.toLowerCase()];
+    if (demoUser) {
+      console.log('🎭 Demo login:', email);
+      localStorage.setItem('accessToken', 'demo-token-' + demoUser.roles[0]);
+      localStorage.setItem('refreshToken', 'demo-refresh-token');
+      localStorage.setItem('user', JSON.stringify({
+        id: demoUser.id, email: demoUser.email,
+        firstName: demoUser.firstName, lastName: demoUser.lastName,
+        tenantId: demoUser.tenantId, role: demoUser.roles[0],
+        permissions: demoUser.permissions,
+      }));
+      setUser(demoUser);
+      return;
+    }
+
+    // Real API login
     const response = await authService.login({ email, password });
     console.log('✅ Login response received:', response);
     localStorage.removeItem('mockUser');
     localStorage.removeItem('mockRemember');
     localStorage.removeItem('allowbox:store')
 
-    // Map backend response to frontend User type
     const backendUser = response.user;
     const mappedUser: User = {
-      id: backendUser.id,
-      email: backendUser.email,
-      firstName: backendUser.firstName,
-      lastName: backendUser.lastName,
+      id: backendUser.id, email: backendUser.email,
+      firstName: backendUser.firstName, lastName: backendUser.lastName,
       tenantId: backendUser.tenantId || '',
-      roles: [backendUser.role], // Convert single role to array
+      roles: [backendUser.role],
       permissions: backendUser.permissions || [],
     };
-
-    console.log('👤 Mapped user:', mappedUser);
-    console.log('💾 Tokens stored in localStorage:', {
-      accessToken: localStorage.getItem('accessToken'),
-      refreshToken: localStorage.getItem('refreshToken')
-    });
-
     setUser(mappedUser);
-    console.log('✅ User state updated');
   };
 
   const signup = async (email: string, password: string, name?: string) => {
@@ -174,7 +224,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    await authService.logout();
+    const token = authService.getAccessToken();
+    if (token?.startsWith('demo-token-')) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+    } else {
+      await authService.logout();
+    }
     setUser(null);
   };
 

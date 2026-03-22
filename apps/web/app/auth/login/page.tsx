@@ -55,21 +55,24 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
+      // Demo accounts bypass API entirely
+      const demoEmails = ['admin@allowbox.app', 'school@example.com', 'teacher@example.com', 'parent@example.com'];
+      if (demoEmails.includes(email.toLowerCase())) {
+        await login(email, password, rememberMe);
+        setShouldRedirect(true);
+        return;
+      }
+
       const response = await authService.login({ email, password });
 
-      // Check if this is first login (explicitly check === true)
       if (response.user.isFirstLogin === true) {
         console.log('First login detected - showing password reset modal');
         setLoginCredentials({ email, password });
         setShowFirstLoginModal(true);
         setIsSubmitting(false);
-        // Logout to prevent access without password reset
         await logout();
       } else {
-        // Normal login flow
         await login(email, password, rememberMe);
-        // User state will be updated by auth context
-        // Trigger redirect via useEffect
         setShouldRedirect(true);
       }
     } catch (err: any) {
@@ -202,16 +205,27 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Test Accounts Info */}
+        {/* Demo Accounts */}
         <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-xs font-semibold text-gray-700 mb-2">Test Accounts (Mock Mode):</p>
-          <ul className="text-xs text-gray-600 space-y-1">
-            <li>Super Admin: admin@allowbox.app</li>
-            <li>School Admin: school@example.com</li>
-            <li>Teacher: teacher@example.com</li>
-            <li>Parent: parent@example.com</li>
-          </ul>
-          <p className="text-xs italic text-gray-500 mt-2">Password: any</p>
+          <p className="text-xs font-semibold text-gray-700 mb-3">Quick Demo Login:</p>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: 'Super Admin', email: 'admin@allowbox.app', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+              { label: 'School Admin', email: 'school@example.com', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+              { label: 'Teacher', email: 'teacher@example.com', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+              { label: 'Parent', email: 'parent@example.com', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+            ].map((acc) => (
+              <button
+                key={acc.email}
+                type="button"
+                onClick={() => { setEmail(acc.email); setPassword('demo123'); }}
+                className={`px-3 py-2 text-xs font-medium rounded-lg border transition-colors hover:opacity-80 ${acc.color}`}
+              >
+                {acc.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs italic text-gray-400 mt-2 text-center">Click a role, then hit Login</p>
         </div>
       </div>
     </AuthLayout>
