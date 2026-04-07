@@ -12,6 +12,7 @@ export interface AuthContextType {
   login: (email: string, password: string, remember?: boolean) => Promise<void>;
   signup: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => Promise<void>;
+  switchRole: (email: string) => void;
   refreshUser: () => Promise<void>;
 }
 
@@ -235,12 +236,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
+  const switchRole = (email: string) => {
+    const demoUser = DEMO_USERS[email.toLowerCase()];
+    if (!demoUser) {
+      console.warn('[switchRole] unknown demo email:', email);
+      return;
+    }
+    // Atomic swap: overwrite localStorage and user state in one pass,
+    // never passing through null — prevents UI flicker in the demo mode bar.
+    localStorage.setItem('accessToken', 'demo-token-' + demoUser.roles[0]);
+    localStorage.setItem('refreshToken', 'demo-refresh-token');
+    localStorage.setItem('user', JSON.stringify({
+      id: demoUser.id, email: demoUser.email,
+      firstName: demoUser.firstName, lastName: demoUser.lastName,
+      tenantId: demoUser.tenantId, role: demoUser.roles[0],
+      permissions: demoUser.permissions,
+    }));
+    setUser(demoUser);
+  };
+
   useEffect(() => {
     refreshUser();
   }, [refreshUser]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, switchRole, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
