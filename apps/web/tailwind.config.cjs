@@ -49,6 +49,29 @@ module.exports = {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        blobDriftA: {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '33%':      { transform: 'translate(40px, -30px) scale(1.1)' },
+          '66%':      { transform: 'translate(-20px, 40px) scale(0.95)' },
+        },
+        blobDriftB: {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '33%':      { transform: 'translate(-30px, 20px) scale(1.08)' },
+          '66%':      { transform: 'translate(25px, -35px) scale(0.97)' },
+        },
+        blobDriftC: {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '33%':      { transform: 'translate(20px, 30px) scale(1.05)' },
+          '66%':      { transform: 'translate(-30px, -20px) scale(1.0)' },
+        },
+        cardFloat: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%':      { transform: 'translateY(-4px)' },
+        },
+        cardEnterZoom: {
+          '0%':   { transform: 'scale(1)',     opacity: '1' },
+          '100%': { transform: 'scale(1.5)',   opacity: '0' },
+        },
       },
       animation: {
   fadeIn: 'fadeInSmooth 0.5s ease-in-out',
@@ -61,6 +84,11 @@ module.exports = {
         'slide-in-right': 'slideInRight 200ms ease-out',
         'slide-in-left': 'slideInLeft 200ms ease-out',
         'slide-in-bottom': 'slideInBottom 200ms ease-out',
+        'blob-a': 'blobDriftA 20s ease-in-out infinite',
+        'blob-b': 'blobDriftB 25s ease-in-out infinite',
+        'blob-c': 'blobDriftC 30s ease-in-out infinite',
+        'card-float': 'cardFloat 4s ease-in-out infinite',
+        'card-enter': 'cardEnterZoom 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
       },
       transitionTimingFunction: {
         'ease-smooth': 'cubic-bezier(0.16, 1, 0.3, 1)',
