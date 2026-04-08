@@ -141,16 +141,16 @@ export default function TeacherLayout({
                   sidebarCollapsed ? 'md:ml-20' : 'md:ml-64'
                 }`}
               >
-                <header className="sticky top-0 z-20 bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6">
-                  <div>
-                    <h1 className="text-lg font-semibold text-slate-900">
+                <header className="sticky top-0 z-20 bg-white border-b border-slate-200 h-14 sm:h-16 flex items-center justify-between px-4 sm:px-6">
+                  <div className="min-w-0">
+                    <h1 className="text-base sm:text-lg font-semibold text-slate-900 truncate">
                       {pageTitles[activeItem] || activeItem.charAt(0).toUpperCase() + activeItem.slice(1).replace(/-/g, ' ')}
                     </h1>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-[11px] sm:text-xs text-slate-500">
                       Teacher Portal
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 shrink-0">
                     <div className="relative hidden lg:block">
                       <input
                         type="text"
@@ -173,7 +173,7 @@ export default function TeacherLayout({
                   </div>
                 </header>
 
-                <main className="p-4 md:p-6 animate-fade-in">
+                <main className="p-3 sm:p-4 md:p-6 pb-24 md:pb-6 animate-fade-in">
                   {children}
                 </main>
               </div>

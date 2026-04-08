@@ -21,6 +21,22 @@ export function DemoModeBar() {
     setIsDemo(Boolean(token?.startsWith('demo-token-')));
   }, [user]);
 
+  // Toggle a body data attribute so global CSS can push fixed-position
+  // siblings (like the layout sidebar) below the bar.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (isDemo && user) {
+      document.body.dataset.demoMode = 'true';
+    } else {
+      delete document.body.dataset.demoMode;
+    }
+    return () => {
+      if (typeof document !== 'undefined') {
+        delete document.body.dataset.demoMode;
+      }
+    };
+  }, [isDemo, user]);
+
   if (!isDemo || !user) return null;
 
   const currentRole = user.roles?.[0];
