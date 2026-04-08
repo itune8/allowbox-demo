@@ -137,7 +137,7 @@ export default function ParentDashboardPage() {
       </div>
 
       {/* 4 Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <SchoolStatCard icon={<CheckCircle className="w-5 h-5" />} color="green" label="Attendance Rate" value="94%" />
         <SchoolStatCard icon={<FileText className="w-5 h-5" />} color="orange" label="Pending Homework" value={2} />
         <SchoolStatCard icon={<GraduationCap className="w-5 h-5" />} color="purple" label="Average Grade" value="A-" />
@@ -231,7 +231,7 @@ export default function ParentDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-slate-200 p-6">
           <h2 className="text-base font-semibold text-slate-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {[
               { label: 'View Report Card', icon: <GraduationCap className="w-5 h-5 text-purple-500" />, bg: 'bg-purple-50', href: '/parent/exams' },
               { label: 'Pay Fees', icon: <DollarSign className="w-5 h-5 text-green-500" />, bg: 'bg-green-50', href: '/parent/fees' },

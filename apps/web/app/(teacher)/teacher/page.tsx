@@ -89,7 +89,7 @@ export default function TeacherDashboardPage() {
       </div>
 
       {/* 4 Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <SchoolStatCard
           icon={<Users className="w-5 h-5" />}
           color="blue"

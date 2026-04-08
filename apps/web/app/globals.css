@@ -668,3 +668,46 @@ a {
   0% { opacity: 0; transform: translateY(20px); }
   100% { opacity: 1; transform: translateY(0); }
 }
+
+/* ============================================================================
+   Demo Mode Bar — global offset for fixed-position layout siblings
+   ----------------------------------------------------------------------------
+   When the demo mode bar is visible, the layout's fixed sidebars (which use
+   `top-0`) would otherwise sit underneath it. The DemoModeBar component sets
+   `body[data-demo-mode="true"]` while it is mounted; these rules push fixed
+   left-side asides and the mobile drawer overlay below the bar so nothing is
+   clipped.
+
+   Bar height: 40px on mobile, 44px from sm: breakpoint (640px) up.
+   ============================================================================ */
+
+body[data-demo-mode='true'] {
+  --demo-bar-height: 40px;
+}
+
+@media (min-width: 640px) {
+  body[data-demo-mode='true'] {
+    --demo-bar-height: 44px;
+  }
+}
+
+/* Desktop fixed sidebar (ProfessionalSidebar) */
+body[data-demo-mode='true'] aside.fixed.left-0.top-0 {
+  top: var(--demo-bar-height);
+  height: calc(100vh - var(--demo-bar-height));
+}
+
+/* Mobile drawer overlay parent (the fullscreen wrapper that contains the drawer) */
+body[data-demo-mode='true'] .md\:hidden.fixed.inset-0 {
+  top: var(--demo-bar-height);
+}
+
+/* Mobile drawer aside inside the overlay */
+body[data-demo-mode='true'] .md\:hidden.fixed.inset-0 > aside.absolute.left-0.top-0 {
+  height: 100%;
+}
+
+/* Layout sticky headers (e.g. parent/teacher dashboard chrome) — sit below the bar */
+body[data-demo-mode='true'] header.sticky.top-0 {
+  top: var(--demo-bar-height);
+}

@@ -1,44 +1,37 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/auth-context';
 import { ROLE_DASHBOARDS } from '@repo/config';
+import { BackgroundEffects } from '../components/landing/BackgroundEffects';
+import { LandingHero } from '../components/landing/LandingHero';
+import { RoleCards } from '../components/landing/RoleCards';
+import { TrustMarkers } from '../components/landing/trust-markers';
 
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  const dashboardPath = useMemo(() => {
-    const primaryRole = user?.roles?.[0] as keyof typeof ROLE_DASHBOARDS | undefined;
-    return (primaryRole && ROLE_DASHBOARDS[primaryRole]) || '/platform';
-  }, [user]);
-
+  // If a user is already logged in (e.g. they bookmarked a panel and came back via /),
+  // send them straight to their dashboard. Otherwise show the landing.
   useEffect(() => {
-    if (!loading) {
-      if (user) {
-        router.replace(dashboardPath);
-      } else {
-        router.replace('/auth/login');
-      }
+    if (loading) return;
+    if (user) {
+      const primaryRole = user.roles?.[0] as keyof typeof ROLE_DASHBOARDS | undefined;
+      const dashboardPath = (primaryRole && ROLE_DASHBOARDS[primaryRole]) || '/platform';
+      router.replace(dashboardPath);
     }
+  }, [user, loading, router]);
 
-    // Safety timeout: if loading takes more than 3s, redirect to login
-    const timeout = setTimeout(() => {
-      if (loading) {
-        router.replace('/auth/login');
-      }
-    }, 3000);
-
-    return () => clearTimeout(timeout);
-  }, [user, loading, router, dashboardPath]);
-
+  // While auth context is hydrating, render the landing underneath — it's the right
+  // background regardless, and the redirect will kick in if user exists.
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading...</p>
-      </div>
-    </div>
+    <main className="relative min-h-screen overflow-hidden flex flex-col items-center justify-center gap-8 sm:gap-12 py-12">
+      <BackgroundEffects />
+      <LandingHero />
+      <RoleCards />
+      <TrustMarkers />
+    </main>
   );
 }
