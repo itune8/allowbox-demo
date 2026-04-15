@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
@@ -29,6 +29,11 @@ export default function DemoWelcomePage() {
   const portal = params?.portal as DemoPortalKey | undefined;
   const [name, setName] = useState<string | null>(null);
 
+  // Hold login in a ref so the effect's deps don't churn when auth context
+  // re-renders (which would cancel the redirect timeout).
+  const loginRef = useRef(login);
+  loginRef.current = login;
+
   useEffect(() => {
     if (!portal || !portalLabels[portal]) {
       router.replace('/');
@@ -42,30 +47,26 @@ export default function DemoWelcomePage() {
     }
     setName(blob.name);
 
-    let cancelled = false;
-
     // Kick off auto-login in parallel so it's ready by the time the animation ends.
     const creds = PORTAL_CREDENTIALS[portal];
     (async () => {
       try {
-        await login(creds.email, creds.password);
+        await loginRef.current(creds.email, creds.password);
       } catch {
         // If demo login fails the banner will still show but protected routes
         // will redirect. Continue — don't block the animation.
       }
-      if (cancelled) return;
     })();
 
+    // Use a plain setTimeout that fires regardless of re-renders — deps are
+    // intentionally scoped to just portal so we don't cancel mid-animation.
     const t = setTimeout(() => {
-      if (cancelled) return;
       router.replace(portalRoutes[portal]);
     }, WELCOME_MS);
 
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-    };
-  }, [portal, router, login]);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [portal]);
 
   if (!portal || !portalLabels[portal]) return null;
 
