@@ -82,12 +82,14 @@ export function PortalPickerCards() {
 
   useEffect(() => {
     load();
-    // Retry every 30s on error — config may recover
+    // Poll every 10s so super-admin toggle flips propagate to anyone who
+    // already has this page open — keeps the demo and admin panel in sync.
+    // (On error, the same interval also naturally retries.)
     const id = setInterval(() => {
-      if (error) load();
-    }, 30_000);
+      load();
+    }, 10_000);
     return () => clearInterval(id);
-  }, [error]);
+  }, []);
 
   return (
     <div className="relative z-10 w-full max-w-5xl px-6">
