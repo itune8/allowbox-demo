@@ -3,15 +3,17 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/auth-context';
-import { ROUTES } from '@repo/config';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
+    // Demo site: unauthenticated (including after logout) bounces back to
+    // the portal picker, NOT the login page. The picker is the canonical
+    // entry point for visitors.
     if (!loading && !user) {
-      router.push(ROUTES.LOGIN);
+      router.push('/');
     }
   }, [user, loading, router]);
 

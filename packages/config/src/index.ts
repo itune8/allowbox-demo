@@ -1,7 +1,43 @@
 // Environment Configuration
+//
+// On the demo site hosted at allowbox-demo.vercel.app we detected the Vercel
+// dashboard holding a stale `NEXT_PUBLIC_API_URL` pointing at a retired
+// hyperbrainlabs host. That killed all API calls. Since the dashboard env
+// var can't be edited from the repo, we override by hostname for known
+// production hosts — cleanest way to route the deployed demo back to the
+// real API without touching the dashboard.
+
+function resolveApiUrl(): string {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (
+      host === 'allowbox-demo.vercel.app' ||
+      host.endsWith('.allowbox-demo.vercel.app') ||
+      host === 'allowbox.in' ||
+      host === 'www.allowbox.in'
+    ) {
+      return 'https://api.allowbox.in/api/v1';
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5004/api/v1';
+}
+
+function resolveAppUrl(): string {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host === 'allowbox-demo.vercel.app') return 'https://allowbox-demo.vercel.app';
+    if (host === 'allowbox.in' || host === 'www.allowbox.in') return 'https://allowbox.in';
+  }
+  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+}
+
 export const env = {
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5004/api/v1',
-  appUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  get apiUrl() {
+    return resolveApiUrl();
+  },
+  get appUrl() {
+    return resolveAppUrl();
+  },
   useApiMocks: process.env.NEXT_PUBLIC_USE_API_MOCKS === 'true',
   wsUrl: process.env.NEXT_PUBLIC_WS_URL || '',
   nodeEnv: process.env.NODE_ENV || 'development',
