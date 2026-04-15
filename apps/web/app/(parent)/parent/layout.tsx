@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { ProfessionalSidebar, type SidebarSection } from '@repo/ui/navigation';
 import { DemoModeBar } from '../../../components/demo-mode-bar';
+import { DemoNameBanner } from '../../../components/demo/DemoNameBanner';
 import { useAuth } from '../../../contexts/auth-context';
 import { ProtectedRoute } from '../../../components/protected-route';
 import { ToastProvider } from '../../../components/school/toast';
@@ -105,6 +106,7 @@ export default function ParentLayout({
   return (
     <>
       <DemoModeBar />
+      <DemoNameBanner portal="parent" />
       <div className="pt-10 sm:pt-11">
         <ProtectedRoute>
           <ToastProvider>

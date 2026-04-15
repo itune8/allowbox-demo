@@ -5,6 +5,7 @@ import { ProfessionalSidebar, type SidebarSection } from '@repo/ui/navigation';
 import { useAuth } from '../../../contexts/auth-context';
 import { ProtectedRoute } from '../../../components/protected-route';
 import { DemoModeBar } from '../../../components/demo-mode-bar';
+import { DemoNameBanner } from '../../../components/demo/DemoNameBanner';
 import { ToastProvider } from '../../../components/school/toast';
 import { useMemo, useState } from 'react';
 import {
@@ -116,6 +117,7 @@ export default function TeacherLayout({
   return (
     <>
       <DemoModeBar />
+      <DemoNameBanner portal="teacher" />
       <div className="pt-10 sm:pt-11">
         <ProtectedRoute>
           <ToastProvider>

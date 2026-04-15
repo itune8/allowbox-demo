@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/auth-context';
 import { ROLE_DASHBOARDS } from '@repo/config';
 import { BackgroundEffects } from '../components/landing/BackgroundEffects';
 import { LandingHero } from '../components/landing/LandingHero';
-import { RoleCards } from '../components/landing/RoleCards';
+import { PortalPickerCards } from '../components/landing/PortalPickerCards';
 import { TrustMarkers } from '../components/landing/trust-markers';
 
 export default function Home() {
@@ -30,7 +30,7 @@ export default function Home() {
     <main className="relative min-h-screen overflow-hidden flex flex-col items-center justify-center gap-8 sm:gap-12 py-12">
       <BackgroundEffects />
       <LandingHero />
-      <RoleCards />
+      <PortalPickerCards />
       <TrustMarkers />
     </main>
   );

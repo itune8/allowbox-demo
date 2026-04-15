@@ -5,6 +5,7 @@ import { ProfessionalSidebar, type SidebarSection } from '@repo/ui/navigation';
 import { useAuth } from '../../../contexts/auth-context';
 import { ProtectedRoute } from '../../../components/protected-route';
 import { ToastProvider } from '../../../components/school/toast';
+import { DemoNameBanner } from '../../../components/demo/DemoNameBanner';
 import { useMemo, useState, useEffect } from 'react';
 import { tenantService, type TenantData } from '../../../lib/services/tenant.service';
 import {
@@ -152,6 +153,7 @@ export default function SchoolLayout({
   return (
     <ProtectedRoute>
       <ToastProvider>
+        <DemoNameBanner portal="school" />
         <div className="min-h-screen bg-slate-50">
           <ProfessionalSidebar
             title={schoolName}

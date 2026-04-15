@@ -5,6 +5,7 @@ import { ProfessionalSidebar, type SidebarSection } from '@repo/ui/navigation';
 import { useAuth } from '../../contexts/auth-context';
 import { ProtectedRoute } from '../../components/protected-route';
 import { schoolService } from '../../lib/services/superadmin/school.service';
+import { DemoNameBanner } from '../../components/demo/DemoNameBanner';
 import { useMemo, useState, useEffect } from 'react';
 import {
   LayoutDashboard,
@@ -103,6 +104,7 @@ export default function PlatformLayout({
 
   return (
     <ProtectedRoute>
+      <DemoNameBanner portal="platform" />
       <div className="min-h-screen bg-slate-50">
         {/* Professional Sidebar */}
         <ProfessionalSidebar
