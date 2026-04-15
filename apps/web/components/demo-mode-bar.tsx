@@ -47,8 +47,15 @@ export function DemoModeBar() {
   // Other roles (super_admin, tenant_admin) accessed via backdoor do not
   // need swap buttons — the bar will just show "Exit demo".
   const otherRoleLabel = isParent ? 'Teacher' : isTeacher ? 'Parent' : null;
-  const otherRoleEmail = isParent ? 'teacher@example.com' : isTeacher ? 'parent@example.com' : null;
-  const otherRoleDashboard = isParent ? '/teacher' : isTeacher ? '/parent' : null;
+  // Route the "switch" button through the proper demo flow so each portal
+  // visit has its own captured form (if no 24h blob) and greeting overlay.
+  // The target form page will skip to /welcome automatically if a fresh
+  // blob already exists for the target portal.
+  const otherPortalFormPath = isParent
+    ? '/demo/form/teacher'
+    : isTeacher
+    ? '/demo/form/parent'
+    : null;
 
   const displayRole = isParent ? 'Parent' : isTeacher ? 'Teacher'
     : currentRole === 'tenant_admin' ? 'School Admin'
@@ -56,9 +63,8 @@ export function DemoModeBar() {
     : 'Demo User';
 
   const handleSwitch = () => {
-    if (!otherRoleEmail || !otherRoleDashboard) return;
-    switchRole(otherRoleEmail);
-    router.push(otherRoleDashboard);
+    if (!otherPortalFormPath) return;
+    router.push(otherPortalFormPath);
   };
 
   const handleExit = async () => {
