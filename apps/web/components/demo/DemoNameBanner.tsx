@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles } from 'lucide-react';
 import { useAuth } from '../../contexts/auth-context';
@@ -26,6 +26,17 @@ export function DemoNameBanner({ portal }: { portal: DemoPortalKey }) {
   const [name, setName] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
+  // Keep latest patchUser + user in refs so the main effect only depends on
+  // portal and router. Including them in deps caused the effect to fire on
+  // every auth re-render, which (combined with polling) caused runaway
+  // requests.
+  const patchRef = useRef(patchUser);
+  patchRef.current = patchUser;
+  const userFirstRef = useRef(user?.firstName);
+  const userLastRef = useRef(user?.lastName);
+  userFirstRef.current = user?.firstName;
+  userLastRef.current = user?.lastName;
+
   useEffect(() => {
     const blob = readPortalBlob(portal);
     if (!blob) {
@@ -36,17 +47,16 @@ export function DemoNameBanner({ portal }: { portal: DemoPortalKey }) {
     setName(blob.name);
     setReady(true);
 
-    // Keep the logged-in user's firstName in sync with the demo name so every
-    // dashboard greeting ("Welcome back, {firstName}!") reads as personalized.
-    // Only patch if the current firstName doesn't already match — avoids a
-    // re-render loop.
+    // Overlay the visitor's typed name onto the logged-in user's first/last
+    // name so dashboards greet them correctly.
     const parts = blob.name.trim().split(/\s+/);
     const first = parts[0] || blob.name;
     const last = parts.slice(1).join(' ') || '';
-    if (user && (user.firstName !== first || user.lastName !== last)) {
-      patchUser({ firstName: first, lastName: last } as any);
+    if (userFirstRef.current !== first || userLastRef.current !== last) {
+      patchRef.current({ firstName: first, lastName: last } as any);
     }
-  }, [portal, router, user, patchUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [portal]);
 
   if (!ready || !name) return null;
 

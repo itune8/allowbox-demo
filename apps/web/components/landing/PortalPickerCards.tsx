@@ -82,13 +82,30 @@ export function PortalPickerCards() {
 
   useEffect(() => {
     load();
-    // Poll every 10s so super-admin toggle flips propagate to anyone who
-    // already has this page open — keeps the demo and admin panel in sync.
-    // (On error, the same interval also naturally retries.)
-    const id = setInterval(() => {
+
+    // Refresh on tab focus/visibility so super-admin toggles propagate when
+    // the visitor re-engages. No background polling — prior aggressive
+    // polling (10s) racked up hundreds of requests/hour per open tab.
+    let lastLoad = Date.now();
+    const MIN_REFETCH_MS = 15_000;
+
+    const maybeReload = () => {
+      if (typeof document === 'undefined') return;
+      if (document.visibilityState !== 'visible') return;
+      const since = Date.now() - lastLoad;
+      if (since < MIN_REFETCH_MS) return;
+      lastLoad = Date.now();
       load();
-    }, 10_000);
-    return () => clearInterval(id);
+    };
+
+    const onVis = () => maybeReload();
+    const onFocus = () => maybeReload();
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   return (
