@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, X } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+import { useAuth } from '../../contexts/auth-context';
 import {
   readPortalBlob,
   clearPortalBlob,
@@ -21,6 +22,7 @@ import {
  */
 export function DemoNameBanner({ portal }: { portal: DemoPortalKey }) {
   const router = useRouter();
+  const { user, patchUser } = useAuth();
   const [name, setName] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -33,7 +35,18 @@ export function DemoNameBanner({ portal }: { portal: DemoPortalKey }) {
     }
     setName(blob.name);
     setReady(true);
-  }, [portal, router]);
+
+    // Keep the logged-in user's firstName in sync with the demo name so every
+    // dashboard greeting ("Welcome back, {firstName}!") reads as personalized.
+    // Only patch if the current firstName doesn't already match — avoids a
+    // re-render loop.
+    const parts = blob.name.trim().split(/\s+/);
+    const first = parts[0] || blob.name;
+    const last = parts.slice(1).join(' ') || '';
+    if (user && (user.firstName !== first || user.lastName !== last)) {
+      patchUser({ firstName: first, lastName: last } as any);
+    }
+  }, [portal, router, user, patchUser]);
 
   if (!ready || !name) return null;
 

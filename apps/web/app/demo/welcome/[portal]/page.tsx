@@ -25,14 +25,16 @@ const WELCOME_MS = 2500;
 export default function DemoWelcomePage() {
   const params = useParams();
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, patchUser } = useAuth();
   const portal = params?.portal as DemoPortalKey | undefined;
   const [name, setName] = useState<string | null>(null);
 
-  // Hold login in a ref so the effect's deps don't churn when auth context
-  // re-renders (which would cancel the redirect timeout).
+  // Hold login + patchUser in refs so the effect's deps don't churn when auth
+  // context re-renders (which would cancel the redirect timeout).
   const loginRef = useRef(login);
   loginRef.current = login;
+  const patchRef = useRef(patchUser);
+  patchRef.current = patchUser;
 
   useEffect(() => {
     if (!portal || !portalLabels[portal]) {
@@ -56,6 +58,13 @@ export default function DemoWelcomePage() {
         // If demo login fails the banner will still show but protected routes
         // will redirect. Continue — don't block the animation.
       }
+      // Overlay the visitor's typed name on top of the seeded demo user so
+      // every dashboard greeting (user.firstName) reads as personalized.
+      const parts = blob.name.trim().split(/\s+/);
+      patchRef.current({
+        firstName: parts[0] || blob.name,
+        lastName: parts.slice(1).join(' ') || '',
+      } as any);
     })();
 
     // Use a plain setTimeout that fires regardless of re-renders — deps are

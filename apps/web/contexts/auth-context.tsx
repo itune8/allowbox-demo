@@ -14,6 +14,13 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   switchRole: (email: string) => void;
   refreshUser: () => Promise<void>;
+  /**
+   * Shallow-merge the given fields into the current user object and persist
+   * to localStorage. Used by the demo welcome flow to overlay the visitor's
+   * typed name on top of the seeded demo user so dashboards that greet
+   * `user.firstName` feel personalized.
+   */
+  patchUser: (patch: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -255,12 +262,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(demoUser);
   };
 
+  const patchUser = useCallback((patch: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch } as User;
+      try {
+        localStorage.setItem('user', JSON.stringify(next));
+      } catch {
+        /* quota / private mode — ignore */
+      }
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     refreshUser();
   }, [refreshUser]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, switchRole, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, switchRole, refreshUser, patchUser }}>
       {children}
     </AuthContext.Provider>
   );
