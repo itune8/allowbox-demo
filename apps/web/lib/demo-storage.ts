@@ -15,6 +15,12 @@ export type DemoPortalKey = 'parent' | 'teacher' | 'school' | 'platform';
 
 export interface DemoPortalBlob {
   name: string;
+  /**
+   * The school / tenant / organisation name the visitor typed in the form,
+   * shown in the demo header ("Hi Sahil · Gulmohur High School"). Absent
+   * only for older blobs written before this field was added.
+   */
+  orgName?: string;
   ts: number;
 }
 
@@ -46,10 +52,14 @@ export function readPortalBlob(portal: DemoPortalKey): DemoPortalBlob | null {
   return entry;
 }
 
-export function writePortalBlob(portal: DemoPortalKey, name: string): void {
+export function writePortalBlob(
+  portal: DemoPortalKey,
+  name: string,
+  orgName?: string,
+): void {
   if (typeof window === 'undefined') return;
   const all = safeParse(window.localStorage.getItem(STORAGE_KEY));
-  all[portal] = { name, ts: Date.now() };
+  all[portal] = { name, orgName, ts: Date.now() };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
 }
 

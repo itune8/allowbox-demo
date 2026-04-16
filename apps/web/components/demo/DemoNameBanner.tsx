@@ -4,26 +4,29 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles } from 'lucide-react';
 import { useAuth } from '../../contexts/auth-context';
-import {
-  readPortalBlob,
-  clearPortalBlob,
-  type DemoPortalKey,
-} from '../../lib/demo-storage';
+import { readPortalBlob, type DemoPortalKey } from '../../lib/demo-storage';
+
+const PORTAL_LABELS: Record<DemoPortalKey, string> = {
+  parent: 'parent',
+  teacher: 'teacher',
+  school: 'school admin',
+  platform: 'super admin',
+};
 
 /**
  * Sticky ribbon at the top of a demo portal page greeting the visitor by
- * the name they typed in the form. Mounted in each portal's layout.
+ * the name + org they typed in the form. Mounted in each portal's layout.
  *
  * Behavior:
  *  - If a fresh (<24h) blob exists for this portal, render the banner.
  *  - If none exists, redirect back to the demo landing (no sneaky direct
  *    access to the portal without going through the demo flow).
- *  - "Change name" link clears the portal blob and re-routes to the form.
  */
 export function DemoNameBanner({ portal }: { portal: DemoPortalKey }) {
   const router = useRouter();
   const { user, patchUser } = useAuth();
   const [name, setName] = useState<string | null>(null);
+  const [orgName, setOrgName] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
   // Keep latest patchUser + user in refs so the main effect only depends on
@@ -45,6 +48,7 @@ export function DemoNameBanner({ portal }: { portal: DemoPortalKey }) {
       return;
     }
     setName(blob.name);
+    setOrgName(blob.orgName || null);
     setReady(true);
 
     // Overlay the visitor's typed name onto the logged-in user's first/last
@@ -60,26 +64,23 @@ export function DemoNameBanner({ portal }: { portal: DemoPortalKey }) {
 
   if (!ready || !name) return null;
 
-  const handleChange = () => {
-    clearPortalBlob(portal);
-    router.push(`/demo/form/${portal}`);
-  };
+  const portalLabel = PORTAL_LABELS[portal];
 
   return (
     <div className="sticky top-0 z-40 w-full bg-gradient-to-r from-[#824ef2] to-[#6b3fd4] text-white text-xs sm:text-sm">
       <div className="mx-auto max-w-screen-2xl flex items-center gap-2 px-4 py-1.5">
         <Sparkles className="w-3.5 h-3.5 opacity-90 flex-shrink-0" />
         <span className="truncate">
-          👋 Hi, <strong>{name}</strong> — this is a demo of the{' '}
-          <span className="underline decoration-white/40">{portal}</span> portal.
+          👋 Hi, <strong>{name}</strong>
+          {orgName && (
+            <>
+              {' from '}
+              <strong>{orgName}</strong>
+            </>
+          )}
+          {' '}— this is a demo of the{' '}
+          <span className="underline decoration-white/40">{portalLabel}</span> portal.
         </span>
-        <button
-          type="button"
-          onClick={handleChange}
-          className="ml-auto text-[11px] underline decoration-white/40 hover:decoration-white transition-colors"
-        >
-          Change name
-        </button>
       </div>
     </div>
   );

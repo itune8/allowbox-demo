@@ -52,6 +52,11 @@ function greetingName(portal: DemoPortalKey, data: Record<string, string>): stri
   return data.representative || '';
 }
 
+function orgName(portal: DemoPortalKey, data: Record<string, string>): string {
+  if (portal === 'platform') return data.tenantName || '';
+  return data.schoolName || '';
+}
+
 export default function DemoFormPage() {
   const params = useParams();
   const router = useRouter();
@@ -98,7 +103,8 @@ export default function DemoFormPage() {
         ...values,
       } as any);
       const name = greetingName(portal, values) || 'friend';
-      writePortalBlob(portal, name);
+      const org = orgName(portal, values);
+      writePortalBlob(portal, name, org || undefined);
       router.push(`/demo/welcome/${portal}`);
     } catch (e: any) {
       setErr(e?.message || 'Could not submit. Please try again.');
