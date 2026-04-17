@@ -65,7 +65,8 @@ export function BackgroundEffects() {
           style={{
             top: '-10%',
             left: '-10%',
-            background: 'radial-gradient(circle, rgba(251,191,36,0.35) 0%, transparent 70%)',
+            // Brand purple — matches the parent-signup auth gradient (#824ef2).
+            background: 'radial-gradient(circle, rgba(130,78,242,0.32) 0%, transparent 70%)',
             filter: 'blur(80px)',
             willChange: 'transform',
           }}
@@ -76,7 +77,9 @@ export function BackgroundEffects() {
           style={{
             bottom: '-10%',
             right: '-10%',
-            background: 'radial-gradient(circle, rgba(99,102,241,0.30) 0%, transparent 70%)',
+            // Deeper brand shade (#5228a8 end of the gradient), kept cooler so
+            // the landing doesn't feel flat.
+            background: 'radial-gradient(circle, rgba(82,40,168,0.28) 0%, transparent 70%)',
             filter: 'blur(80px)',
             willChange: 'transform',
           }}
@@ -87,7 +90,9 @@ export function BackgroundEffects() {
           style={{
             top: '30%',
             right: '20%',
-            background: 'radial-gradient(circle, rgba(16,185,129,0.25) 0%, transparent 70%)',
+            // Soft lavender accent (violet-300) — keeps three hues on screen
+            // without introducing green/amber warmth that clashed with the brand.
+            background: 'radial-gradient(circle, rgba(196,181,253,0.30) 0%, transparent 70%)',
             filter: 'blur(80px)',
             willChange: 'transform',
           }}
@@ -122,7 +127,7 @@ export function BackgroundEffects() {
         aria-hidden
         style={{
           background:
-            'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)',
+            'radial-gradient(circle, rgba(130,78,242,0.14) 0%, transparent 70%)',
           transform: 'translate(50%, 50%)',
           transition: 'transform 120ms linear',
         }}
