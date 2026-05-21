@@ -4,6 +4,7 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../contexts/auth-context';
 import { ThemeProvider } from '../contexts/theme-provider';
+import { DemoSessionTracker } from './demo-session-tracker';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,7 +19,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {/* Anonymous session-duration telemetry — opens a row on mount
+              and beacons end on pagehide. Renders nothing. */}
+          <DemoSessionTracker />
+          {children}
+        </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
