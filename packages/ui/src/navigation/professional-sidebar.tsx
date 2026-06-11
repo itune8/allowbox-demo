@@ -65,7 +65,23 @@ export const ProfessionalSidebar: React.FC<ProfessionalSidebarProps> = ({
         ) : (
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#824ef2] rounded-lg flex items-center justify-center shrink-0">
-              <span className="text-white font-bold text-lg">E</span>
+              {/* AllowBox graduation-cap mark (lucide GraduationCap, inline
+                  so this shared package carries no icon-lib dependency). */}
+              <svg
+                className="w-6 h-6 text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-label="AllowBox"
+                role="img"
+              >
+                <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z" />
+                <path d="M22 10v6" />
+                <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5" />
+              </svg>
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
