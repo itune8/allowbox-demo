@@ -13,11 +13,18 @@ import {
 } from '../../../../lib/demo-storage';
 
 // Maps each portal to the auto-login credentials the existing demo seed uses.
+// These MUST match the keys of DEMO_USERS in auth-context.tsx — when they
+// don't, the login falls through to the real API, returns 401, and the
+// api-client interceptor hard-redirects to /auth/login (the "black login
+// page" visitors were seeing after Start My Demo on the school/platform
+// portals). Aligned school -> school@example.com and platform ->
+// admin@allowbox.app so every portal resolves to a local demo user and the
+// API is never touched.
 const PORTAL_CREDENTIALS: Record<DemoPortalKey, { email: string; password: string }> = {
   parent: { email: 'parent@example.com', password: 'demo123' },
   teacher: { email: 'teacher@example.com', password: 'demo123' },
-  school: { email: 'admin@example.com', password: 'demo123' },
-  platform: { email: 'superadmin@example.com', password: 'demo123' },
+  school: { email: 'school@example.com', password: 'demo123' },
+  platform: { email: 'admin@allowbox.app', password: 'demo123' },
 };
 
 const WELCOME_MS = 2500;
@@ -80,7 +87,7 @@ export default function DemoWelcomePage() {
   if (!portal || !portalLabels[portal]) return null;
 
   return (
-    <main className="relative min-h-screen bg-gradient-to-br from-[#1a0d3d] via-[#2d1464] to-[#1a0d3d] flex items-center justify-center p-6 overflow-hidden">
+    <main className="relative min-h-screen bg-gradient-to-br from-[#824ef2] via-[#6b3fd4] to-[#5a34c0] flex items-center justify-center p-6 overflow-hidden">
       {/* Ambient particles */}
       <div className="absolute inset-0 pointer-events-none">
         {Array.from({ length: 18 }).map((_, i) => (
@@ -119,7 +126,9 @@ export default function DemoWelcomePage() {
           className="text-3xl sm:text-4xl md:text-5xl font-bold text-white"
         >
           Hey{' '}
-          <span className="text-[#f7b955]">{name || 'there'}</span>
+          <span className="text-white underline decoration-white/40 underline-offset-4">
+            {name || 'there'}
+          </span>
           ,
         </motion.h1>
 

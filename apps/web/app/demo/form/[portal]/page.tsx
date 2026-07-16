@@ -113,14 +113,14 @@ export default function DemoFormPage() {
   };
 
   return (
-    <main className="relative min-h-screen bg-gradient-to-br from-[#1a0d3d] via-[#2d1464] to-[#1a0d3d] flex items-center justify-center p-6">
+    <main className="relative min-h-screen bg-gradient-to-b from-[#f6f3ff] via-white to-[#f3f0fb] flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white mb-4"
+          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-[#824ef2] mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to portals
+          Back to start
         </Link>
         <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
           <h1 className="text-2xl font-bold text-slate-900">
@@ -167,7 +167,7 @@ export default function DemoFormPage() {
               className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-white font-medium bg-[#824ef2] hover:bg-[#6b3fd4] disabled:opacity-50 transition-colors"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              Start my demo
+              Start My Demo
             </button>
             <p className="text-[11px] text-slate-400 text-center">
               We'll never share your details. This is just so we can say hi.

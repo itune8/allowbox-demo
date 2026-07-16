@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, X } from 'lucide-react';
 import { useAuth } from '../../contexts/auth-context';
 import { readPortalBlob, type DemoPortalKey } from '../../lib/demo-storage';
 
@@ -28,6 +28,7 @@ export function DemoNameBanner({ portal }: { portal: DemoPortalKey }) {
   const [name, setName] = useState<string | null>(null);
   const [orgName, setOrgName] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   // Keep latest patchUser + user in refs so the main effect only depends on
   // portal and router. Including them in deps caused the effect to fire on
@@ -62,7 +63,7 @@ export function DemoNameBanner({ portal }: { portal: DemoPortalKey }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portal]);
 
-  if (!ready || !name) return null;
+  if (!ready || !name || dismissed) return null;
 
   const portalLabel = PORTAL_LABELS[portal];
 
@@ -81,6 +82,14 @@ export function DemoNameBanner({ portal }: { portal: DemoPortalKey }) {
           {' '}— this is a demo of the{' '}
           <span className="underline decoration-white/40">{portalLabel}</span> portal.
         </span>
+        <button
+          type="button"
+          onClick={() => setDismissed(true)}
+          aria-label="Dismiss demo banner"
+          className="ml-auto flex-shrink-0 grid place-items-center w-6 h-6 rounded-md hover:bg-white/15 active:bg-white/25 transition-colors"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   );
