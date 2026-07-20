@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronDown, Loader2, ArrowRight, Lock } from 'lucide-react';
 import { fetchDemoConfig, postSubmission } from '../../lib/demo-api';
 import { writePortalBlob, type DemoPortalKey } from '../../lib/demo-storage';
+import { AutoHeight } from './AutoHeight';
 
 /**
  * Single-screen demo entry: a role dropdown + the fields for that role +
@@ -190,29 +191,39 @@ export function ExperienceForm() {
             </div>
           </div>
 
-          {fields.map((f) => (
-            <div key={f.name}>
-              <label
-                htmlFor={f.name}
-                className="block text-sm font-medium text-slate-700 mb-1.5"
-              >
-                {f.label}
-                {f.required && <span className="text-rose-500"> *</span>}
-              </label>
-              <input
-                id={f.name}
-                name={f.name}
-                type={f.type || 'text'}
-                inputMode={f.type === 'tel' ? 'tel' : 'text'}
-                value={values[f.name] || ''}
-                onChange={(e) =>
-                  setValues((prev) => ({ ...prev, [f.name]: e.target.value }))
-                }
-                placeholder={f.placeholder}
-                className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] placeholder:text-slate-400"
-              />
+          {/* Role-dependent fields. Keyed by role so the set fades in on every
+              switch, inside AutoHeight so the card resizes smoothly instead of
+              snapping between the 3- and 4-field layouts. */}
+          <AutoHeight>
+            <div
+              key={role ?? 'none'}
+              className="space-y-4 animate-fade-in-up motion-reduce:animate-none"
+            >
+              {fields.map((f) => (
+                <div key={f.name}>
+                  <label
+                    htmlFor={f.name}
+                    className="block text-sm font-medium text-slate-700 mb-1.5"
+                  >
+                    {f.label}
+                    {f.required && <span className="text-rose-500"> *</span>}
+                  </label>
+                  <input
+                    id={f.name}
+                    name={f.name}
+                    type={f.type || 'text'}
+                    inputMode={f.type === 'tel' ? 'tel' : 'text'}
+                    value={values[f.name] || ''}
+                    onChange={(e) =>
+                      setValues((prev) => ({ ...prev, [f.name]: e.target.value }))
+                    }
+                    placeholder={f.placeholder}
+                    className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#824ef2]/20 focus:border-[#824ef2] placeholder:text-slate-400"
+                  />
+                </div>
+              ))}
             </div>
-          ))}
+          </AutoHeight>
 
           <button
             type="submit"

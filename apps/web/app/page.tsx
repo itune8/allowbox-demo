@@ -33,7 +33,10 @@ export default function Home() {
       />
 
       <div className="relative z-10 mx-auto max-w-6xl px-6 py-12 sm:py-16">
-        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+        {/* Top-aligned, not centered: the form card changes height when the
+            role changes (3 vs 4 fields) and `items-center` re-centered BOTH
+            columns on every switch, so the hero visibly jumped. */}
+        <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-16">
           {/* Left — hero */}
           <div className="animate-fade-in-up">
             <div className="inline-flex items-center gap-2 rounded-full bg-[#824ef2]/10 px-3 py-1 text-xs font-semibold text-[#824ef2]">
