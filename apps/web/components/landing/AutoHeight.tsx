@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 /**
  * Animates its own height whenever the content inside it changes size.
@@ -14,7 +14,10 @@ export function AutoHeight({ children }: { children: ReactNode }) {
   const inner = useRef<HTMLDivElement | null>(null);
   const [height, setHeight] = useState<number | null>(null);
 
-  useLayoutEffect(() => {
+  // useEffect, not useLayoutEffect: this component is server-prerendered, and
+  // the pre-measurement state is already the natural height, so there is no
+  // flash to avoid — only React's SSR warning to.
+  useEffect(() => {
     const el = inner.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
 
